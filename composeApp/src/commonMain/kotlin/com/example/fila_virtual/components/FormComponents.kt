@@ -19,12 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.BackHandler
+import io.kamel.image.KamelImage
+import io.kamel.image.asyncPainterResource
+import com.example.fila_virtual.core.ImageBytesPreview
 
 @Composable
 fun FormHeader(
@@ -194,7 +198,10 @@ fun FormTextField(
 @Composable
 fun FormImagePicker(
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    hasImage: Boolean = false,
+    imageUrl: String = "",
+    previewBytes: ByteArray? = null
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -214,20 +221,64 @@ fun FormImagePicker(
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = null,
-                    tint = PrimaryOrange,
-                    modifier = Modifier.size(40.dp)
+            if (previewBytes != null) {
+                ImageBytesPreview(
+                    bytes = previewBytes,
+                    contentDescription = label,
+                    modifier = Modifier.fillMaxSize()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Toca para subir imagen",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MediumGray
+            } else if (imageUrl.isNotBlank()) {
+                KamelImage(
+                    resource = asyncPainterResource(imageUrl),
+                    contentDescription = label,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onFailure = {
+                        ImagePickerPlaceholder(hasImage)
+                    }
                 )
+            } else {
+                ImagePickerPlaceholder(hasImage)
             }
         }
+    }
+}
+
+@Composable
+private fun ImagePickerPlaceholder(hasImage: Boolean) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(
+            imageVector = Icons.Default.Image,
+            contentDescription = null,
+            tint = PrimaryOrange,
+            modifier = Modifier.size(40.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = if (hasImage) "Imagen seleccionada" else "Toca para subir imagen",
+            style = MaterialTheme.typography.bodySmall,
+            color = MediumGray
+        )
+    }
+}
+
+@Composable
+fun RemoteImage(
+    url: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    fallback: @Composable () -> Unit
+) {
+    if (url.isBlank()) {
+        fallback()
+    } else {
+        KamelImage(
+            resource = asyncPainterResource(url),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = contentScale,
+            onFailure = { fallback() }
+        )
     }
 }

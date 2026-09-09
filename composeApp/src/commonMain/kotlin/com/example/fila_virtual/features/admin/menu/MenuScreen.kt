@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
+import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.admin.ProductoViewModel
@@ -32,7 +33,7 @@ import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenMenu(
+fun MenuScreen(
     establecimientoId: String,
     ownerUid: String,
     onNavigateToAdd: () -> Unit,
@@ -41,7 +42,7 @@ fun ScreenMenu(
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    val categorias = listOf("Todos", "Entradas", "Platos Fuertes", "Bebidas", "Postres")
+    val categorias = ProductMenuCategories.filters
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
     
     var currentEstablecimientoId by remember { mutableStateOf(establecimientoId) }
@@ -255,13 +256,18 @@ fun ScreenMenu(
                         .clip(RoundedCornerShape(16.dp))
                         .background(BorderGray)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Fastfood,
-                        contentDescription = null,
-                        tint = MediumGray,
-                        modifier = Modifier
-                            .size(64.dp)
-                            .align(Alignment.Center)
+                    RemoteImage(
+                        url = prod.imagenUrl,
+                        contentDescription = prod.nombre,
+                        modifier = Modifier.fillMaxSize(),
+                        fallback = {
+                            Icon(
+                                imageVector = Icons.Default.Fastfood,
+                                contentDescription = null,
+                                tint = MediumGray,
+                                modifier = Modifier.size(64.dp).align(Alignment.Center)
+                            )
+                        }
                     )
                     
                     // Category badge
@@ -386,38 +392,7 @@ fun ScreenMenu(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Two small cards
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Surface(
-                        color = ExtraLightGray,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Icon(Icons.Outlined.Timer, contentDescription = null, tint = DarkGray, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("PREP EST.", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("10 - 15 min", style = MaterialTheme.typography.bodyLarge, color = DarkGray, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    Surface(
-                        color = ExtraLightGray,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Icon(Icons.Outlined.ShoppingBag, contentDescription = null, tint = DarkGray, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("VENTAS HOY", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("24 órdenes", style = MaterialTheme.typography.bodyLarge, color = DarkGray, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Botón Editar
                 Button(
@@ -488,7 +463,7 @@ fun ScreenMenu(
 }
 
 @Composable
-fun CardMenuItem(
+private fun CardMenuItem(
     producto: Producto,
     sucursalNombre: String,
     onClick: () -> Unit
@@ -515,7 +490,14 @@ fun CardMenuItem(
                     .background(ExtraLightGray),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
+                RemoteImage(
+                    url = producto.imagenUrl,
+                    contentDescription = producto.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    fallback = {
+                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))

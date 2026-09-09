@@ -31,12 +31,16 @@ import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.features.admin.ProductoViewModel
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.core.SelectedImage
+import com.example.fila_virtual.core.PermissionType
+import com.example.fila_virtual.core.rememberPermissionsManager
+import com.example.fila_virtual.core.rememberImagePicker
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AgregarPlatilloScreen(
+fun AddDishScreen(
     establecimientoId: String,
     ownerUid: String,
     productoToEdit: Producto? = null,
@@ -63,8 +67,20 @@ fun AgregarPlatilloScreen(
     var nombre by remember { mutableStateOf(productoToEdit?.nombre ?: "") }
     var descripcion by remember { mutableStateOf(productoToEdit?.descripcion ?: "") }
     var precio by remember { mutableStateOf(productoToEdit?.precio?.toString() ?: "") }
+    var selectedImage by remember { mutableStateOf<SelectedImage?>(null) }
+    val imagePicker = rememberImagePicker { selectedImage = it }
+    val permissions = rememberPermissionsManager()
+    val requestImage = {
+        if (permissions.isPermissionGranted(PermissionType.GALLERY)) {
+            imagePicker()
+        } else {
+            permissions.askPermission(PermissionType.GALLERY) { granted ->
+                if (granted) imagePicker()
+            }
+        }
+    }
 
-    val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
+    val categorias = ProductMenuCategories.options
     var categoriaSeleccionada by remember { mutableStateOf(productoToEdit?.categoria ?: "") }
     
     var showSuccessSheet by remember { mutableStateOf(false) }
@@ -214,6 +230,9 @@ fun AgregarPlatilloScreen(
                     descripcion = descripcion.trim(),
                     precio = precioDouble,
                     categoria = categoriaSeleccionada,
+                    imagenUrl = productoToEdit?.imagenUrl ?: "",
+                    imageBytes = selectedImage?.bytes,
+                    imageMimeType = selectedImage?.mimeType ?: "image/jpeg",
                     onSuccess = {
                         showSuccessSheet = true
                     }
@@ -224,7 +243,10 @@ fun AgregarPlatilloScreen(
     ) {
         FormImagePicker(
             label = "IMAGEN DEL PLATILLO",
-            onClick = { /* Selector de imagen */ }
+            onClick = requestImage,
+            hasImage = selectedImage != null || !productoToEdit?.imagenUrl.isNullOrBlank(),
+            imageUrl = productoToEdit?.imagenUrl ?: "",
+            previewBytes = selectedImage?.bytes
         )
 
         Spacer(modifier = Modifier.height(24.dp))

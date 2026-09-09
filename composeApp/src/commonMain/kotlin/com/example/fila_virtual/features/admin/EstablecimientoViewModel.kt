@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.repository.EstablecimientoRepository
+import com.example.fila_virtual.repository.uploadImage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,10 +40,28 @@ class EstablecimientoViewModel : ViewModel() {
         _ownerUid.value = uid
     }
 
-    fun guardarEstablecimiento(establecimiento: Establecimiento, onSuccess: () -> Unit) {
+    fun guardarEstablecimiento(
+        establecimiento: Establecimiento,
+        imageBytes: ByteArray? = null,
+        imageMimeType: String = "image/jpeg",
+        onSuccess: () -> Unit
+    ) {
         viewModelScope.launch {
             _uiState.value = FormState.Loading
-            val result = repository.guardarEstablecimiento(establecimiento)
+            val imageResult = imageBytes?.let {
+                uploadImage(
+                    path = "establecimientos/${establecimiento.id.ifEmpty { establecimiento.ownerUid + System.currentTimeMillis() }}",
+                    bytes = it,
+                    mimeType = imageMimeType
+                )
+            }
+            if (imageResult?.isFailure == true) {
+                _uiState.value = FormState.Error("No se pudo subir la imagen")
+                return@launch
+            }
+            val establecimientoConImagen = imageResult?.getOrNull()?.let { establecimiento.copy(logoUrl = it) }
+                ?: establecimiento
+            val result = repository.guardarEstablecimiento(establecimientoConImagen)
             if (result.isSuccess) {
                 _uiState.value = FormState.Success
                 onSuccess()

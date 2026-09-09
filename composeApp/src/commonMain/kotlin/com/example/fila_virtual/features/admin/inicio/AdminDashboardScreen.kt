@@ -33,7 +33,7 @@ private val DEMO_TOP_PRODUCTS = listOf(
 )
 
 @Composable
-fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
+fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
 

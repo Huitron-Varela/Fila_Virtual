@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
-import com.example.fila_virtual.data.Empleado
+import com.example.fila_virtual.data.EmpleadoDetalle
 import com.example.fila_virtual.features.admin.FormState
 
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
@@ -39,7 +39,7 @@ import io.kamel.image.asyncPainterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenEmpleados(
+fun EmployeesScreen(
     establecimientoId: String,
     ownerUid: String,
     onNavigateToAdd: (String) -> Unit,
@@ -78,7 +78,7 @@ fun ScreenEmpleados(
 
     val listaFiltrada = empleados.filter {
         it.nombre.contains(searchQuery, ignoreCase = true) ||
-                it.rol.contains(searchQuery, ignoreCase = true) ||
+                it.roles.any { role -> role.contains(searchQuery, ignoreCase = true) } ||
                 it.correo.contains(searchQuery, ignoreCase = true)
     }
 
@@ -353,7 +353,9 @@ fun ScreenEmpleados(
                         color = DarkGray
                     )
                     Text(
-                        text = emp.rol.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                        text = emp.roles.joinToString(" • ") { role ->
+                            role.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                        },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MediumGray
                     )
@@ -530,7 +532,7 @@ fun CardEmpleado(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = empleado.rol.uppercase(),
+                    text = empleado.roles.joinToString(" • ") { it.uppercase() },
                     style = MaterialTheme.typography.bodyMedium,
                     color = PrimaryOrange,
                     fontWeight = FontWeight.Bold
