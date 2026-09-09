@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -27,6 +28,7 @@ import com.example.fila_virtual.features.user.UserHomeViewModel
 
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.SearchBar
+import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 
@@ -306,7 +308,14 @@ fun CafeteriaCard(establecimiento: Establecimiento, onClick: () -> Unit) {
                     .background(ExtraLightGray),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Storefront, contentDescription = null, tint = MediumGray)
+                RemoteImage(
+                    url = establecimiento.logoUrl,
+                    contentDescription = establecimiento.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    fallback = {
+                        Icon(Icons.Default.Storefront, contentDescription = null, tint = MediumGray)
+                    }
+                )
             }
 
             Column(modifier = Modifier.padding(start = 12.dp)) {
@@ -383,7 +392,14 @@ fun RecommendationCard(
                     .background(Color(0xFF1E1E24)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+                RemoteImage(
+                    url = producto.imagenUrl,
+                    contentDescription = producto.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    fallback = {
+                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+                    }
+                )
             }
 
             Row(

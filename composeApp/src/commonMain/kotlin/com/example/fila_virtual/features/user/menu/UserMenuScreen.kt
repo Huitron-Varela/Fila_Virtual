@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Producto
@@ -23,6 +24,7 @@ import com.example.fila_virtual.core.BackHandler
 import com.example.fila_virtual.features.user.UserViewModel
 
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.components.RemoteImage
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,7 +130,14 @@ fun ProductoClienteCard(producto: Producto, onAddClick: () -> Unit) {
                     .background(Color(0xFF1E1E24)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+                RemoteImage(
+                    url = producto.imagenUrl,
+                    contentDescription = producto.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    fallback = {
+                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+                    }
+                )
             }
 
             Row(

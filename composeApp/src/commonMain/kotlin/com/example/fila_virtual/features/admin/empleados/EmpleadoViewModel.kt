@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.data.EmpleadoDetalle
+import com.example.fila_virtual.data.InvitacionEmpleado
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.repository.EmpleadoRepository
@@ -20,32 +22,6 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
 
-data class EmpleadoDetalle(
-    val uid: String = "",
-    val nombre: String = "",
-    val correo: String = "",
-    val fotoUrl: String = "",
-    val rol: String = "",
-    val activo: Boolean = true,
-    val joinedAt: Long = 0L
-)
-
-@Serializable
-data class InvitacionEmpleado(
-    val token: String = "",
-    val correo: String = "",
-    val establecimientoId: String = "",
-    val rol: String = "",
-    val ownerUid: String = "",
-    val ownerNombre: String = "",
-    val establecimientoNombre: String = "",
-    val status: String = "pending",
-    val acceptedBy: String = "",
-    val acceptedAt: Long = 0L,
-    val createdAt: Long = 0L,
-    val expiresAt: Long = 0L
-)
-
 class EmpleadoViewModel : ViewModel() {
 
     private val repository = EmpleadoRepository()
@@ -59,11 +35,11 @@ class EmpleadoViewModel : ViewModel() {
 
     fun enviarInvitacionPorCorreo(
         correo: String,
-        rol: String,
+        roles: List<String>,
         establecimientoId: String,
         onSent: (String) -> Unit
     ) {
-        if (correo.isBlank()) {
+        if (correo.isBlank() || roles.isEmpty()) {
             _uiState.value = FormState.Error("Por favor ingresa un correo válido")
             return
         }
@@ -125,7 +101,8 @@ class EmpleadoViewModel : ViewModel() {
                     token = token,
                     correo = email,
                     establecimientoId = establecimientoId,
-                    rol = rol,
+                    rol = roles.joinToString(","),
+                    roles = roles,
                     ownerUid = establecimiento.ownerUid,
                     ownerNombre = owner.nombre.ifEmpty { owner.email },
                     establecimientoNombre = establecimiento.nombre,
@@ -143,7 +120,7 @@ class EmpleadoViewModel : ViewModel() {
                         email = email,
                         ownerNombre = owner.nombre.ifEmpty { owner.email },
                         establecimientoNombre = establecimiento.nombre,
-                        rol = rol
+                        rol = roles.joinToString(", ")
                     )
                 )
 
@@ -163,24 +140,7 @@ class EmpleadoViewModel : ViewModel() {
             if (result.isSuccess) {
                 val listaEmpleados = result.getOrDefault(emptyList())
                 val empleadosDetalle = listaEmpleados.map { empleado ->
-                    async {
-                        try {
-                            val userDoc = db.collection("usuarios").document(empleado.uid).get()
-                            val usuario = userDoc.data<Usuario>()
-
-                            EmpleadoDetalle(
-                                uid = empleado.uid,
-                                nombre = usuario.nombre.ifEmpty { "Usuario sin nombre" },
-                                correo = usuario.email,
-                                fotoUrl = usuario.fotoUrl,
-                                rol = empleado.rol,
-                                activo = empleado.activo,
-                                joinedAt = empleado.joinedAt
-                            )
-                        } catch (e: Exception) {
-                            EmpleadoDetalle(uid = empleado.uid, nombre = "Usuario Desconocido", rol = empleado.rol, activo = empleado.activo)
-                        }
-                    }
+                    async { construirDetalleEmpleado(empleado) }
                 }.awaitAll()
 
                 _empleados.value = empleadosDetalle
@@ -195,7 +155,7 @@ class EmpleadoViewModel : ViewModel() {
 
     fun guardarEmpleadoPorCorreo(
         correoBusqueda: String,
-        rol: String,
+        roles: List<String>,
         establecimientoId: String,
         onSuccess: () -> Unit
     ) {
@@ -224,7 +184,8 @@ class EmpleadoViewModel : ViewModel() {
 
                 val nuevoEmpleado = Empleado(
                     uid = uidFinal,
-                    rol = rol,
+                    rol = roles.joinToString(","),
+                    roles = roles,
                     activo = true
                 )
 
@@ -254,23 +215,7 @@ class EmpleadoViewModel : ViewModel() {
                 val result = repository.obtenerEmpleados(estId)
                 if (result.isSuccess) {
                     val detalles = result.getOrDefault(emptyList()).map { empleado ->
-                        async {
-                            try {
-                                val userDoc = db.collection("usuarios").document(empleado.uid).get()
-                                val usuario = userDoc.data<Usuario>()
-                                EmpleadoDetalle(
-                                    uid = empleado.uid,
-                                    nombre = usuario.nombre.ifEmpty { "Usuario sin nombre" },
-                                    correo = usuario.email,
-                                    fotoUrl = usuario.fotoUrl,
-                                    rol = empleado.rol,
-                                    activo = empleado.activo,
-                                    joinedAt = empleado.joinedAt
-                                )
-                            } catch (e: Exception) {
-                                EmpleadoDetalle(uid = empleado.uid, nombre = "Usuario Desconocido", rol = empleado.rol, activo = empleado.activo)
-                            }
-                        }
+                        async { construirDetalleEmpleado(empleado) }
                     }.awaitAll()
                     todosList.addAll(detalles)
                 }
@@ -297,5 +242,34 @@ class EmpleadoViewModel : ViewModel() {
 
     fun resetState() {
         _uiState.value = FormState.Idle
+    }
+
+    private suspend fun construirDetalleEmpleado(empleado: Empleado): EmpleadoDetalle {
+        return try {
+            val usuario = db.collection("usuarios").document(empleado.uid).get().data<Usuario>()
+            EmpleadoDetalle(
+                uid = empleado.uid,
+                nombre = usuario.nombre.ifEmpty { "Usuario sin nombre" },
+                correo = usuario.email,
+                fotoUrl = usuario.fotoUrl,
+                rol = empleado.rol,
+                roles = empleado.roles.normalizarRoles(empleado.rol),
+                activo = empleado.activo,
+                joinedAt = empleado.joinedAt
+            )
+        } catch (exception: Exception) {
+            EmpleadoDetalle(
+                uid = empleado.uid,
+                nombre = "Usuario Desconocido",
+                rol = empleado.rol,
+                roles = empleado.roles.normalizarRoles(empleado.rol),
+                activo = empleado.activo,
+                joinedAt = empleado.joinedAt
+            )
+        }
+    }
+
+    private fun List<String>.normalizarRoles(rol: String): List<String> {
+        return if (isNotEmpty()) this else rol.split(",").map(String::trim).filter(String::isNotEmpty)
     }
 }

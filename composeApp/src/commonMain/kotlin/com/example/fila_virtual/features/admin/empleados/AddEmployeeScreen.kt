@@ -31,7 +31,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
-import com.example.fila_virtual.data.Empleado
+import com.example.fila_virtual.data.EmpleadoDetalle
+import com.example.fila_virtual.data.RolesEmpleado
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.core.*
 import com.example.fila_virtual.core.theme.*
@@ -43,7 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun AnadirEmpleadoScreen(
+fun AddEmployeeScreen(
     empleado: EmpleadoDetalle? = null,
     establecimientoId: String,
     ownerUid: String,
@@ -56,7 +57,14 @@ fun AnadirEmpleadoScreen(
     val focusManager = LocalFocusManager.current
 
     var correo by remember { mutableStateOf(empleado?.correo ?: "") }
-    var rol by remember { mutableStateOf(empleado?.rol ?: "cajero") }
+    val rolesDisponibles = RolesEmpleado.disponibles
+    var rolesSeleccionados by remember {
+        mutableStateOf(
+            empleado?.roles?.ifEmpty {
+                empleado.rol.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            }?.ifEmpty { listOf("cajero") } ?: listOf("cajero")
+        )
+    }
     var localError by remember { mutableStateOf("") }
     var invitationToken by remember { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
@@ -98,14 +106,14 @@ fun AnadirEmpleadoScreen(
             if (isEditing) {
                 viewModel.guardarEmpleadoPorCorreo(
                     correoBusqueda = correo,
-                    rol = rol,
+                    roles = rolesSeleccionados,
                     establecimientoId = selectedEstablecimientoId,
                     onSuccess = onNavigateBack
                 )
             } else {
                 viewModel.enviarInvitacionPorCorreo(
                     correo = correo,
-                    rol = rol,
+                    roles = rolesSeleccionados,
                     establecimientoId = selectedEstablecimientoId,
                     onSent = { invitationToken = it }
                 )
@@ -252,48 +260,46 @@ fun AnadirEmpleadoScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Rol en el establecimiento",
+            text = "Roles en el establecimiento",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = DarkGray
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            RoleChip(
-                label = "Cajero",
-                isSelected = rol == "cajero",
-                onClick = { rol = "cajero" },
-                modifier = Modifier.weight(1f)
-            )
-            RoleChip(
-                label = "Cocina",
-                isSelected = rol == "cocina",
-                onClick = { rol = "cocina" },
-                modifier = Modifier.weight(1f)
-            )
-        }
+        RoleRow(
+            roles = listOf("cajero", "cocina"),
+            selectedRoles = rolesSeleccionados,
+            onRoleClick = { role ->
+                rolesSeleccionados = toggleRole(rolesSeleccionados, role)
+            }
+        )
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            RoleChip(
-                label = "Supervisor",
-                isSelected = rol == "supervisor",
-                onClick = { rol = "supervisor" },
-                modifier = Modifier.weight(1f)
-            )
-            RoleChip(
-                label = "Admin Local",
-                isSelected = rol == "admin",
-                onClick = { rol = "admin" },
-                modifier = Modifier.weight(1f)
-            )
-        }
+        RoleRow(
+            roles = listOf("supervisor", "admin"),
+            selectedRoles = rolesSeleccionados,
+            onRoleClick = { role ->
+                rolesSeleccionados = toggleRole(rolesSeleccionados, role)
+            }
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        RoleRow(
+            roles = listOf("entrega", "todos"),
+            selectedRoles = rolesSeleccionados,
+            onRoleClick = { role ->
+                rolesSeleccionados = if (role == "todos") {
+                    if (rolesSeleccionados.containsAll(rolesDisponibles)) emptyList() else rolesDisponibles
+                } else {
+                    toggleRole(rolesSeleccionados, role)
+                }
+            }
+        )
+        Text(
+            text = if (rolesSeleccionados.isEmpty()) "Selecciona al menos un rol" else "Puedes asignar varios roles",
+            color = if (rolesSeleccionados.isEmpty()) TrafficRed else MediumGray,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 8.dp)
+        )
 
         if (localError.isNotEmpty() || uiState is FormState.Error) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -308,6 +314,38 @@ fun AnadirEmpleadoScreen(
             )
         }
     }
+}
+
+@Composable
+private fun RoleRow(
+    roles: List<String>,
+    selectedRoles: List<String>,
+    onRoleClick: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        roles.forEach { role ->
+            RoleChip(
+                label = when (role) {
+                    "cajero" -> "Cajero"
+                    "cocina" -> "Cocina"
+                    "entrega" -> "Entrega"
+                    "supervisor" -> "Supervisor"
+                    "todos" -> "Todos"
+                    else -> "Admin Local"
+                },
+                isSelected = if (role == "todos") selectedRoles.containsAll(listOf("cajero", "cocina", "entrega", "supervisor", "admin")) else role in selectedRoles,
+                onClick = { onRoleClick(role) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+private fun toggleRole(selectedRoles: List<String>, role: String): List<String> {
+    return if (role in selectedRoles) selectedRoles - role else selectedRoles + role
 }
 
 @Composable

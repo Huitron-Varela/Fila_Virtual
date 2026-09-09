@@ -10,15 +10,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
 import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.data.EmpleadoDetalle
 import com.example.fila_virtual.data.Producto
-import com.example.fila_virtual.features.admin.empleados.AnadirEmpleadoScreen
-import com.example.fila_virtual.features.admin.empleados.EmpleadoDetalle
-import com.example.fila_virtual.features.admin.empleados.ScreenEmpleados
-import com.example.fila_virtual.features.admin.inicio.AñadirEstablecimientoScreen
-import com.example.fila_virtual.features.admin.inicio.EstablecimientosScreen
-import com.example.fila_virtual.features.admin.inicio.InicioAdminScreen
-import com.example.fila_virtual.features.admin.menu.AgregarPlatilloScreen
-import com.example.fila_virtual.features.admin.menu.ScreenMenu
+import com.example.fila_virtual.features.admin.empleados.AddEmployeeScreen
+import com.example.fila_virtual.features.admin.empleados.EmployeesScreen
+import com.example.fila_virtual.features.admin.inicio.AddEstablishmentScreen
+import com.example.fila_virtual.features.admin.inicio.EstablishmentsScreen
+import com.example.fila_virtual.features.admin.inicio.AdminDashboardScreen
+import com.example.fila_virtual.features.admin.menu.AddDishScreen
+import com.example.fila_virtual.features.admin.menu.MenuScreen
 import com.example.fila_virtual.perfil.EditProfileScreen
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.perfil.ProfileComponent
@@ -46,7 +46,7 @@ fun AdminMainScreen(
     var establecimientoToEdit by remember { mutableStateOf<Establecimiento?>(null) }
 
     if (isAddingDish) {
-        AgregarPlatilloScreen(
+        AddDishScreen(
             establecimientoId = selectedEstablecimientoId,
             ownerUid = usuario.uid,
             productoToEdit = productoToEdit,
@@ -56,7 +56,7 @@ fun AdminMainScreen(
             }
         )
     } else if (isAddingEmployee) {
-        AnadirEmpleadoScreen(
+        AddEmployeeScreen(
             empleado = empleadoToEdit,
             establecimientoId = selectedEstablecimientoId,
             ownerUid = usuario.uid,
@@ -73,7 +73,7 @@ fun AdminMainScreen(
             onBack = { isEditingProfile = false }
         )
     } else if (isAddingEstablecimiento) {
-        AñadirEstablecimientoScreen(
+        AddEstablishmentScreen(
             ownerUid = usuario.uid,
             establecimientoToEdit = establecimientoToEdit,
             onBack = { 
@@ -82,7 +82,7 @@ fun AdminMainScreen(
             }
         )
     } else if (isManagingEstablecimientos) {
-        EstablecimientosScreen(
+        EstablishmentsScreen(
             currentAdminUid = usuario.uid,
             onBack = { isManagingEstablecimientos = false },
             onSelectEstablecimiento = { id ->
@@ -96,11 +96,6 @@ fun AdminMainScreen(
             onEditEstablecimiento = { est ->
                 establecimientoToEdit = est
                 isAddingEstablecimiento = true
-            },
-            onAddDish = { id ->
-                selectedEstablecimientoId = id
-                isAddingDish = true
-                isManagingEstablecimientos = false
             }
         )
     } else {
@@ -120,10 +115,10 @@ fun AdminMainScreen(
                 modifier = Modifier.padding(padding)
             ) { page ->
                 when (page) {
-                    0 -> InicioAdminScreen(
+                    0 -> AdminDashboardScreen(
                         onNavigateToManage = { isManagingEstablecimientos = true }
                     )
-                    1 -> ScreenEmpleados(
+                    1 -> EmployeesScreen(
                         establecimientoId = selectedEstablecimientoId,
                         ownerUid = usuario.uid,
                         onNavigateToAdd = { establecimientoId ->
@@ -135,7 +130,7 @@ fun AdminMainScreen(
                             isAddingEmployee = true
                         }
                     )
-                    2 -> ScreenMenu(
+                    2 -> MenuScreen(
                         establecimientoId = selectedEstablecimientoId,
                         ownerUid = usuario.uid,
                         onNavigateToAdd = {

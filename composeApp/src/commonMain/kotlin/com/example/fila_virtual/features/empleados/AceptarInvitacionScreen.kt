@@ -41,7 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.core.theme.*
-import com.example.fila_virtual.features.admin.empleados.InvitacionEmpleado
+import com.example.fila_virtual.data.InvitacionEmpleado
 import com.example.fila_virtual.repository.EmpleadoRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
@@ -254,7 +254,13 @@ private fun InvitationCard(invitation: InvitacionEmpleado) {
             Spacer(Modifier.height(18.dp))
             Text("TE UNES COMO", color = MediumGray, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             Surface(color = SoftOrangeBg, shape = RoundedCornerShape(16.dp), modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)) {
-                Text(invitation.rol.replaceFirstChar { it.uppercase() }, color = PrimaryOrange, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp))
+                Text(
+                    invitation.roles.ifEmpty { invitation.rol.split(",").map { it.trim() } }
+                        .joinToString(" • ") { it.replaceFirstChar { character -> character.uppercase() } },
+                    color = PrimaryOrange,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
+                )
             }
         }
     }
@@ -283,7 +289,8 @@ private fun acceptInvitation(
             val now = Clock.System.now().toEpochMilliseconds()
             val employee = Empleado(
                 uid = user.uid,
-                rol = invitation.rol,
+                rol = invitation.roles.ifEmpty { invitation.rol.split(",").map { it.trim() } }.joinToString(","),
+                roles = invitation.roles.ifEmpty { invitation.rol.split(",").map { it.trim() } },
                 activo = true,
                 invitacionToken = token,
                 joinedAt = now,

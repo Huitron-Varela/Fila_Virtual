@@ -23,12 +23,16 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.core.SelectedImage
+import com.example.fila_virtual.core.PermissionType
+import com.example.fila_virtual.core.rememberPermissionsManager
+import com.example.fila_virtual.core.rememberImagePicker
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AñadirEstablecimientoScreen(
+fun AddEstablishmentScreen(
     ownerUid: String,
     onBack: () -> Unit,
     establecimientoToEdit: Establecimiento? = null,
@@ -42,6 +46,18 @@ fun AñadirEstablecimientoScreen(
     var nombre by remember { mutableStateOf(establecimientoToEdit?.nombre ?: "") }
     var descripcion by remember { mutableStateOf(establecimientoToEdit?.descripcion ?: "") }
     var direccion by remember { mutableStateOf(establecimientoToEdit?.ubicacion?.direccion ?: "") }
+    var selectedImage by remember { mutableStateOf<SelectedImage?>(null) }
+    val imagePicker = rememberImagePicker { selectedImage = it }
+    val permissions = rememberPermissionsManager()
+    val requestImage = {
+        if (permissions.isPermissionGranted(PermissionType.GALLERY)) {
+            imagePicker()
+        } else {
+            permissions.askPermission(PermissionType.GALLERY) { granted ->
+                if (granted) imagePicker()
+            }
+        }
+    }
     
     // Horario
     var apertura by remember { mutableStateOf(establecimientoToEdit?.horario?.get("todos")?.apertura ?: "09:00 AM") }
@@ -169,10 +185,15 @@ fun AñadirEstablecimientoScreen(
                 ownerUid = ownerUid,
                 categorias = categoriasSeleccionadas,
                 horario = mapOf("todos" to HorarioDia(apertura = apertura, cierre = cierre)),
+                logoUrl = establecimientoToEdit?.logoUrl ?: "",
                 createdAt = establecimientoToEdit?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
-            viewModel.guardarEstablecimiento(nuevo) { showSuccessSheet = true }
+            viewModel.guardarEstablecimiento(
+                establecimiento = nuevo,
+                imageBytes = selectedImage?.bytes,
+                imageMimeType = selectedImage?.mimeType ?: "image/jpeg"
+            ) { showSuccessSheet = true }
         },
         saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (establecimientoToEdit == null) "Registrar Establecimiento" else "Guardar Cambios",
         saveIcon = Icons.Default.Store
@@ -180,7 +201,10 @@ fun AñadirEstablecimientoScreen(
         // Imagen de portada
         FormImagePicker(
             label = "Imagen de Portada / Logotipo",
-            onClick = { /* TODO: Implementar selección de imagen */ }
+            onClick = requestImage,
+            hasImage = selectedImage != null || !establecimientoToEdit?.logoUrl.isNullOrBlank(),
+            imageUrl = establecimientoToEdit?.logoUrl ?: "",
+            previewBytes = selectedImage?.bytes
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -329,7 +353,7 @@ private fun formatTime(hour: Int, minute: Int): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimePickerDialog(
+private fun TimePickerDialog(
     title: String = "Seleccionar hora",
     onDismissRequest: () -> Unit,
     confirmButton: @Composable () -> Unit,

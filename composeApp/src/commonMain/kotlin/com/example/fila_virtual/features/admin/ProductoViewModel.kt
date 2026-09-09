@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.repository.ProductoRepository
+import com.example.fila_virtual.repository.uploadImage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +56,9 @@ class ProductoViewModel : ViewModel() {
         descripcion: String,
         precio: Double,
         categoria: String,
+        imagenUrl: String = "",
+        imageBytes: ByteArray? = null,
+        imageMimeType: String = "image/jpeg",
         onSuccess: () -> Unit
     ) {
         if (nombre.isEmpty() || precio <= 0) {
@@ -64,6 +68,17 @@ class ProductoViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.value = FormState.Loading
+            val imageResult = imageBytes?.let {
+                uploadImage(
+                    path = "productos/${id.ifEmpty { ownerUid + System.currentTimeMillis() }}",
+                    bytes = it,
+                    mimeType = imageMimeType
+                )
+            }
+            if (imageResult?.isFailure == true) {
+                _uiState.value = FormState.Error("No se pudo subir la imagen")
+                return@launch
+            }
 
             val nuevoProducto = Producto(
                 id = id,
@@ -73,6 +88,7 @@ class ProductoViewModel : ViewModel() {
                 descripcion = descripcion,
                 precio = precio,
                 categoria = categoria,
+                imagenUrl = imageResult?.getOrNull() ?: imagenUrl,
                 disponible = true
             )
 

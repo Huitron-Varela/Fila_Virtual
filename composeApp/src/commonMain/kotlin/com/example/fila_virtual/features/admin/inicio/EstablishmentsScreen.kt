@@ -17,11 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
+import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Establecimiento
@@ -29,13 +31,12 @@ import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EstablecimientosScreen(
+fun EstablishmentsScreen(
     currentAdminUid: String,
     onBack: () -> Unit,
     onSelectEstablecimiento: (String) -> Unit,
     onRegisterNew: () -> Unit,
     onEditEstablecimiento: (Establecimiento) -> Unit,
-    onAddDish: (String) -> Unit,
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
@@ -181,13 +182,18 @@ fun EstablecimientosScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(BorderGray)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Storefront,
-                            contentDescription = null,
-                            tint = MediumGray,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .align(Alignment.Center)
+                        RemoteImage(
+                            url = est.logoUrl,
+                            contentDescription = est.nombre,
+                            modifier = Modifier.fillMaxSize(),
+                            fallback = {
+                                Icon(
+                                    imageVector = Icons.Default.Storefront,
+                                    contentDescription = null,
+                                    tint = MediumGray,
+                                    modifier = Modifier.align(Alignment.Center).size(36.dp)
+                                )
+                            }
                         )
                     }
                     
@@ -288,7 +294,12 @@ fun EstablecimientosScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text("CATEGORÍA", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("Comida Rápida", style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Bold)
+                            Text(
+                                est.categorias.firstOrNull() ?: "Sin categoría",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DarkGray,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                     Surface(
@@ -306,7 +317,13 @@ fun EstablecimientosScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text("HORARIO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("09:00 AM - 10:00 PM", style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Bold)
+                            val horario = est.horario["todos"]
+                            Text(
+                                if (horario == null) "Sin horario" else "${horario.apertura} - ${horario.cierre}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DarkGray,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -424,14 +441,18 @@ fun EstablecimientoCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(BorderGray) // Placeholder de la imagen
             ) {
-                // Icono por defecto
-                Icon(
-                    imageVector = Icons.Default.Storefront,
-                    contentDescription = null,
-                    tint = MediumGray,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(36.dp)
+                RemoteImage(
+                    url = establecimiento.logoUrl,
+                    contentDescription = establecimiento.nombre,
+                    modifier = Modifier.fillMaxSize(),
+                    fallback = {
+                        Icon(
+                            imageVector = Icons.Default.Storefront,
+                            contentDescription = null,
+                            tint = MediumGray,
+                            modifier = Modifier.align(Alignment.Center).size(36.dp)
+                        )
+                    }
                 )
 
                 // Etiqueta "ABIERTO" / "CERRADO"

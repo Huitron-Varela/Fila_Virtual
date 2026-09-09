@@ -38,6 +38,8 @@ kotlin {
             implementation("com.google.android.gms:play-services-auth:21.0.0")
             implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
             implementation("com.google.firebase:firebase-firestore-ktx:24.10.1")
+            implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
             // Motor Ktor para Android (Asegúrate de que esté en libs.versions.toml)
             implementation(libs.ktor.client.okhttp)
@@ -74,6 +76,7 @@ kotlin {
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
             implementation("dev.gitlive:firebase-functions:1.11.1")
+            implementation("dev.gitlive:firebase-storage:1.11.1")
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             implementation(libs.kotlinx.datetime)
