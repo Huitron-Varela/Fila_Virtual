@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.FormHeader
@@ -40,7 +41,8 @@ fun EstablishmentsScreen(
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
-    val horizontalPadding = windowSize.adaptiveDp(24).value.dp
+    val horizontalPadding = windowSize.compactDp(24)
+    val isCompact = windowSize.isSmallScreen
     var searchQuery by remember { mutableStateOf("") }
     
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
@@ -106,7 +108,9 @@ fun EstablishmentsScreen(
                     text = "Sucursales",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = DarkGray
+                    color = DarkGray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Surface(
@@ -162,12 +166,12 @@ fun EstablishmentsScreen(
         ModalBottomSheet(
             onDismissRequest = { selectedEstablecimiento = null },
             sheetState = sheetState,
-            containerColor = Color.White
+            containerColor = LightSurface
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = horizontalPadding)
                     .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -204,7 +208,9 @@ fun EstablishmentsScreen(
                             text = est.nombre.ifEmpty { "Sin Nombre" },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = DarkGray
+                            color = DarkGray,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -214,7 +220,8 @@ fun EstablishmentsScreen(
                                 text = est.ubicacion.direccion.ifEmpty { "Sin dirección" },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MediumGray,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -298,7 +305,9 @@ fun EstablishmentsScreen(
                                 est.categorias.firstOrNull() ?: "Sin categoría",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = DarkGray,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -322,7 +331,9 @@ fun EstablishmentsScreen(
                                 if (horario == null) "Sin horario" else "${horario.apertura} - ${horario.cierre}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = DarkGray,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
