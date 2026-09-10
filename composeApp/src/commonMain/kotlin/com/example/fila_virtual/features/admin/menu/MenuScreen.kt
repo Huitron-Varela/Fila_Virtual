@@ -22,10 +22,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
+import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.admin.ProductoViewModel
@@ -41,6 +43,9 @@ fun MenuScreen(
     viewModel: ProductoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
+    val windowSize = LocalWindowSize.current
+    val horizontalPadding = windowSize.compactDp(24)
+    val isCompact = windowSize.isSmallScreen
     var searchQuery by remember { mutableStateOf("") }
     val categorias = ProductMenuCategories.filters
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
@@ -82,7 +87,7 @@ fun MenuScreen(
             FloatingActionButton(
                 onClick = onNavigateToAdd,
                 containerColor = PrimaryOrange,
-                contentColor = Color.White,
+                contentColor = LightSurface,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Platillo")
@@ -92,7 +97,7 @@ fun MenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = horizontalPadding)
         ) {
             // Título de la sección
             Column(
@@ -104,12 +109,14 @@ fun MenuScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     color = DarkGray,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = windowSize.compactDp(24), bottom = 8.dp)
                 )
                 
                 Box {
                     Surface(
-                        color = Color.White,
+                        color = LightSurface,
                         shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.clickable { showSucursalSelector = true },
                         border = BorderStroke(1.dp, ExtraLightGray)
@@ -129,7 +136,10 @@ fun MenuScreen(
                                 text = sucursalActual,
                                 color = PrimaryOrange,
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.widthIn(max = if (isCompact) 170.dp else 260.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
@@ -144,7 +154,7 @@ fun MenuScreen(
                     DropdownMenu(
                         expanded = showSucursalSelector,
                         onDismissRequest = { showSucursalSelector = false },
-                        modifier = Modifier.background(Color.White)
+                        modifier = Modifier.background(LightSurface)
                     ) {
                         DropdownMenuItem(
                             text = { Text("Todas las Sucursales") },
@@ -184,14 +194,14 @@ fun MenuScreen(
                 items(categorias) { categoria ->
                     val isSelected = categoria == categoriaSeleccionada
                     Surface(
-                        color = if (isSelected) PrimaryOrange else Color.White,
+                        color = if (isSelected) PrimaryOrange else LightSurface,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.clickable { categoriaSeleccionada = categoria },
                         border = if (!isSelected) BorderStroke(1.dp, BorderGray) else null
                     ) {
                         Text(
                             text = categoria,
-                            color = if (isSelected) Color.White else DarkGray,
+                            color = if (isSelected) LightSurface else DarkGray,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -212,7 +222,9 @@ fun MenuScreen(
                             "No se encontraron resultados para '$searchQuery'",
                         color = MediumGray,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
+                        modifier = Modifier.padding(horizontal = horizontalPadding),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             } else {
@@ -239,12 +251,12 @@ fun MenuScreen(
         ModalBottomSheet(
             onDismissRequest = { selectedProducto = null },
             sheetState = sheetState,
-            containerColor = Color.White
+            containerColor = LightSurface
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = horizontalPadding)
                     .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -252,7 +264,7 @@ fun MenuScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(if (isCompact) 160.dp else 200.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(BorderGray)
                 ) {
@@ -272,7 +284,7 @@ fun MenuScreen(
                     
                     // Category badge
                     Surface(
-                        color = Color(0xFF00ACC1),
+                        color = ActionBlue,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -282,11 +294,11 @@ fun MenuScreen(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = LightSurface, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = prod.categoria,
-                                color = Color.White,
+                                color = LightSurface,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -307,13 +319,17 @@ fun MenuScreen(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = "$${prod.precio}",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFC62828)
+                        color = TrafficRed,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -325,7 +341,9 @@ fun MenuScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
+                    textAlign = TextAlign.Start,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -380,9 +398,9 @@ fun MenuScreen(
                                 selectedProducto = prod.copy(disponible = disp)
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
+                                checkedThumbColor = LightSurface,
                                 checkedTrackColor = PrimaryOrange,
-                                uncheckedThumbColor = Color.White,
+                                uncheckedThumbColor = LightSurface,
                                 uncheckedTrackColor = MediumGray,
                                 uncheckedBorderColor = Color.Transparent
                             )
@@ -419,9 +437,9 @@ fun MenuScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TrafficRed),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
+                    border = BorderStroke(1.dp, TrafficRed.copy(alpha = 0.5f))
                 ) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -447,7 +465,7 @@ fun MenuScreen(
                             selectedProducto = null
                         }
                     ) {
-                        Text("Eliminar", fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                        Text("Eliminar", fontWeight = FontWeight.Bold, color = TrafficRed)
                     }
                 },
                 dismissButton = {
@@ -473,7 +491,7 @@ private fun CardMenuItem(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -508,7 +526,9 @@ private fun CardMenuItem(
                     text = producto.nombre,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = DarkGray
+                    color = DarkGray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Surface(
@@ -520,6 +540,8 @@ private fun CardMenuItem(
                         style = MaterialTheme.typography.labelSmall,
                         color = DarkGray,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }

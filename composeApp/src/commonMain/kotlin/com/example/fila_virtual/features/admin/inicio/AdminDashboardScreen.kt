@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,8 @@ private val DEMO_TOP_PRODUCTS = listOf(
 @Composable
 fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
-    val horizontalPadding = windowSize.adaptiveDp(24).value.dp
+    val horizontalPadding = windowSize.compactDp(24)
+    val isCompact = windowSize.isSmallScreen
 
     Column(
         modifier = Modifier
@@ -71,7 +73,7 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onNavigateToManage() },
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = LightSurface),
                     shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -112,8 +114,8 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(24.dp))
-                        .padding(20.dp)
+                        .background(LightSurface, RoundedCornerShape(24.dp))
+                        .padding(if (isCompact) 16.dp else 20.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -147,7 +149,7 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(30.dp)
+                                        .width(if (isCompact) 24.dp else 30.dp)
                                         .fillMaxHeight(DEMO_VALUES[index])
                                         .background(
                                             if (day == "V") PrimaryOrange else ExtraLightGray,
@@ -228,7 +230,7 @@ fun AdminHeader(padding: Dp) {
 fun MetricSmallCard(modifier: Modifier, title: String, value: String, trend: String, trendColor: Color) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -255,7 +257,7 @@ data class TopProduct(val name: String, val sold: String, val price: String, val
 fun TopProductCard(product: TopProduct) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {

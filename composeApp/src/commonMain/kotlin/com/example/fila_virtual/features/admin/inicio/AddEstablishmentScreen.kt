@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,6 +24,7 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.SelectedImage
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.rememberPermissionsManager
@@ -38,6 +40,8 @@ fun AddEstablishmentScreen(
     establecimientoToEdit: Establecimiento? = null,
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
+    val windowSize = LocalWindowSize.current
+    val formPadding = windowSize.compactDp(16)
     val uiState by viewModel.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current
     BackHandler(onBack = onBack)
@@ -118,7 +122,7 @@ fun AddEstablishmentScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = formPadding)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -129,11 +133,11 @@ fun AddEstablishmentScreen(
                         viewModel.resetState()
                         onBack() 
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(windowSize.compactDp(56)),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Entendido", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Entendido", fontWeight = FontWeight.Bold, color = LightSurface)
                 }
             }
         }
@@ -267,7 +271,7 @@ fun AddEstablishmentScreen(
                 val isSelected = cat in categoriasSeleccionadas
                 Box(
                     modifier = Modifier
-                        .background(if (isSelected) PrimaryOrange else Color.White, RoundedCornerShape(20.dp))
+                        .background(if (isSelected) PrimaryOrange else LightSurface, RoundedCornerShape(20.dp))
                         .border(1.dp, if (isSelected) Color.Transparent else BorderGray, RoundedCornerShape(20.dp))
                         .clickable {
                             categoriasSeleccionadas = if (isSelected) {
@@ -280,7 +284,7 @@ fun AddEstablishmentScreen(
                 ) {
                     Text(
                         text = cat,
-                        color = if (isSelected) Color.White else MediumGray,
+                        color = if (isSelected) LightSurface else MediumGray,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -366,6 +370,6 @@ private fun TimePickerDialog(
         dismissButton = dismissButton,
         title = { Text(text = title, style = MaterialTheme.typography.titleMedium, color = DarkGray) },
         text = { content() },
-        containerColor = Color.White,
+        containerColor = LightSurface,
     )
 }

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
@@ -52,6 +53,8 @@ fun AddEmployeeScreen(
     establecimientoViewModel: EstablecimientoViewModel = viewModel(),
     onNavigateBack: () -> Unit
 ) {
+    val windowSize = LocalWindowSize.current
+    val formPadding = windowSize.compactDp(16)
     val uiState by viewModel.uiState.collectAsState()
     val isEditing = empleado != null
     val focusManager = LocalFocusManager.current
@@ -139,7 +142,7 @@ fun AddEmployeeScreen(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(formPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("Invitación enviada", fontWeight = FontWeight.Bold, color = DarkGray)
@@ -203,7 +206,7 @@ fun AddEmployeeScreen(
         
         Box {
             Surface(
-                color = Color.White,
+                color = LightSurface,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -211,7 +214,7 @@ fun AddEmployeeScreen(
                 border = BorderStroke(1.dp, ExtraLightGray)
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(formPadding),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -225,6 +228,8 @@ fun AddEmployeeScreen(
                         text = sucursalActual,
                         color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
                         style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                     if (!isEditing) {
@@ -243,7 +248,7 @@ fun AddEmployeeScreen(
                 onDismissRequest = { expandedEstablecimiento = false },
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .background(Color.White)
+                    .background(LightSurface)
             ) {
                 establecimientos.forEach { sucursal ->
                     DropdownMenuItem(
@@ -358,7 +363,7 @@ private fun RoleChip(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) PrimaryOrange else Color.White)
+            .background(if (isSelected) PrimaryOrange else LightSurface)
             .border(1.dp, if (isSelected) Color.Transparent else BorderGray, RoundedCornerShape(20.dp))
             .clickable { onClick() }
             .padding(vertical = 12.dp),
@@ -366,7 +371,7 @@ private fun RoleChip(
     ) {
         Text(
             text = label,
-            color = if (isSelected) Color.White else MediumGray,
+            color = if (isSelected) LightSurface else MediumGray,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             style = MaterialTheme.typography.bodyMedium
         )

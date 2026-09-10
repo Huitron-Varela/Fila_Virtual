@@ -37,6 +37,8 @@ import com.example.fila_virtual.core.rememberPermissionsManager
 import com.example.fila_virtual.core.rememberImagePicker
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.fila_virtual.core.LocalWindowSize
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +50,9 @@ fun AddDishScreen(
     viewModel: ProductoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
+    val windowSize = LocalWindowSize.current
+    val formPadding = windowSize.compactDp(16)
+    val isCompact = windowSize.isSmallScreen
     val uiState by viewModel.uiState.collectAsState()
 
     var selectedEstablecimientoId by remember { mutableStateOf(productoToEdit?.establecimientoId?.takeIf { it.isNotBlank() } ?: establecimientoId) }
@@ -99,7 +104,7 @@ fun AddDishScreen(
                 viewModel.resetState()
                 onBack() 
             },
-            containerColor = Color.White
+            containerColor = LightSurface
         ) {
             Column(
                 modifier = Modifier
@@ -130,7 +135,7 @@ fun AddDishScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = formPadding)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -141,7 +146,7 @@ fun AddDishScreen(
                         viewModel.resetState()
                         onBack() 
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(windowSize.compactDp(56)),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -149,7 +154,7 @@ fun AddDishScreen(
                         "Entendido",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color.White
+                        color = LightSurface
                     )
                 }
             }
@@ -159,10 +164,10 @@ fun AddDishScreen(
     if (showNoEstablecimientosAlert) {
         ModalBottomSheet(
             onDismissRequest = { showNoEstablecimientosAlert = false },
-            containerColor = Color.White
+            containerColor = LightSurface
         ) {
             Column(
-                modifier = Modifier
+            modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 40.dp),
@@ -192,14 +197,14 @@ fun AddDishScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = formPadding)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
                     onClick = { showNoEstablecimientosAlert = false },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(windowSize.compactDp(56)),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -207,7 +212,7 @@ fun AddDishScreen(
                         "Entendido",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color.White
+                        color = LightSurface
                     )
                 }
             }
@@ -300,7 +305,7 @@ fun AddDishScreen(
 
         Box {
             Surface(
-                color = Color.White,
+                color = LightSurface,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -342,7 +347,7 @@ fun AddDishScreen(
             DropdownMenu(
                 expanded = showSucursalSelector,
                 onDismissRequest = { showSucursalSelector = false },
-                modifier = Modifier.background(Color.White)
+                modifier = Modifier.background(LightSurface)
             ) {
                 establecimientos.forEach { sucursal ->
                     DropdownMenuItem(
@@ -375,14 +380,14 @@ fun AddDishScreen(
             categorias.forEach { categoria ->
                 val isSelected = categoria == categoriaSeleccionada
                 Surface(
-                    color = if (isSelected) PrimaryOrange else Color.White,
+                    color = if (isSelected) PrimaryOrange else LightSurface,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.clickable { categoriaSeleccionada = categoria },
                     border = if (!isSelected) BorderStroke(1.dp, BorderGray) else null
                 ) {
                     Text(
                         text = categoria,
-                        color = if (isSelected) Color.White else DarkGray,
+                        color = if (isSelected) LightSurface else DarkGray,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal

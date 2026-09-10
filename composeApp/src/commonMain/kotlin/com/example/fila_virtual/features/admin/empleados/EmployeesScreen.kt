@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
@@ -48,7 +49,7 @@ fun EmployeesScreen(
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
-    val horizontalPadding = windowSize.adaptiveDp(24)
+    val horizontalPadding = windowSize.compactDp(24)
 
     val uiState by viewModel.uiState.collectAsState()
     val empleados by viewModel.empleados.collectAsState()
@@ -128,12 +129,14 @@ fun EmployeesScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     color = DarkGray,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = windowSize.compactDp(24), bottom = 8.dp)
                 )
 
                 Box {
                     Surface(
-                        color = Color.White,
+                        color = LightSurface,
                         shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.clickable { showSucursalSelector = true },
                         border = BorderStroke(1.dp, ExtraLightGray)
@@ -153,7 +156,9 @@ fun EmployeesScreen(
                                 text = sucursalActual,
                                 color = PrimaryOrange,
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
@@ -319,12 +324,12 @@ fun EmployeesScreen(
             ModalBottomSheet(
                 onDismissRequest = { selectedEmpleado = null },
                 sheetState = sheetState,
-                containerColor = Color.White
+                containerColor = LightSurface
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
+                        .padding(horizontal = horizontalPadding)
                         .padding(bottom = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -350,7 +355,9 @@ fun EmployeesScreen(
                         text = emp.nombre,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        color = DarkGray,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = emp.roles.joinToString(" • ") { role ->
@@ -399,7 +406,7 @@ fun EmployeesScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text("CORREO ELECTRÓNICO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text(emp.correo, style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Medium)
+                            Text(emp.correo, style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     
@@ -489,7 +496,7 @@ fun CardEmpleado(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -523,12 +530,16 @@ fun CardEmpleado(
                     text = empleado.nombre,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = DarkGray
+                    color = DarkGray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = empleado.correo,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MediumGray
+                    color = MediumGray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
