@@ -147,9 +147,9 @@ fun ProfileComponent(
                 shape = RoundedCornerShape(windowSize.adaptiveDp(16)),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.onError)
                 Spacer(modifier = Modifier.width(windowSize.adaptiveDp(8)))
-                Text("Cerrar Sesión", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text("Cerrar Sesión", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
 
             Spacer(modifier = Modifier.height(windowSize.adaptiveDp(40)))
@@ -179,7 +179,7 @@ fun ProfileComponent(
                 Text("¿Cerrar sesión?", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
                 Button(onClick = { showLogoutSheet = false; onLogout() }, modifier = Modifier.fillMaxWidth().height(windowSize.adaptiveDp(54)), shape = RoundedCornerShape(windowSize.adaptiveDp(14)), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                    Text("Sí, cerrar sesión", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Sí, cerrar sesión", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold)
                 }
                 TextButton(onClick = { showLogoutSheet = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar", color = MaterialTheme.colorScheme.onSurface) }
             }
