@@ -3,7 +3,7 @@ package com.example.fila_virtual
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
 
     private lateinit var googleSignInClient: GoogleSignInClient

@@ -50,7 +50,9 @@ fun ProfileComponent(
     val logoutSheetState = rememberModalBottomSheetState()
     val languageSheetState = rememberModalBottomSheetState()
 
-    var selectedLanguage by remember { mutableStateOf("Español") }
+    var selectedLanguage by remember { 
+        mutableStateOf(if (com.example.fila_virtual.core.getCurrentLanguage().startsWith("en")) "English" else "Español") 
+    }
 
     Column(
         modifier = Modifier
@@ -159,16 +161,55 @@ fun ProfileComponent(
         }
     }
 
+    var isChangingLanguage by remember { mutableStateOf(false) }
+
     if (showLanguageSheet) {
         ModalBottomSheet(onDismissRequest = { showLanguageSheet = false }, sheetState = languageSheetState, containerColor = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.fillMaxWidth().padding(windowSize.adaptiveDp(24)).padding(bottom = windowSize.adaptiveDp(32)), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Seleccionar idioma", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(24)))
-                LanguageOption("🇲🇽", "Español", selectedLanguage == "Español") { selectedLanguage = "Español"; showLanguageSheet = false }
-                LanguageOption("🇺🇸", "English", selectedLanguage == "English") { selectedLanguage = "English"; showLanguageSheet = false }
+                LanguageOption("🇲🇽", "Español", selectedLanguage == "Español") {
+                    showLanguageSheet = false
+                    if (selectedLanguage != "Español") {
+                        selectedLanguage = "Español"
+                        isChangingLanguage = true
+                        com.example.fila_virtual.core.changeAppLanguage("es")
+                    }
+                }
+                LanguageOption("🇺🇸", "English", selectedLanguage == "English") {
+                    showLanguageSheet = false
+                    if (selectedLanguage != "English") {
+                        selectedLanguage = "English"
+                        isChangingLanguage = true
+                        com.example.fila_virtual.core.changeAppLanguage("en")
+                    }
+                }
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
                 TextButton(onClick = { showLanguageSheet = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar", color = MediumGray) }
             }
+        }
+    }
+
+    if (isChangingLanguage) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { }) {
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Cambiando idioma...", color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+        
+        // Hide the dialog after a short delay since recomposition will happen
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(1500)
+            isChangingLanguage = false
         }
     }
 

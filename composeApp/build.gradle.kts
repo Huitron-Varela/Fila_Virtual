@@ -33,6 +33,8 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.appcompat)
+            implementation(libs.androidx.core.ktx)
 
             // Firebase Nativo Android
             implementation("com.google.android.gms:play-services-auth:21.0.0")
