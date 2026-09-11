@@ -21,6 +21,9 @@ import com.example.fila_virtual.features.user.carrio_compra.CartScreen
 import com.example.fila_virtual.features.user.menu.UserMenuScreen
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.perfil.EditProfileScreen
+import com.example.fila_virtual.perfil.EnProcesoScreen
+import com.example.fila_virtual.core.LegalConstants
+import com.example.fila_virtual.core.navigation.LegalScreen
 
 @Composable
 fun ClienteMainScreen(
@@ -37,6 +40,9 @@ fun ClienteMainScreen(
     // ESTADOS PARA NAVEGACIÓN
     var isEditingProfile by remember { mutableStateOf(false) }
     var showCart by remember { mutableStateOf(false) }
+    var showSecurity by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
+    var showTerms by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
 
     if (isEditingProfile) {
@@ -53,6 +59,22 @@ fun ClienteMainScreen(
                 showCart = false
                 scope.launch { pagerState.animateScrollToPage(1) }
             }
+        )
+    } else if (showSecurity) {
+        EnProcesoScreen(
+            titulo = "Configuración de Seguridad",
+            onBack = { showSecurity = false }
+        )
+    } else if (showHelp) {
+        EnProcesoScreen(
+            titulo = "Centro de Ayuda",
+            onBack = { showHelp = false }
+        )
+    } else if (showTerms) {
+        LegalScreen(
+            title = "Términos y Condiciones",
+            content = LegalConstants.TERMINOS_Y_CONDICIONES,
+            onBack = { showTerms = false }
         )
     } else if (selectedEstablecimiento != null) {
         UserMenuScreen(
@@ -110,7 +132,10 @@ fun ClienteMainScreen(
                                 usuario = usuario,
                                 viewModel = viewModel,
                                 onLogout = { viewModel.signOut(onLogout) },
-                                onNavigateToEdit = { isEditingProfile = true }
+                                onNavigateToEdit = { isEditingProfile = true },
+                                onNavigateToSecurity = { showSecurity = true },
+                                onNavigateToHelp = { showHelp = true },
+                                onNavigateToTerms = { showTerms = true }
                             )
                         }
                     }
