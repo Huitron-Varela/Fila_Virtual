@@ -37,7 +37,10 @@ fun ProfileComponent(
     usuario: Usuario?,
     viewModel: UserViewModel,
     onLogout: () -> Unit,
-    onNavigateToEdit: () -> Unit
+    onNavigateToEdit: () -> Unit,
+    onNavigateToSecurity: () -> Unit = {},
+    onNavigateToHelp: () -> Unit = {},
+    onNavigateToTerms: () -> Unit = {}
 ) {
     val windowSize = LocalWindowSize.current
 
@@ -125,12 +128,12 @@ fun ProfileComponent(
             }
 
             ProfileSectionCard(icon = Icons.Default.Security, title = "Seguridad", iconTint = MaterialTheme.colorScheme.primary) {
-                ProfileOptionItem(icon = Icons.Default.Lock, title = "Configuración de Seguridad")
+                ProfileOptionItem(icon = Icons.Default.Lock, title = "Configuración de Seguridad", onClick = onNavigateToSecurity)
             }
 
             ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = "Otros", iconTint = MaterialTheme.colorScheme.primary) {
-                ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = "Centro de Ayuda")
-                ProfileOptionItem(icon = Icons.Default.Description, title = "Términos y Condiciones")
+                ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = "Centro de Ayuda", onClick = onNavigateToHelp)
+                ProfileOptionItem(icon = Icons.Default.Description, title = "Términos y Condiciones", onClick = onNavigateToTerms)
                 ProfileOptionItem(
                     icon = Icons.Default.Translate,
                     title = "Idioma",
