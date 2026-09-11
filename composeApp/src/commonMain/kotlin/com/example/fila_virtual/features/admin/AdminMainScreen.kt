@@ -20,6 +20,9 @@ import com.example.fila_virtual.features.admin.inicio.AdminDashboardScreen
 import com.example.fila_virtual.features.admin.menu.AddDishScreen
 import com.example.fila_virtual.features.admin.menu.MenuScreen
 import com.example.fila_virtual.perfil.EditProfileScreen
+import com.example.fila_virtual.perfil.EnProcesoScreen
+import com.example.fila_virtual.core.LegalConstants
+import com.example.fila_virtual.core.navigation.LegalScreen
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.perfil.ProfileComponent
 import kotlinx.coroutines.launch
@@ -38,6 +41,9 @@ fun AdminMainScreen(
     var isAddingEmployee by remember { mutableStateOf(false) }
     var isManagingEstablecimientos by remember { mutableStateOf(false) }
     var isAddingEstablecimiento by remember { mutableStateOf(false) }
+    var showSecurity by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
+    var showTerms by remember { mutableStateOf(false) }
     
     var selectedEstablecimientoId by remember { mutableStateOf("") }
     
@@ -98,6 +104,22 @@ fun AdminMainScreen(
                 isAddingEstablecimiento = true
             }
         )
+    } else if (showSecurity) {
+        EnProcesoScreen(
+            titulo = "Configuración de Seguridad",
+            onBack = { showSecurity = false }
+        )
+    } else if (showHelp) {
+        EnProcesoScreen(
+            titulo = "Centro de Ayuda",
+            onBack = { showHelp = false }
+        )
+    } else if (showTerms) {
+        LegalScreen(
+            title = "Términos y Condiciones",
+            content = LegalConstants.TERMINOS_Y_CONDICIONES,
+            onBack = { showTerms = false }
+        )
     } else {
         Scaffold(
             bottomBar = {
@@ -145,7 +167,10 @@ fun AdminMainScreen(
                         usuario = usuario,
                         viewModel = viewModel,
                         onLogout = { viewModel.signOut(onLogout) },
-                        onNavigateToEdit = { isEditingProfile = true }
+                        onNavigateToEdit = { isEditingProfile = true },
+                        onNavigateToSecurity = { showSecurity = true },
+                        onNavigateToHelp = { showHelp = true },
+                        onNavigateToTerms = { showTerms = true }
                     )
                 }
             }
