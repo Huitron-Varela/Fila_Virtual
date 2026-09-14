@@ -24,6 +24,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.theme.*
@@ -169,7 +171,7 @@ fun ProfileComponent(
     if (showLanguageSheet) {
         ModalBottomSheet(onDismissRequest = { showLanguageSheet = false }, sheetState = languageSheetState, containerColor = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.fillMaxWidth().padding(windowSize.adaptiveDp(24)).padding(bottom = windowSize.adaptiveDp(32)), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Seleccionar idioma", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(stringResource(Res.string.profile_select_language), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(24)))
                 LanguageOption("🇲🇽", "Español", selectedLanguage == "Español") {
                     showLanguageSheet = false
@@ -188,7 +190,7 @@ fun ProfileComponent(
                     }
                 }
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
-                TextButton(onClick = { showLanguageSheet = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar", color = MediumGray) }
+                TextButton(onClick = { showLanguageSheet = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.btn_cancel), color = MediumGray) }
             }
         }
     }
@@ -197,14 +199,14 @@ fun ProfileComponent(
         androidx.compose.ui.window.Dialog(onDismissRequest = { }) {
             Box(
                 modifier = Modifier
-                    .size(200.dp)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
+                    .size(windowSize.adaptiveDp(200))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(windowSize.adaptiveDp(16))),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Cambiando idioma...", color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
+                    Text(stringResource(Res.string.profile_changing_language), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -223,12 +225,12 @@ fun ProfileComponent(
                     Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(windowSize.adaptiveDp(32)))
                 }
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(20)))
-                Text("¿Cerrar sesión?", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(stringResource(Res.string.profile_logout_confirm_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
                 Button(onClick = { showLogoutSheet = false; onLogout() }, modifier = Modifier.fillMaxWidth().height(windowSize.adaptiveDp(54)), shape = RoundedCornerShape(windowSize.adaptiveDp(14)), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                    Text("Sí, cerrar sesión", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.profile_logout_confirm_btn), color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold)
                 }
-                TextButton(onClick = { showLogoutSheet = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar", color = MaterialTheme.colorScheme.onSurface) }
+                TextButton(onClick = { showLogoutSheet = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.btn_cancel), color = MaterialTheme.colorScheme.onSurface) }
             }
         }
     }

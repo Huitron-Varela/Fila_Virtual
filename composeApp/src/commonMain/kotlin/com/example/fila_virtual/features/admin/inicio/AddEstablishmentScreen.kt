@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.*
@@ -64,8 +66,8 @@ fun AddEstablishmentScreen(
     }
     
     // Horario
-    var apertura by remember { mutableStateOf(establecimientoToEdit?.horario?.get("todos")?.apertura ?: "09:00 AM") }
-    var cierre by remember { mutableStateOf(establecimientoToEdit?.horario?.get("todos")?.cierre ?: "10:00 PM") }
+    var apertura by remember { mutableStateOf(establecimientoToEdit?.horario?.get(stringResource(Res.string.est_all))?.apertura ?: "09:00 AM") }
+    var cierre by remember { mutableStateOf(establecimientoToEdit?.horario?.get(stringResource(Res.string.est_all))?.cierre ?: "10:00 PM") }
     
     // Estados para diálogos y selectores
     var showAperturaPicker by remember { mutableStateOf(false) }
@@ -188,7 +190,7 @@ fun AddEstablishmentScreen(
                 activo = establecimientoToEdit?.activo ?: false,
                 ownerUid = ownerUid,
                 categorias = categoriasSeleccionadas,
-                horario = mapOf("todos" to HorarioDia(apertura = apertura, cierre = cierre)),
+                horario = mapOf(stringResource(Res.string.est_all) to HorarioDia(apertura = apertura, cierre = cierre)),
                 logoUrl = establecimientoToEdit?.logoUrl ?: "",
                 createdAt = establecimientoToEdit?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
@@ -199,7 +201,7 @@ fun AddEstablishmentScreen(
                 imageMimeType = selectedImage?.mimeType ?: "image/jpeg"
             ) { showSuccessSheet = true }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (establecimientoToEdit == null) "Registrar Establecimiento" else "Guardar Cambios",
+        saveButtonText = if (uiState is FormState.Loading) stringResource(Res.string.est_saving) else if (establecimientoToEdit == null) "Registrar Establecimiento" else stringResource(Res.string.est_save_changes),
         saveIcon = Icons.Default.Store
     ) {
         // Imagen de portada
@@ -223,7 +225,7 @@ fun AddEstablishmentScreen(
         )
 
         FormTextField(
-            label = "Nombre del Establecimiento",
+            label = stringResource(Res.string.est_name),
             value = nombre,
             onValueChange = { nombre = it },
             placeholder = "Ej. El Naranjo Cafetería",

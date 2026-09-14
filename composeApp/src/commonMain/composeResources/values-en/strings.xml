@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <resources>
     <string name="app_name">AlToque</string>
     <string name="login_welcome">Great to see you again!</string>
@@ -27,7 +28,6 @@
     <string name="terms_and"> and the </string>
     <string name="terms_privacy_policy">Privacy Policy.</string>
     <string name="error_fill_fields">Please fill all fields</string>
-
     <string name="profile_section_account">MY ACCOUNT</string>
     <string name="profile_personal_info">Personal Information</string>
     <string name="profile_addresses">Addresses</string>
@@ -43,12 +43,10 @@
     <string name="profile_select_language">Select Language</string>
     <string name="btn_cancel">Cancel</string>
     <string name="member_since">MEMBER SINCE 2024</string>
-
     <string name="nav_home">HOME</string>
     <string name="nav_orders">ORDERS</string>
     <string name="nav_wallet">WALLET</string>
     <string name="nav_profile">PROFILE</string>
-
     <string name="home_greeting">Hi,</string>
     <string name="home_welcome">Welcome</string>
     <string name="home_search_placeholder">What are you craving today?</string>
@@ -56,27 +54,21 @@
     <string name="home_see_all">SEE ALL</string>
     <string name="home_featured">Featured Establishments</string>
     <string name="home_see_all_establishments">SEE ALL</string>
-
     <string name="orders_title">My Orders</string>
     <string name="orders_empty">You don\'t have any orders yet</string>
     <string name="orders_empty_desc">Order something delicious now!</string>
-
     <string name="wallet_title">My Wallet</string>
     <string name="wallet_balance_label">Available balance</string>
     <string name="wallet_add_money">Add Money</string>
     <string name="wallet_recent_transactions">Recent transactions</string>
     <string name="wallet_no_movements">No recent movements</string>
-
-
     <string name="wallet_payment_methods_title">Payment Methods</string>
     <string name="wallet_no_linked_cards">You have no linked cards</string>
     <string name="wallet_linked_account">Linked account</string>
     <string name="wallet_add_new_method">Add new payment method</string>
-
     <string name="wallet_how_to_pay">How do you want to pay?</string>
     <string name="wallet_mp_subtitle">Account money and installments</string>
     <string name="wallet_new_card">New Card</string>
-
     <string name="wallet_enter_card_title">Enter your card</string>
     <string name="wallet_card_number">Card number</string>
     <string name="wallet_card_name">Name as it appears on the card</string>
@@ -84,16 +76,12 @@
     <string name="wallet_card_expiry_placeholder">MMYY</string>
     <string name="wallet_card_cvv">CVV</string>
     <string name="wallet_link_card_button">Link Card</string>
-
     <string name="wallet_success_title">Card linked!</string>
     <string name="wallet_success_desc">Your payment method has been successfully saved and is ready to be used in AlToque.</string>
     <string name="wallet_accept_button">Accept</string>
-
-
     <string name="cart_ending_in">ending in</string>
     <string name="cart_expires">Expires</string>
     <string name="cart_no_cards_message">You have no linked cards. Add one from the Wallet tab.</string>
-
     <string name="cart_title">Cart</string>
     <string name="cart_info_title">Your order will generate a service ticket</string>
     <string name="cart_info_desc">Approach the counter when your ticket appears on the screen.</string>
@@ -104,11 +92,90 @@
     <string name="cart_tap_to_select">Tap to select or add</string>
     <string name="cart_pay_button">Pay and Generate Ticket</string>
     <string name="cart_select_payment">Select payment method</string>
-
-
     <string name="general_edit">Edit</string>
     <string name="general_summary">Summary</string>
     <string name="general_subtotal">Subtotal</string>
     <string name="general_service_fee">Service fee</string>
     <string name="general_total">Total</string>
+    <string name="profile_verified_account">Verified Account</string>
+    <string name="profile_edit">Edit Profile</string>
+    <string name="profile_security">Security</string>
+    <string name="profile_security_config">Security Configuration</string>
+    <string name="profile_others">Others</string>
+    <string name="profile_help_center">Help Center</string>
+    <string name="profile_terms">Terms and Conditions</string>
+    <string name="profile_changing_language">Changing language...</string>
+    <string name="profile_logout_confirm_btn">Yes, log out</string>
+    <string name="in_process_default_title">Coming Soon</string>
+    <string name="in_process_back">Back</string>
+    <string name="in_process_title">Page in process</string>
+    <string name="in_process_desc">We are working on this section. It will be available soon.</string>
+    <string name="in_process_btn">Back to profile</string>
+    <string name="legal_understood">Understood</string>
+    <string name="nav_admin_home">Home</string>
+    <string name="nav_admin_employees">Employees</string>
+    <string name="nav_admin_menu">Menu</string>
+    <string name="dashboard_title">Dashboard 👋</string>
+    <string name="dashboard_subtitle">ADMIN DASHBOARD</string>
+    <string name="dashboard_manage_establishments">Manage Establishments</string>
+    <string name="dashboard_manage_desc">MANAGE BRANCHES AND LOCATIONS</string>
+    <string name="dashboard_sales_trend">SALES TREND</string>
+    <string name="dashboard_weekly_performance">Weekly Performance</string>
+    <string name="dashboard_this_week">THIS WEEK</string>
+    <string name="dashboard_top_selling">TOP SELLING</string>
+    <string name="dashboard_sales">SALES</string>
+    <string name="dashboard_orders">ORDERS</string>
+    <string name="dashboard_ticket">TICKET</string>
+    <string name="est_title_manage">My Establishments</string>
+    <string name="est_title_add">Register New Location</string>
+    <string name="est_title_edit">Edit Location</string>
+    <string name="est_no_results">No results found</string>
+    <string name="est_empty">No establishments registered</string>
+    <string name="est_options">Options</string>
+    <string name="est_name">Establishment Name</string>
+    <string name="est_category">Category</string>
+    <string name="est_address">Full Address</string>
+    <string name="est_schedule">Operating Hours (E.g., M-F 9am - 10pm)</string>
+    <string name="est_save">Save Establishment</string>
+    <string name="est_save_changes">Save Changes</string>
+    <string name="est_saving">Saving...</string>
+    <string name="est_all">all</string>
+    <string name="est_visibility">Visibility in app for clients</string>
+    <string name="est_no_name">No Name</string>
+    <string name="est_no_category">No category</string>
+    <string name="est_no_address">No address</string>
+    <string name="est_no_schedule">No schedule</string>
+    <string name="menu_title_manage">Menu Management</string>
+    <string name="menu_title_add">Add Dish</string>
+    <string name="menu_title_edit">Edit Dish</string>
+    <string name="menu_empty">No dishes registered yet</string>
+    <string name="menu_search">Search dishes...</string>
+    <string name="menu_delete_title">Delete Dish</string>
+    <string name="menu_delete_confirm">Are you sure you want to delete this dish? This action cannot be undone.</string>
+    <string name="menu_delete_btn">Delete</string>
+    <string name="menu_dish_name">Dish Name</string>
+    <string name="menu_dish_desc">Description</string>
+    <string name="menu_dish_desc_placeholder">Describe ingredients, allergens and special details...</string>
+    <string name="menu_dish_price">Price</string>
+    <string name="menu_dish_category">Category</string>
+    <string name="menu_dish_image">DISH IMAGE</string>
+    <string name="menu_dish_active">Active in Menu</string>
+    <string name="menu_dish_active_desc">Visible to customers</string>
+    <string name="menu_dish_save">Save Dish</string>
+    <string name="menu_saved_success">Dish Saved!</string>
+    <string name="menu_saved_success_desc">The dish has been successfully added to your menu and is available to your customers.</string>
+    <string name="menu_updated_success">Dish Updated!</string>
+    <string name="menu_updated_success_desc">The dish details have been successfully updated.</string>
+    <string name="emp_title_manage">Staff Management</string>
+    <string name="emp_title_add">Add Employee</string>
+    <string name="emp_title_edit">Edit Employee</string>
+    <string name="emp_empty">No employees registered yet</string>
+    <string name="emp_search">Search employees...</string>
+    <string name="emp_name">Full Name</string>
+    <string name="emp_email">Email</string>
+    <string name="emp_phone">Phone (Optional)</string>
+    <string name="emp_role">Employee Role</string>
+    <string name="emp_save">Save Employee</string>
+    <string name="emp_delete_title">Dismiss Employee</string>
+    <string name="emp_delete_confirm">Are you sure you want to remove this employee? This action will revoke their system access.</string>
 </resources>

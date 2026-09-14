@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <resources>
     <string name="app_name">AlToque</string>
     <string name="login_welcome">¡Qué bueno verte de nuevo!</string>
@@ -27,7 +28,6 @@
     <string name="terms_and"> y la </string>
     <string name="terms_privacy_policy">Política de Privacidad.</string>
     <string name="error_fill_fields">Por favor llena todos los campos</string>
-
     <string name="profile_section_account">MI CUENTA</string>
     <string name="profile_personal_info">Información Personal</string>
     <string name="profile_addresses">Direcciones</string>
@@ -43,12 +43,10 @@
     <string name="profile_select_language">Selecciona Idioma</string>
     <string name="btn_cancel">Cancelar</string>
     <string name="member_since">MIEMBRO DESDE 2024</string>
-
     <string name="nav_home">INICIO</string>
     <string name="nav_orders">ÓRDENES</string>
     <string name="nav_wallet">BILLETERA</string>
     <string name="nav_profile">PERFIL</string>
-
     <string name="home_greeting">Hola,</string>
     <string name="home_welcome">Bienvenido</string>
     <string name="home_search_placeholder">¿Qué se te antoja hoy?</string>
@@ -56,26 +54,21 @@
     <string name="home_see_all">VER TODAS</string>
     <string name="home_featured">Establecimientos destacados</string>
     <string name="home_see_all_establishments">VER TODOS</string>
-
     <string name="orders_title">Mis Órdenes</string>
     <string name="orders_empty">Aún no tienes órdenes</string>
     <string name="orders_empty_desc">¡Pide algo delicioso ahora!</string>
-
     <string name="wallet_title">Mi Billetera</string>
     <string name="wallet_balance_label">Saldo disponible</string>
     <string name="wallet_add_money">Recargar Dinero</string>
     <string name="wallet_recent_transactions">Transacciones recientes</string>
     <string name="wallet_no_movements">No hay movimientos recientes</string>
-
     <string name="wallet_payment_methods_title">Métodos de Pago</string>
     <string name="wallet_no_linked_cards">No tienes tarjetas vinculadas</string>
     <string name="wallet_linked_account">Cuenta vinculada</string>
     <string name="wallet_add_new_method">Añadir nuevo método de pago</string>
-
     <string name="wallet_how_to_pay">¿Cómo quieres pagar?</string>
     <string name="wallet_mp_subtitle">Dinero en cuenta y cuotas</string>
     <string name="wallet_new_card">Nueva Tarjeta</string>
-
     <string name="wallet_enter_card_title">Ingresa tu tarjeta</string>
     <string name="wallet_card_number">Número de la tarjeta</string>
     <string name="wallet_card_name">Nombre como aparece en la tarjeta</string>
@@ -83,12 +76,9 @@
     <string name="wallet_card_expiry_placeholder">MMAA</string>
     <string name="wallet_card_cvv">CVV</string>
     <string name="wallet_link_card_button">Vincular Tarjeta</string>
-
     <string name="wallet_success_title">¡Tarjeta vinculada!</string>
     <string name="wallet_success_desc">Tu método de pago se ha guardado correctamente y está listo para usarse en AlToque.</string>
     <string name="wallet_accept_button">Aceptar</string>
-
-
     <string name="cart_ending_in">terminada en</string>
     <string name="cart_expires">Expira</string>
     <string name="cart_no_cards_message">No tienes tarjetas vinculadas. Agrega una desde la pestaña Billetera.</string>
@@ -102,7 +92,6 @@
     <string name="cart_tap_to_select">Toca para seleccionar o agregar</string>
     <string name="cart_pay_button">Pagar y Generar Turno</string>
     <string name="cart_select_payment">Selecciona método de pago</string>
-
     <string name="general_edit">Editar</string>
     <string name="general_summary">Resumen</string>
     <string name="general_subtotal">Subtotal</string>

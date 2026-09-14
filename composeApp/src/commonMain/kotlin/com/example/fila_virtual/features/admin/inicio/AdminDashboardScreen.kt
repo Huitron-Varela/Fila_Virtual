@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
