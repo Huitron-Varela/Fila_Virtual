@@ -2,62 +2,120 @@ package com.example.fila_virtual.features.user.ordenes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fila_virtual.data.EstadoPedido
 import com.example.fila_virtual.data.Pedido
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.where
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+
 class OrdenesViewModel : ViewModel() {
+
+    /*
+     * ==========================================================
+     * FIREBASE
+     * ==========================================================
+     */
     private val db = Firebase.firestore
     private val pedidosRef = db.collection("pedidos")
 
-    // Estado para guardar los pedidos descargados de Firebase
+    /*
+     * ==========================================================
+     * PEDIDOS ACTIVOS
+     * ==========================================================
+     */
     private val _pedidosActivos = MutableStateFlow<List<Pedido>>(emptyList())
     val pedidosActivos: StateFlow<List<Pedido>> = _pedidosActivos
 
+    /*
+     * ==========================================================
+     * HISTORIAL
+     * ==========================================================
+     */
     private val _pedidosHistorial = MutableStateFlow<List<Pedido>>(emptyList())
     val pedidosHistorial: StateFlow<List<Pedido>> = _pedidosHistorial
 
-    var isLoading = MutableStateFlow(true)
-        private set
+    /*
+     * ==========================================================
+     * LOADING
+     * ==========================================================
+     */
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
+    /*
+     * ==========================================================
+     * PEDIDOS CALIFICADOS (Memoria de la sesión)
+     * ==========================================================
+     */
+    private val _pedidosCalificados = MutableStateFlow<Set<String>>(emptySet())
+    val pedidosCalificados: StateFlow<Set<String>> = _pedidosCalificados
+
+    fun marcarPedidoComoCalificado(pedidoId: String) {
+        _pedidosCalificados.value = _pedidosCalificados.value + pedidoId
+    }
+
+    /*
+     * ==========================================================
+     * INICIO
+     * ==========================================================
+     */
     init {
         escucharPedidosDelUsuario()
     }
 
+    /*
+     * ==========================================================
+     * ESCUCHAR PEDIDOS DEL USUARIO
+     * ==========================================================
+     */
     private fun escucharPedidosDelUsuario() {
         val userId = Firebase.auth.currentUser?.uid
+
         if (userId == null) {
-            isLoading.value = false
+            _isLoading.value = false
             return
         }
 
         viewModelScope.launch {
-            // Escuchamos en tiempo real los pedidos de este usuario
-            pedidosRef.where { "userId" equalTo userId }
+            pedidosRef
+                .where { "userId" equalTo userId }
                 .snapshots
-                .map { snapshot -> snapshot.documents.map { it.data<Pedido>() } }
+                .map { snapshot ->
+                    snapshot.documents.map { document ->
+                        document.data<Pedido>()
+                    }
+                }
+                .catch { exception ->
+                    println("ORDENES_VM: Error escuchando pedidos: " + exception.message)
+                    _isLoading.value = false
+                }
                 .collect { todosLosPedidos ->
-                    // Filtramos en locales:
-                    // Activos = RECIBIDO, PREPARANDO, EN CAMINO o LISTO
-                    val activos = todosLosPedidos.filter {
-                        it.estado != "ENTREGADO" && it.estado != "CANCELADO"
+
+                    val activos = todosLosPedidos.filter { pedido ->
+                        pedido.estado == EstadoPedido.PENDIENTE ||
+                                pedido.estado == EstadoPedido.RECIBIDO ||
+                                pedido.estado == EstadoPedido.EN_PREPARACION ||
+                                pedido.estado == EstadoPedido.LISTO ||
+                                pedido.estado == EstadoPedido.ENTREGADO
                     }.sortedByDescending { it.createdAt }
 
-                    // Historial = ENTREGADO o CANCELADO
-                    val historial = todosLosPedidos.filter {
-                        it.estado == "ENTREGADO" || it.estado == "CANCELADO"
+                    val historial = todosLosPedidos.filter { pedido ->
+                        pedido.estado == EstadoPedido.ENTREGADO ||
+                                pedido.estado == EstadoPedido.CANCELADO
                     }.sortedByDescending { it.createdAt }
 
                     _pedidosActivos.value = activos
                     _pedidosHistorial.value = historial
-                    isLoading.value = false
+                    _isLoading.value = false
                 }
         }
     }

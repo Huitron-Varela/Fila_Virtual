@@ -1,39 +1,46 @@
 package com.example.fila_virtual.features.user.billetera
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
-import androidx.compose.runtime.saveable.rememberSaveable
-
-// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
+import com.example.fila_virtual.data.TarjetaGuardada
 import org.jetbrains.compose.resources.stringResource
-import fila_virtual.composeapp.generated.resources.* // <-- Asegúrate de que este sea tu import de Res
+import fila_virtual.composeapp.generated.resources.*
+import kotlinx.coroutines.launch
 
-// Colores de marca
 private val MPBlue = Color(0xFF009EE3)
 private val LightBlueBg = Color(0xFFE1F5FE)
 private val OrangeGradient = Brush.horizontalGradient(
-    colors = listOf(Color(0xFFE94E1B), Color(0xFFF26522))
+    colors = listOf(
+        Color(0xFFE94E1B),
+        Color(0xFFF26522)
+    )
 )
 
 enum class BottomSheetStateView {
@@ -51,223 +58,1188 @@ fun BilleteraScreen(
     val typography = MaterialTheme.typography
 
     val usuario = viewModel.usuario
-    val metodosPago = usuario?.metodosPago ?: emptyList()
+    val metodosPago =
+        usuario?.metodosPago ?: emptyList()
 
-    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
-    var currentSheetView by rememberSaveable { mutableStateOf(BottomSheetStateView.SELECCION_METODO) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
+    var showBottomSheet by
+    rememberSaveable {
+        mutableStateOf(false)
+    }
 
-    Box(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
+    var currentSheetView by
+    rememberSaveable {
+        mutableStateOf(
+            BottomSheetStateView.SELECCION_METODO
+        )
+    }
+
+    val sheetState =
+        rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        )
+
+    // Hoja inferior de confirmación de tarjeta vinculada.
+    // Es independiente del formulario para conservar la animación
+    // de salida y la nueva entrada desde abajo.
+    val tarjetaVinculadaSheetState =
+        rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        )
+
+    val coroutineScope =
+        rememberCoroutineScope()
+
+    var tarjetaAEliminar by
+    remember {
+        mutableStateOf<TarjetaGuardada?>(null)
+    }
+
+    var showProximamente by
+    rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    /*
+     * Modal de confirmación después de vincular una tarjeta.
+     * Se conserva separado del BottomSheet para que el usuario
+     * reciba feedback claro antes de continuar.
+     */
+    var showTarjetaVinculadaModal by
+    rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val pendingAction =
+        viewModel.pendingWalletAction
+
+    LaunchedEffect(pendingAction) {
+        if (
+            pendingAction ==
+            "abrir_formulario"
+        ) {
+            currentSheetView =
+                BottomSheetStateView
+                    .FORMULARIO_TARJETA
+
+            showBottomSheet = true
+
+            viewModel
+                .clearPendingWalletAction()
+        }
+    }
+
+    LaunchedEffect(showBottomSheet) {
+        if (!showBottomSheet) {
+            showProximamente = false
+            viewModel.clearWalletMessage()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                colorScheme.background
+            )
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colorScheme.background)
+                .padding(
+                    bottom = 24.dp
+                )
         ) {
-            // Header centrado
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 24.dp),
-                horizontalArrangement = Arrangement.Center
+                    .padding(
+                        top = 24.dp,
+                        bottom = 16.dp
+                    ),
+                horizontalArrangement =
+                    Arrangement.Center
             ) {
                 Text(
-                    text = stringResource(Res.string.wallet_payment_methods_title),
-                    style = typography.titleLarge.copy(
-                        fontSize = windowSize.adaptiveSp(20),
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = colorScheme.onBackground
+                    text =
+                        stringResource(
+                            Res.string
+                                .wallet_payment_methods_title
+                        ),
+                    style =
+                        typography
+                            .titleLarge
+                            .copy(
+                                fontSize =
+                                    windowSize
+                                        .adaptiveSp(20),
+                                fontWeight =
+                                    FontWeight.Bold
+                            ),
+                    color =
+                        colorScheme.onBackground
                 )
             }
 
-            LazyColumn(
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp)
-            ) {
-                // Tarjetas vinculadas como CreditCardView
-                items(metodosPago) { tarjeta ->
-                    CreditCardView(
-                        cardNumber = tarjeta.ultimos4,
-                        cardHolder = tarjeta.nombreTitular,
-                        expiryDate = tarjeta.expiracion,
-                        cardBrand = tarjeta.marca
+                    .weight(1f)
+                    .verticalScroll(
+                        rememberScrollState()
                     )
-                    Spacer(Modifier.height(16.dp))
-                }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 24.dp
+                        )
+                        .padding(
+                            bottom = 16.dp
+                        ),
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Text(
+                        text =
+                            "MIS TARJETAS",
+                        style =
+                            typography
+                                .labelLarge
+                                .copy(
+                                    fontWeight =
+                                        FontWeight.ExtraBold,
+                                    letterSpacing =
+                                        1.sp
+                                ),
+                        color =
+                            MediumGray
+                    )
 
-                // Mensaje si no hay tarjetas
-                if (metodosPago.isEmpty()) {
-                    item {
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Color(0xFFFFF0E6),
+                                RoundedCornerShape(
+                                    12.dp
+                                )
+                            )
+                            .padding(
+                                horizontal = 8.dp,
+                                vertical = 2.dp
+                            )
+                    ) {
                         Text(
-                            text = stringResource(Res.string.wallet_no_linked_cards),
-                            style = typography.bodyMedium.copy(
-                                fontSize = windowSize.adaptiveSp(14)
-                            ),
-                            color = MediumGray,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            text =
+                                "${metodosPago.size} activas",
+                            color =
+                                PrimaryOrange,
+                            style =
+                                typography
+                                    .labelSmall
+                                    .copy(
+                                        fontWeight =
+                                            FontWeight.Bold
+                                    )
+                        )
+                    }
+
+                    Spacer(
+                        modifier =
+                            Modifier.weight(1f)
+                    )
+
+                    if (metodosPago.isNotEmpty()) {
+                        Text(
+                            text =
+                                "Desliza para ver",
+                            style =
+                                typography.labelSmall,
+                            color =
+                                MediumGray
                         )
                     }
                 }
 
-                // Card de Mercado Pago vinculado
-                item {
-                    LinkedMethodView(
-                        icon = Icons.Default.AccountBalanceWallet,
-                        title = "Mercado Pago",
-                        status = stringResource(Res.string.wallet_linked_account)
-                    )
-                    Spacer(Modifier.height(40.dp))
-                }
-
-                // Botón con degradado naranja
-                item {
-                    Button(
-                        onClick = {
-                            currentSheetView = BottomSheetStateView.SELECCION_METODO
-                            showBottomSheet = true
-                        },
+                if (metodosPago.isEmpty()) {
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string
+                                    .wallet_no_linked_cards
+                            ),
+                        style =
+                            typography.bodyMedium,
+                        color =
+                            MediumGray,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .background(OrangeGradient, RoundedCornerShape(12.dp)),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = Color.White)
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(Res.string.wallet_add_new_method),
-                                style = typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = windowSize.adaptiveSp(16)
-                                ),
-                                color = Color.White
+                            .padding(
+                                horizontal = 24.dp
                             )
+                            .padding(
+                                bottom = 32.dp
+                            )
+                    )
+                } else {
+                    LazyRow(
+                        contentPadding =
+                            PaddingValues(
+                                horizontal = 24.dp
+                            ),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                16.dp
+                            ),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        items(
+                            metodosPago
+                        ) { tarjeta ->
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillParentMaxWidth(
+                                            0.85f
+                                        )
+                            ) {
+                                CreditCardView(
+                                    cardNumber =
+                                        tarjeta.ultimos4,
+                                    cardHolder =
+                                        tarjeta.nombreTitular,
+                                    expiryDate =
+                                        tarjeta.expiracion,
+                                    cardBrand =
+                                        tarjeta.marca,
+                                    onDelete = {
+                                        tarjetaAEliminar =
+                                            tarjeta
+                                    }
+                                )
+                            }
                         }
                     }
-                    Spacer(Modifier.height(100.dp))
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(40.dp)
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 24.dp
+                        )
+                        .padding(
+                            bottom = 16.dp
+                        ),
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text =
+                            "BILLETERAS DIGITALES",
+                        style =
+                            typography
+                                .labelLarge
+                                .copy(
+                                    fontWeight =
+                                        FontWeight.ExtraBold,
+                                    letterSpacing =
+                                        1.sp
+                                ),
+                        color =
+                            MediumGray
+                    )
+
+                    Surface(
+                        shape =
+                            RoundedCornerShape(
+                                12.dp
+                            ),
+                        color =
+                            LightBlueBg
+                    ) {
+                        Text(
+                            text =
+                                "FASE 2",
+                            color =
+                                MPBlue,
+                            style =
+                                typography
+                                    .labelSmall
+                                    .copy(
+                                        fontWeight =
+                                            FontWeight.Bold
+                                    ),
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 8.dp,
+                                    vertical = 4.dp
+                                )
+                        )
+                    }
+                }
+
+                Box(
+                    modifier =
+                        Modifier.padding(
+                            horizontal = 24.dp
+                        )
+                ) {
+                    LinkedMethodView(
+                        icon =
+                            Icons.Default
+                                .AccountBalanceWallet,
+                        title =
+                            "Mercado Pago",
+                        status =
+                            "Integración de cuenta • Próximamente"
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(32.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 24.dp
+                    ),
+                horizontalAlignment =
+                    Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = {
+                        currentSheetView =
+                            BottomSheetStateView
+                                .SELECCION_METODO
+
+                        showProximamente =
+                            false
+
+                        showBottomSheet =
+                            true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .background(
+                            OrangeGradient,
+                            RoundedCornerShape(
+                                16.dp
+                            )
+                        ),
+                    colors =
+                        ButtonDefaults
+                            .buttonColors(
+                                containerColor =
+                                    Color.Transparent
+                            ),
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+                    contentPadding =
+                        PaddingValues(0.dp)
+                ) {
+                    Row(
+                        verticalAlignment =
+                            Alignment.CenterVertically,
+                        horizontalArrangement =
+                            Arrangement.Center,
+                        modifier =
+                            Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            Icons.Default
+                                .AddCircleOutline,
+                            contentDescription =
+                                null,
+                            tint =
+                                Color.White
+                        )
+
+                        Spacer(
+                            Modifier.width(8.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Añadir nuevo método de pago",
+                            style =
+                                typography
+                                    .bodyLarge
+                                    .copy(
+                                        fontWeight =
+                                            FontWeight.Bold,
+                                        fontSize =
+                                            windowSize
+                                                .adaptiveSp(16)
+                                    ),
+                            color =
+                                Color.White
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(16.dp)
+                )
+
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+                    horizontalArrangement =
+                        Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription =
+                            "Seguridad",
+                        tint =
+                            MediumGray,
+                        modifier =
+                            Modifier.size(14.dp)
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(6.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Los datos sensibles se validan antes de guardar el método de pago",
+                        color =
+                            MediumGray,
+                        style =
+                            typography.labelSmall,
+                        textAlign =
+                            TextAlign.Center
+                    )
                 }
             }
         }
 
-        // Modal Bottom Sheet
         if (showBottomSheet) {
             ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false },
-                sheetState = sheetState,
-                containerColor = colorScheme.surface
+                onDismissRequest = {
+                    showBottomSheet =
+                        false
+                },
+                sheetState =
+                    sheetState,
+                containerColor =
+                    colorScheme.surface
             ) {
-                when (currentSheetView) {
-                    BottomSheetStateView.SELECCION_METODO -> {
+                when (
+                    currentSheetView
+                ) {
+                    BottomSheetStateView
+                        .SELECCION_METODO -> {
                         AddMPMethodContent(
-                            onAddCard = { currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA },
+                            onAddCard = {
+                                showProximamente =
+                                    false
+
+                                currentSheetView =
+                                    BottomSheetStateView
+                                        .FORMULARIO_TARJETA
+                            },
                             onConnectMP = {
-                                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { showBottomSheet = false }
-                            }
+                                showProximamente =
+                                    true
+                            },
+                            showProximamente =
+                                showProximamente
                         )
                     }
-                    BottomSheetStateView.FORMULARIO_TARJETA -> {
+
+                    BottomSheetStateView
+                        .FORMULARIO_TARJETA -> {
                         FormularioTarjetaScreen(
-                            viewModel = viewModel,
+                            viewModel =
+                                viewModel,
+                            onBack = {
+                                viewModel
+                                    .clearWalletMessage()
+
+                                currentSheetView =
+                                    BottomSheetStateView
+                                        .SELECCION_METODO
+                            },
                             onSuccess = {
-                                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion { showBottomSheet = false }
+                                /*
+                                 * Primero cerramos el formulario y después
+                                 * mostramos el modal de éxito que ya formaba
+                                 * parte de la experiencia de la Wallet.
+                                 */
+                                coroutineScope
+                                    .launch {
+                                        sheetState.hide()
+                                    }
+                                    .invokeOnCompletion {
+                                        showBottomSheet =
+                                            false
+                                        showTarjetaVinculadaModal =
+                                            true
+                                    }
                             }
                         )
                     }
                 }
             }
+        }
+
+        // ==========================================================
+        // TARJETA VINCULADA - MODAL INFERIOR
+        // ==========================================================
+        //
+        // Importante:
+        // NO es AlertDialog.
+        // Sale desde abajo usando el ModalBottomSheet de Material 3
+        // y ocupa aproximadamente media pantalla.
+        // ==========================================================
+
+        if (showTarjetaVinculadaModal) {
+
+            val ultimaTarjeta =
+                viewModel.usuario
+                    ?.metodosPago
+                    ?.lastOrNull()
+
+            ModalBottomSheet(
+                onDismissRequest = {
+                    showTarjetaVinculadaModal =
+                        false
+
+                    viewModel
+                        .clearWalletMessage()
+                },
+
+                sheetState =
+                    tarjetaVinculadaSheetState,
+
+                containerColor =
+                    colorScheme.surface,
+
+                dragHandle = {
+                    BottomSheetDefaults.DragHandle()
+                }
+            ) {
+
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.48f)
+                            .padding(
+                                horizontal = 24.dp
+                            )
+                            .padding(
+                                bottom = 28.dp
+                            ),
+
+                    horizontalAlignment =
+                        Alignment.CenterHorizontally,
+
+                    verticalArrangement =
+                        Arrangement.Center
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.CheckCircle,
+
+                        contentDescription =
+                            null,
+
+                        tint =
+                            Color(0xFF2E7D32),
+
+                        modifier =
+                            Modifier.size(56.dp)
+                    )
+
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(16.dp)
+                    )
+
+
+                    Text(
+                        text =
+                            "Tarjeta vinculada",
+
+                        style =
+                            typography
+                                .titleLarge
+                                .copy(
+                                    fontWeight =
+                                        FontWeight.Bold
+                                ),
+
+                        textAlign =
+                            TextAlign.Center,
+
+                        color =
+                            colorScheme.onSurface
+                    )
+
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(8.dp)
+                    )
+
+
+                    Text(
+                        text =
+                            "Tu tarjeta fue validada correctamente y se agregó a tu Wallet.",
+
+                        style =
+                            typography.bodyMedium,
+
+                        color =
+                            MediumGray,
+
+                        textAlign =
+                            TextAlign.Center
+                    )
+
+
+                    if (ultimaTarjeta != null) {
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(20.dp)
+                        )
+
+
+                        Surface(
+                            shape =
+                                RoundedCornerShape(
+                                    14.dp
+                                ),
+
+                            color =
+                                Color(0xFFE8F5E9)
+                        ) {
+
+                            Row(
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 18.dp,
+                                        vertical = 13.dp
+                                    ),
+
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+
+                                Icon(
+                                    imageVector =
+                                        Icons.Default.CreditCard,
+
+                                    contentDescription =
+                                        null,
+
+                                    tint =
+                                        Color(0xFF2E7D32)
+                                )
+
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.width(10.dp)
+                                )
+
+
+                                Text(
+                                    text =
+                                        "${ultimaTarjeta.marca} •••• ${ultimaTarjeta.ultimos4}",
+
+                                    fontWeight =
+                                        FontWeight.Bold,
+
+                                    color =
+                                        Color(0xFF1B5E20)
+                                )
+                            }
+                        }
+                    }
+
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(24.dp)
+                    )
+
+
+                    Button(
+                        onClick = {
+
+                            coroutineScope
+                                .launch {
+                                    tarjetaVinculadaSheetState.hide()
+                                }
+                                .invokeOnCompletion {
+
+                                    showTarjetaVinculadaModal =
+                                        false
+
+                                    viewModel
+                                        .clearWalletMessage()
+                                }
+                        },
+
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor =
+                                    PrimaryOrange
+                            ),
+
+                        shape =
+                            RoundedCornerShape(
+                                14.dp
+                            )
+                    ) {
+
+                        Text(
+                            text =
+                                "Aceptar",
+
+                            color =
+                                Color.White,
+
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+
+        // ==========================================================
+        // MODAL ELIMINAR TARJETA
+        // ==========================================================
+
+        if (tarjetaAEliminar != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    tarjetaAEliminar =
+                        null
+                },
+                title = {
+                    Text(
+                        text =
+                            "Eliminar Tarjeta",
+                        style =
+                            typography
+                                .titleLarge
+                                .copy(
+                                    fontWeight =
+                                        FontWeight.Bold
+                                )
+                    )
+                },
+                text = {
+                    Text(
+                        text =
+                            "¿Estás seguro que deseas desvincular la tarjeta terminada en ${tarjetaAEliminar?.ultimos4}? Esta acción no se puede deshacer.",
+                        style =
+                            typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            tarjetaAEliminar
+                                ?.let { tarjeta ->
+                                    viewModel
+                                        .eliminarTarjeta(
+                                            tarjeta.ultimos4
+                                        )
+                                }
+
+                            tarjetaAEliminar =
+                                null
+                        }
+                    ) {
+                        Text(
+                            text =
+                                "Eliminar",
+                            color =
+                                colorScheme.error,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            tarjetaAEliminar =
+                                null
+                        }
+                    ) {
+                        Text(
+                            text =
+                                "Cancelar",
+                            color =
+                                MediumGray
+                        )
+                    }
+                },
+                containerColor =
+                    colorScheme.surface,
+                shape =
+                    RoundedCornerShape(
+                        16.dp
+                    )
+            )
         }
     }
 }
 
 @Composable
-fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, cardBrand: String) {
+fun CreditCardView(
+    cardNumber: String,
+    cardHolder: String,
+    expiryDate: String,
+    cardBrand: String,
+    onDelete: () -> Unit
+) {
+    val cardGradient =
+        when (
+            cardBrand.uppercase()
+        ) {
+            "VISA" ->
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF1434CB),
+                        Color(0xFF0B195E)
+                    )
+                )
+
+            "MASTERCARD" ->
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF141414),
+                        Color(0xFF2B2B2B)
+                    )
+                )
+
+            "AMEX" ->
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF007BC1),
+                        Color(0xFF005696)
+                    )
+                )
+
+            else ->
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFF424242),
+                        Color(0xFF212121)
+                    )
+                )
+        }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1.58f),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        shape =
+            RoundedCornerShape(24.dp),
+        elevation =
+            CardDefaults.cardElevation(8.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    Color.Transparent
+            )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OrangeGradient)
+                .background(cardGradient)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement =
+                    Arrangement.SpaceBetween
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.CreditCard,
-                        contentDescription = "Chip",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Text(
-                        text = cardBrand.ifBlank { "CARD" },
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp,
-                        letterSpacing = 1.sp
-                    )
+                    when (
+                        cardBrand.uppercase()
+                    ) {
+                        "MASTERCARD" -> {
+                            Box(
+                                modifier =
+                                    Modifier.size(
+                                        width = 46.dp,
+                                        height = 30.dp
+                                    ),
+                                contentAlignment =
+                                    Alignment.Center
+                            ) {
+                                Canvas(
+                                    modifier =
+                                        Modifier.fillMaxSize()
+                                ) {
+                                    drawCircle(
+                                        color =
+                                            Color(0xCCEB001B),
+                                        radius =
+                                            size.height / 2,
+                                        center =
+                                            Offset(
+                                                size.width * 0.35f,
+                                                size.height / 2
+                                            )
+                                    )
+
+                                    drawCircle(
+                                        color =
+                                            Color(0xCCF79E1B),
+                                        radius =
+                                            size.height / 2,
+                                        center =
+                                            Offset(
+                                                size.width * 0.65f,
+                                                size.height / 2
+                                            )
+                                    )
+                                }
+                            }
+                        }
+
+                        "VISA" -> {
+                            Text(
+                                text =
+                                    "VISA",
+                                color =
+                                    Color.White,
+                                fontWeight =
+                                    FontWeight.ExtraBold,
+                                fontSize =
+                                    24.sp,
+                                fontStyle =
+                                    FontStyle.Italic,
+                                letterSpacing =
+                                    (-1).sp
+                            )
+                        }
+
+                        "AMEX" -> {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        Color.White.copy(
+                                            alpha = 0.2f
+                                        ),
+                                        RoundedCornerShape(
+                                            4.dp
+                                        )
+                                    )
+                                    .padding(
+                                        horizontal = 6.dp,
+                                        vertical = 2.dp
+                                    )
+                            ) {
+                                Text(
+                                    text =
+                                        "AMEX",
+                                    color =
+                                        Color.White,
+                                    fontWeight =
+                                        FontWeight.Bold,
+                                    fontSize =
+                                        18.sp,
+                                    letterSpacing =
+                                        1.sp
+                                )
+                            }
+                        }
+
+                        else -> {
+                            Icon(
+                                Icons.Default.CreditCard,
+                                contentDescription =
+                                    "Tarjeta",
+                                tint =
+                                    Color.White,
+                                modifier =
+                                    Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(
+                                        width = 36.dp,
+                                        height = 26.dp
+                                    )
+                                    .background(
+                                        Color(0xFFD4AF37),
+                                        RoundedCornerShape(
+                                            4.dp
+                                        )
+                                    )
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(12.dp)
+                        )
+
+                        IconButton(
+                            onClick =
+                                onDelete,
+                            modifier =
+                                Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.DeleteOutline,
+                                contentDescription =
+                                    "Eliminar",
+                                tint =
+                                    Color.White.copy(
+                                        alpha = 0.8f
+                                    )
+                            )
+                        }
+                    }
                 }
 
                 Text(
-                    text = "••••  ••••  ••••  $cardNumber",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    letterSpacing = 3.sp
+                    text =
+                        "••••  ••••  ••••  $cardNumber",
+                    color =
+                        Color.White,
+                    fontWeight =
+                        FontWeight.Bold,
+                    fontSize =
+                        22.sp,
+                    letterSpacing =
+                        3.sp
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.Bottom
                 ) {
                     Column {
                         Text(
-                            text = "CARDHOLDER",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            letterSpacing = 1.sp
+                            text =
+                                "CARDHOLDER",
+                            color =
+                                Color.White.copy(
+                                    alpha = 0.6f
+                                ),
+                            fontSize =
+                                10.sp,
+                            letterSpacing =
+                                1.sp
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(4.dp)
+                        )
+
                         Text(
-                            text = cardHolder.uppercase().ifBlank { "—" },
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
+                            text =
+                                cardHolder
+                                    .uppercase()
+                                    .ifBlank {
+                                        "—"
+                                    },
+                            color =
+                                Color.White,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize =
+                                14.sp
                         )
                     }
-                    Column(horizontalAlignment = Alignment.End) {
+
+                    Column(
+                        horizontalAlignment =
+                            Alignment.End
+                    ) {
                         Text(
-                            text = "EXPIRES",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            letterSpacing = 1.sp
+                            text =
+                                "EXPIRES",
+                            color =
+                                Color.White.copy(
+                                    alpha = 0.6f
+                                ),
+                            fontSize =
+                                10.sp,
+                            letterSpacing =
+                                1.sp
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(4.dp)
+                        )
+
                         Text(
-                            text = expiryDate.ifBlank { "—" },
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
+                            text =
+                                expiryDate.ifBlank {
+                                    "—"
+                                },
+                            color =
+                                Color.White,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize =
+                                14.sp
                         )
                     }
                 }
@@ -277,138 +1249,346 @@ fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, c
 }
 
 @Composable
-fun LinkedMethodView(icon: ImageVector, title: String, status: String) {
-    val windowSize = LocalWindowSize.current
+fun LinkedMethodView(
+    icon: ImageVector,
+    title: String,
+    status: String
+) {
+    val windowSize =
+        LocalWindowSize.current
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MPBlue),
-        elevation = CardDefaults.cardElevation(4.dp)
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(20.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    MPBlue
+            ),
+        elevation =
+            CardDefaults.cardElevation(4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(
+                    horizontal = 24.dp,
+                    vertical = 20.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
                 Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(
+                                RoundedCornerShape(
+                                    12.dp
+                                )
+                            )
+                            .background(
+                                Color.White
+                            ),
+                    contentAlignment =
+                        Alignment.Center
                 ) {
-                    Icon(icon, null, tint = MPBlue, modifier = Modifier.size(24.dp))
+                    Icon(
+                        icon,
+                        null,
+                        tint =
+                            MPBlue,
+                        modifier =
+                            Modifier.size(24.dp)
+                    )
                 }
-                Spacer(Modifier.width(16.dp))
+
+                Spacer(
+                    Modifier.width(16.dp)
+                )
+
                 Column {
                     Text(
-                        text = title,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = windowSize.adaptiveSp(18)
+                        text =
+                            title,
+                        color =
+                            Color.White,
+                        fontWeight =
+                            FontWeight.Bold,
+                        fontSize =
+                            windowSize
+                                .adaptiveSp(18)
                     )
+
                     Text(
-                        text = status,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = windowSize.adaptiveSp(14)
+                        text =
+                            status,
+                        color =
+                            Color.White.copy(
+                                alpha = 0.8f
+                            ),
+                        fontSize =
+                            windowSize
+                                .adaptiveSp(14)
                     )
                 }
             }
-            Icon(Icons.Default.ChevronRight, null, tint = Color.White)
+
+            Icon(
+                Icons.Default.Schedule,
+                contentDescription =
+                    null,
+                tint =
+                    Color.White
+            )
         }
     }
 }
 
 @Composable
-fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
-    val windowSize = LocalWindowSize.current
-    val colorScheme = MaterialTheme.colorScheme
-    val typography = MaterialTheme.typography
+fun AddMPMethodContent(
+    onAddCard: () -> Unit,
+    onConnectMP: () -> Unit,
+    showProximamente: Boolean = false
+) {
+    val windowSize =
+        LocalWindowSize.current
+
+    val colorScheme =
+        MaterialTheme.colorScheme
+
+    val typography =
+        MaterialTheme.typography
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, bottom = 48.dp, top = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(
+                start = 24.dp,
+                end = 24.dp,
+                bottom = 48.dp,
+                top = 8.dp
+            ),
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
         Text(
-            text = stringResource(Res.string.wallet_how_to_pay),
-            style = typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = windowSize.adaptiveSp(20)
-            ),
-            modifier = Modifier.padding(bottom = 24.dp),
-            color = colorScheme.onSurface
+            text =
+                stringResource(
+                    Res.string.wallet_how_to_pay
+                ),
+            style =
+                typography
+                    .titleLarge
+                    .copy(
+                        fontWeight =
+                            FontWeight.Bold,
+                        fontSize =
+                            windowSize
+                                .adaptiveSp(20)
+                    ),
+            modifier =
+                Modifier.padding(
+                    bottom = 24.dp
+                ),
+            color =
+                colorScheme.onSurface
         )
 
         Card(
-            modifier = Modifier.fillMaxWidth().clickable { onConnectMP() },
-            colors = CardDefaults.cardColors(containerColor = LightBlueBg),
-            shape = RoundedCornerShape(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onConnectMP()
+                },
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        LightBlueBg
+                ),
+            shape =
+                RoundedCornerShape(16.dp)
         ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier =
+                    Modifier.padding(16.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colorScheme.surface),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(
+                                RoundedCornerShape(
+                                    12.dp
+                                )
+                            )
+                            .background(
+                                colorScheme.surface
+                            ),
+                    contentAlignment =
+                        Alignment.Center
                 ) {
-                    Icon(Icons.Default.Bolt, null, tint = MPBlue)
+                    Icon(
+                        Icons.Default.Bolt,
+                        null,
+                        tint =
+                            MPBlue
+                    )
                 }
-                Spacer(Modifier.width(16.dp))
+
+                Spacer(
+                    Modifier.width(16.dp)
+                )
+
                 Column {
                     Text(
-                        text = "Mercado Pago",
-                        style = typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = windowSize.adaptiveSp(16)
-                        ),
-                        color = MPBlue
+                        text =
+                            "Mercado Pago",
+                        style =
+                            typography
+                                .bodyLarge
+                                .copy(
+                                    fontWeight =
+                                        FontWeight.Bold,
+                                    fontSize =
+                                        windowSize
+                                            .adaptiveSp(16)
+                                ),
+                        color =
+                            MPBlue
                     )
+
                     Text(
-                        text = stringResource(Res.string.wallet_mp_subtitle),
-                        style = typography.bodySmall.copy(
-                            fontSize = windowSize.adaptiveSp(12)
-                        ),
-                        color = MPBlue.copy(alpha = 0.7f)
+                        text =
+                            "Vincular cuenta de Mercado Pago",
+                        style =
+                            typography.bodySmall,
+                        color =
+                            MPBlue.copy(
+                                alpha = 0.7f
+                            )
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        if (showProximamente) {
+            Text(
+                text =
+                    "Integración directa con cuenta Mercado Pago en Fase 2. El pago se realizará desde el checkout del carrito.",
+                color =
+                    MPBlue,
+                style =
+                    typography
+                        .labelSmall
+                        .copy(
+                            fontWeight =
+                                FontWeight.Bold
+                        ),
+                modifier =
+                    Modifier.padding(
+                        top = 8.dp
+                    ),
+                textAlign =
+                    TextAlign.Center
+            )
+        }
+
+        Spacer(
+            Modifier.height(16.dp)
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth().clickable { onAddCard() },
-            colors = CardDefaults.cardColors(containerColor = colorScheme.background),
-            shape = RoundedCornerShape(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onAddCard()
+                },
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        colorScheme.background
+                ),
+            shape =
+                RoundedCornerShape(16.dp)
         ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier =
+                    Modifier.padding(16.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colorScheme.surface),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(
+                                RoundedCornerShape(
+                                    12.dp
+                                )
+                            )
+                            .background(
+                                colorScheme.surface
+                            ),
+                    contentAlignment =
+                        Alignment.Center
                 ) {
-                    Icon(Icons.Default.CreditCard, null, tint = MediumGray)
+                    Icon(
+                        Icons.Default.CreditCard,
+                        null,
+                        tint =
+                            MediumGray
+                    )
                 }
-                Spacer(Modifier.width(16.dp))
-                Text(
-                    text = stringResource(Res.string.wallet_new_card),
-                    style = typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                        fontSize = windowSize.adaptiveSp(16)
-                    ),
-                    color = colorScheme.onSurface
+
+                Spacer(
+                    Modifier.width(16.dp)
                 )
+
+                Column {
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string.wallet_new_card
+                            ),
+                        style =
+                            typography
+                                .bodyLarge
+                                .copy(
+                                    fontWeight =
+                                        FontWeight.Medium,
+                                    fontSize =
+                                        windowSize
+                                            .adaptiveSp(16)
+                                ),
+                        color =
+                            colorScheme.onSurface
+                    )
+
+                    Text(
+                        text =
+                            "Validar y guardar tarjeta",
+                        style =
+                            typography.bodySmall,
+                        color =
+                            MediumGray
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(24.dp))
+
+        Spacer(
+            Modifier.height(24.dp)
+        )
     }
 }

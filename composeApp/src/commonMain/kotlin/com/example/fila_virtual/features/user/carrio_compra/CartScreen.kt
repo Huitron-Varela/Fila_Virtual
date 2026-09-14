@@ -6,14 +6,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.MediumGray
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.data.TarjetaGuardada
-import androidx.compose.ui.text.font.FontWeight
-
-// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 
@@ -22,6 +20,7 @@ import fila_virtual.composeapp.generated.resources.*
 fun CartScreen(
     onBackClick: () -> Unit,
     onOrderSuccess: () -> Unit,
+    onNavigateToWallet: () -> Unit,
     viewModel: UserViewModel
 ) {
     val windowSize = LocalWindowSize.current
@@ -57,6 +56,7 @@ fun CartScreen(
                     viewModel.procesarCompraDelCarrito(
                         establecimientoId = "local_prueba_123",
                         establecimientoNombre = "AlToque Food",
+                        tarjetaSeleccionada = tarjetaSeleccionada,
                         onSuccess = { onOrderSuccess() }
                     )
                 }
@@ -74,7 +74,7 @@ fun CartScreen(
             item { InfoBanner() }
             item {
                 Text(
-                    text = stringResource(Res.string.cart_your_order),
+                    text = "Tu Pedido",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = windowSize.adaptiveSp(18)
@@ -88,7 +88,12 @@ fun CartScreen(
                         Text(stringResource(Res.string.cart_empty), color = MediumGray)
                     }
                 } else {
-                    CartItemsList(cartItems)
+                    // 🔥 PASAMOS LAS FUNCIONES DE LOS BOTONES 🔥
+                    CartItemsList(
+                        items = cartItems,
+                        onIncrement = { idProducto -> viewModel.incrementarCantidad(idProducto) },
+                        onDecrement = { idProducto -> viewModel.decrementarCantidad(idProducto) }
+                    )
                 }
             }
 
@@ -111,6 +116,10 @@ fun CartScreen(
             onTarjetaSelected = { tarjetaElegida ->
                 tarjetaSeleccionada = tarjetaElegida
                 showPaymentModal = false
+            },
+            onAddNewCardClick = {
+                showPaymentModal = false
+                onNavigateToWallet()
             },
             onDismiss = { showPaymentModal = false }
         )

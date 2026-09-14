@@ -1,10 +1,8 @@
 package com.example.fila_virtual.features.user.carrio_compra
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,138 +13,142 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.core.LocalWindowSize
+import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
+import kotlin.math.round
+import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 
-// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
-import org.jetbrains.compose.resources.stringResource
+// 🔥 ESTA ES LA FUNCIÓN QUE LIMPIA LOS DATOS SUCIOS DE LA BASE DE DATOS 🔥
+fun Double.formatoMoneda(): String {
+    val redondeado = round(this * 100) / 100.0
+    val partes = redondeado.toString().split(".")
+    val enteros = partes[0]
+    val decimales = if (partes.size > 1) partes[1].padEnd(2, '0') else "00"
+    return "$$enteros.$decimales"
+}
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartTopBar(onBackClick: () -> Unit) {
-    val windowSize = LocalWindowSize.current
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(top = windowSize.adaptiveDp(24), bottom = windowSize.adaptiveDp(16)),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 8.dp)
-        ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onBackground)
-        }
-        Text(
-            text = stringResource(Res.string.cart_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-    }
+    TopAppBar(
+        title = { Text(text = "Carrito", fontWeight = FontWeight.Bold) },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Regresar") }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+    )
 }
 
 @Composable
 fun InfoBanner() {
-    val windowSize = LocalWindowSize.current
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = BorderGray.copy(alpha = 0.3f),
-        modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-            Icon(Icons.Default.Info, contentDescription = "Info", tint = TrafficRed, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFFE53935), modifier = Modifier.padding(top = 2.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(
-                    text = stringResource(Res.string.cart_info_title),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)),
-                    color = DarkGray
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(Res.string.cart_info_desc),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = windowSize.adaptiveSp(14)),
-                    color = MediumGray
-                )
+                Text("Tu pedido generará un turno de atención", fontWeight = FontWeight.Bold, color = DarkGray)
+                Text("Acércate al mostrador cuando tu turno aparezca en pantalla.", color = MediumGray, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
 
 @Composable
-fun CartItemsList(items: List<ProductoCarrito>) {
+fun CartItemsList(
+    items: List<ProductoCarrito>,
+    onIncrement: (String) -> Unit,
+    onDecrement: (String) -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        items.forEach { item -> CartItemCard(item = item) }
-    }
-}
+        items.forEach { producto ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier.size(60.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = producto.nombre, fontWeight = FontWeight.Bold, color = DarkGray)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        // 🔥 APLICAMOS EL FORMATO LIMPIO AL PRECIO UNITARIO 🔥
+                        Text(text = producto.precio.formatoMoneda(), color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                    }
 
-@Composable
-fun CartItemCard(item: ProductoCarrito) {
-    val windowSize = LocalWindowSize.current
-    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(70.dp).clip(RoundedCornerShape(12.dp)).background(ExtraLightGray), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(item.nombre, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)))
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("$${item.precio}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = TrafficRed, fontSize = windowSize.adaptiveSp(16)))
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                QuantityButton(icon = Icons.Default.Remove, onClick = { })
-                Text(item.cantidad.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)), modifier = Modifier.padding(horizontal = 12.dp))
-                QuantityButton(icon = Icons.Default.Add, onClick = { })
+                    // CONTROLES DE CANTIDAD FUNCIONALES
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(32.dp).clip(CircleShape).background(PrimaryOrange).clickable { onDecrement(producto.idProducto) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = "Menos", tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                        Text(
+                            text = "${producto.cantidad}",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Box(
+                            modifier = Modifier.size(32.dp).clip(CircleShape).background(PrimaryOrange).clickable { onIncrement(producto.idProducto) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Más", tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
             }
         }
-    }
-}
-
-@Composable
-fun QuantityButton(icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    Surface(shape = CircleShape, color = PrimaryOrange, modifier = Modifier.size(32.dp).clickable { onClick() }) {
-        Icon(imageVector = icon, contentDescription = null, tint = Color.White, modifier = Modifier.padding(4.dp))
     }
 }
 
 @Composable
 fun PaymentMethodSection(tarjeta: TarjetaGuardada?, onEditClick: () -> Unit) {
-    val windowSize = LocalWindowSize.current
     Column {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(Res.string.cart_payment_method), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(18)))
-            Text(stringResource(Res.string.general_edit), color = TrafficRed, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(14)), modifier = Modifier.clickable { onEditClick() })
+            Text("Método de Pago", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
+            Text("Editar", color = Color(0xFFE53935), fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onEditClick() })
         }
         Spacer(modifier = Modifier.height(12.dp))
-
-        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth().clickable { onEditClick() }) {
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable { onEditClick() },
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(6.dp), border = BorderStroke(1.dp, BorderGray), color = MaterialTheme.colorScheme.surface, modifier = Modifier.size(40.dp, 28.dp)) {
-                    Icon(Icons.Default.CreditCard, contentDescription = null, tint = DarkGray, modifier = Modifier.padding(4.dp))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-
+                Icon(Icons.Default.CreditCard, contentDescription = null, tint = DarkGray)
+                Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     if (tarjeta != null) {
-                        Text("${tarjeta.marca} ${stringResource(Res.string.cart_ending_in)} ${tarjeta.ultimos4}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium, fontSize = windowSize.adaptiveSp(16)))
-                        Text("${stringResource(Res.string.cart_expires)} ${tarjeta.expiracion}", style = MaterialTheme.typography.bodyMedium.copy(fontSize = windowSize.adaptiveSp(14)), color = MediumGray)
+                        Text("${tarjeta.marca} terminada en ${tarjeta.ultimos4}", fontWeight = FontWeight.Bold, color = DarkGray)
+                        Text("Expira ${tarjeta.expiracion}", color = MediumGray, style = MaterialTheme.typography.bodySmall)
                     } else {
-                        Text(stringResource(Res.string.cart_no_payment), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = TrafficRed, fontSize = windowSize.adaptiveSp(16)))
-                        Text(stringResource(Res.string.cart_tap_to_select), style = MaterialTheme.typography.bodyMedium.copy(fontSize = windowSize.adaptiveSp(14)), color = MediumGray)
+                        Text("Selecciona una tarjeta", fontWeight = FontWeight.Bold, color = DarkGray)
                     }
                 }
-                if (tarjeta != null) Icon(Icons.Default.CheckCircle, contentDescription = "Seleccionado", tint = PrimaryOrange)
+                if (tarjeta != null) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PrimaryOrange)
+                }
             }
         }
     }
@@ -154,55 +156,60 @@ fun PaymentMethodSection(tarjeta: TarjetaGuardada?, onEditClick: () -> Unit) {
 
 @Composable
 fun SummarySection(subtotal: Double, tarifa: Double, total: Double) {
-    val windowSize = LocalWindowSize.current
-    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(Res.string.general_summary), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(18)), modifier = Modifier.padding(bottom = 16.dp))
-            SummaryRow(label = stringResource(Res.string.general_subtotal), amount = "$${subtotal}")
-            Spacer(modifier = Modifier.height(8.dp))
-            SummaryRow(label = stringResource(Res.string.general_service_fee), amount = "$${tarifa}")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = BorderGray.copy(alpha = 0.5f))
+            Text("Resumen", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
+            Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(stringResource(Res.string.general_total), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)))
-                Text("$${total}", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, color = TrafficRed, fontSize = windowSize.adaptiveSp(20)))
+                Text("Subtotal", color = DarkGray)
+                // 🔥 APLICAMOS FORMATO LIMPIO 🔥
+                Text(subtotal.formatoMoneda(), color = DarkGray, fontWeight = FontWeight.Medium)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Tarifa de servicio", color = DarkGray)
+                // 🔥 APLICAMOS FORMATO LIMPIO 🔥
+                Text(tarifa.formatoMoneda(), color = DarkGray, fontWeight = FontWeight.Medium)
+            }
+            Divider(modifier = Modifier.padding(vertical = 12.dp), color = BorderGray)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Total", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
+                // 🔥 APLICAMOS FORMATO LIMPIO AL TOTAL 🔥
+                Text(total.formatoMoneda(), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFFE53935))
             }
         }
     }
 }
 
 @Composable
-fun SummaryRow(label: String, amount: String) {
-    val windowSize = LocalWindowSize.current
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = windowSize.adaptiveSp(14)), color = DarkGray)
-        Text(amount, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium, fontSize = windowSize.adaptiveSp(14)))
-    }
-}
-
-@Composable
-fun CartBottomBar(isProcessing: Boolean, errorMessage: String, isEnabled: Boolean, onPayClick: () -> Unit) {
-    val windowSize = LocalWindowSize.current
-    Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            if (errorMessage.isNotEmpty()) {
-                Text(errorMessage, color = TrafficRed, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth(), textAlign = TextAlign.Center)
-            }
-            Button(
-                onClick = { onPayClick() },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange, disabledContainerColor = MediumGray),
-                shape = RoundedCornerShape(16.dp),
-                enabled = !isProcessing && isEnabled
-            ) {
-                if (isProcessing) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        Text(stringResource(Res.string.cart_pay_button), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White, fontSize = windowSize.adaptiveSp(16)))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
-                    }
-                }
+fun CartBottomBar(
+    isProcessing: Boolean,
+    errorMessage: String,
+    isEnabled: Boolean,
+    onPayClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
+        if (errorMessage.isNotEmpty()) {
+            Text(text = errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+        }
+        Button(
+            onClick = onPayClick,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+            shape = RoundedCornerShape(16.dp),
+            enabled = isEnabled && !isProcessing
+        ) {
+            if (isProcessing) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Pagar y Generar Turno", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
             }
         }
     }
@@ -214,6 +221,7 @@ fun SelectorTarjetasModal(
     tarjetas: List<TarjetaGuardada>,
     tarjetaActual: TarjetaGuardada?,
     onTarjetaSelected: (TarjetaGuardada) -> Unit,
+    onAddNewCardClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -223,33 +231,63 @@ fun SelectorTarjetasModal(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 48.dp)) {
-            Text(stringResource(Res.string.cart_select_payment), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(bottom = 16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp, top = 8.dp, start = 24.dp, end = 24.dp)
+        ) {
+            Text(
+                text = "Selecciona método de pago",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(bottom = 16.dp),
+                color = DarkGray
+            )
 
-            if (tarjetas.isEmpty()) {
-                Text(stringResource(Res.string.cart_no_cards_message), color = MediumGray, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp))
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(tarjetas.size) { index ->
-                        val tarjeta = tarjetas[index]
-                        val isSelected = tarjeta.ultimos4 == tarjetaActual?.ultimos4
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onTarjetaSelected(tarjeta) },
-                            colors = CardDefaults.cardColors(containerColor = if (isSelected) PrimaryOrange.copy(alpha = 0.1f) else ExtraLightGray),
-                            border = if (isSelected) BorderStroke(2.dp, PrimaryOrange) else null
-                        ) {
-                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CreditCard, contentDescription = null, tint = if (isSelected) PrimaryOrange else DarkGray)
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(text = "${tarjeta.marca} ${stringResource(Res.string.cart_ending_in)} ${tarjeta.ultimos4}", fontWeight = FontWeight.Bold)
-                                    Text(text = "${stringResource(Res.string.cart_expires)} ${tarjeta.expiracion}", color = MediumGray, style = MaterialTheme.typography.bodySmall)
-                                }
-                                if (isSelected) Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PrimaryOrange)
-                            }
+            tarjetas.forEach { tarjeta ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                        .clickable { onTarjetaSelected(tarjeta) },
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (tarjeta == tarjetaActual) Color(0xFFFFF0E6) else Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    border = if (tarjeta == tarjetaActual) androidx.compose.foundation.BorderStroke(1.dp, PrimaryOrange) else androidx.compose.foundation.BorderStroke(1.dp, BorderGray)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.CreditCard, contentDescription = null, tint = DarkGray)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("${tarjeta.marca} terminada en ${tarjeta.ultimos4}", fontWeight = FontWeight.Bold, color = DarkGray)
+                        }
+                        if (tarjeta == tarjetaActual) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PrimaryOrange)
                         }
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAddNewCardClick() },
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = MediumGray)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Agregar nueva tarjeta", fontWeight = FontWeight.Medium, color = DarkGray)
                 }
             }
         }

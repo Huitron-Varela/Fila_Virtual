@@ -4,26 +4,26 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import androidx.compose.material3.MaterialTheme
-import com.example.fila_virtual.core.WindowSize
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
-import com.example.fila_virtual.perfil.ProfileComponent
-import com.example.fila_virtual.features.user.home.HomeView
-import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
+import com.example.fila_virtual.core.WindowSize
+import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
 import com.example.fila_virtual.features.user.carrio_compra.CartScreen
+import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.menu.UserMenuScreen
-import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.perfil.EditProfileScreen
+import com.example.fila_virtual.perfil.ProfileComponent
 import com.example.fila_virtual.perfil.EnProcesoScreen
 import com.example.fila_virtual.core.LegalConstants
 import com.example.fila_virtual.core.navigation.LegalScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun ClienteMainScreen(
@@ -33,9 +33,7 @@ fun ClienteMainScreen(
     val usuario = viewModel.usuario
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { 4 })
-
-    // 👇 ESCUCHAMOS EL CARRITO DESDE EL CEREBRO PRINCIPAL
-    val carritoActual by viewModel.carrito.collectAsState(initial = emptyList())
+    val carritoActual by viewModel.carrito.collectAsState()
 
     // ESTADOS PARA NAVEGACIÓN
     var isEditingProfile by remember { mutableStateOf(false) }
@@ -45,20 +43,16 @@ fun ClienteMainScreen(
     var showTerms by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
 
+    /*
+     * ==========================================================
+     * MODALES DE PERFIL Y EXTRAS
+     * ==========================================================
+     */
     if (isEditingProfile) {
         EditProfileScreen(
             usuario = usuario,
             viewModel = viewModel,
             onBack = { isEditingProfile = false }
-        )
-    } else if (showCart) {
-        CartScreen(
-            viewModel = viewModel, // Conectado al cerebro real
-            onBackClick = { showCart = false },
-            onOrderSuccess = {
-                showCart = false
-                scope.launch { pagerState.animateScrollToPage(1) }
-            }
         )
     } else if (showSecurity) {
         EnProcesoScreen(
@@ -76,7 +70,31 @@ fun ClienteMainScreen(
             content = LegalConstants.TERMINOS_Y_CONDICIONES,
             onBack = { showTerms = false }
         )
+    } else if (showCart) {
+        /*
+         * ==========================================================
+         * CARRITO
+         * ==========================================================
+         */
+        CartScreen(
+            viewModel = viewModel,
+            onBackClick = { showCart = false },
+            onOrderSuccess = {
+                showCart = false
+                scope.launch { pagerState.animateScrollToPage(1) }
+            },
+            onNavigateToWallet = {
+                viewModel.updatePendingWalletAction("abrir_formulario")
+                showCart = false
+                scope.launch { pagerState.animateScrollToPage(2) }
+            }
+        )
     } else if (selectedEstablecimiento != null) {
+        /*
+         * ==========================================================
+         * MENÚ DE ESTABLECIMIENTO
+         * ==========================================================
+         */
         UserMenuScreen(
             establecimientoId = selectedEstablecimiento!!.id,
             nombreEstablecimiento = selectedEstablecimiento!!.nombre,
@@ -84,6 +102,11 @@ fun ClienteMainScreen(
             userViewModel = viewModel
         )
     } else {
+        /*
+         * ==========================================================
+         * NAVEGACIÓN PRINCIPAL (PAGER)
+         * ==========================================================
+         */
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val windowSize = WindowSize(maxWidth, maxHeight)
             val horizontalMargin = if (windowSize.isTablet) (maxWidth - 550.dp) / 2 else 0.dp
@@ -113,30 +136,35 @@ fun ClienteMainScreen(
                         userScrollEnabled = true
                     ) { page ->
                         when (page) {
-                            0 -> HomeView(
-                                usuario = usuario,
-                                cartCount = carritoActual.size, // 👇 Pasamos la cantidad
-                                onCartClick = { showCart = true },
-                                onEstablecimientoClick = { local -> selectedEstablecimiento = local },
-                                onAddToCart = { producto ->
-                                    viewModel.agregarAlCarrito(
-                                        producto.id,       // Pasa el ID como String
-                                        producto.nombre,   // Pasa el nombre
-                                        producto.precio    // Pasa el precio
-                                    )
-                                } // 👇 Disparamos al VM principal
-                            )
+                            0 -> {
+                                HomeView(
+                                    usuario = usuario,
+                                    // 🔥 Mantenemos tu corrección perfecta del sumOf
+                                    cartCount = carritoActual.sumOf { it.cantidad },
+                                    onCartClick = { showCart = true },
+                                    onEstablecimientoClick = { local -> selectedEstablecimiento = local },
+                                    onAddToCart = { producto ->
+                                        viewModel.agregarAlCarrito(
+                                            idProducto = producto.id,
+                                            nombre = producto.nombre,
+                                            precio = producto.precio
+                                        )
+                                    }
+                                )
+                            }
                             1 -> OrdenesScreen()
                             2 -> BilleteraScreen(viewModel)
-                            3 -> ProfileComponent(
-                                usuario = usuario,
-                                viewModel = viewModel,
-                                onLogout = { viewModel.signOut(onLogout) },
-                                onNavigateToEdit = { isEditingProfile = true },
-                                onNavigateToSecurity = { showSecurity = true },
-                                onNavigateToHelp = { showHelp = true },
-                                onNavigateToTerms = { showTerms = true }
-                            )
+                            3 -> {
+                                ProfileComponent(
+                                    usuario = usuario,
+                                    viewModel = viewModel,
+                                    onLogout = { viewModel.signOut(onSuccess = onLogout) },
+                                    onNavigateToEdit = { isEditingProfile = true },
+                                    onNavigateToSecurity = { showSecurity = true },
+                                    onNavigateToHelp = { showHelp = true },
+                                    onNavigateToTerms = { showTerms = true }
+                                )
+                            }
                         }
                     }
                 }

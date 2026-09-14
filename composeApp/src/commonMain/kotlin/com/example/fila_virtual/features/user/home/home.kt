@@ -32,6 +32,10 @@ import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 
+// 👇 Importaciones exclusivas de Compose Multiplatform para la vibración
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+
 @Composable
 fun HomeView(
     usuario: Usuario?,
@@ -49,7 +53,6 @@ fun HomeView(
     val establecimientos by viewModel.establecimientosFiltrados.collectAsState()
     val listaRecomendaciones by viewModel.recomendaciones.collectAsState()
 
-    // 👇 ESCUCHAMOS EL TEXTO Y LOS RESULTADOS DEL BUSCADOR DESDE EL VIEWMODEL
     val searchQuery by viewModel.searchQuery.collectAsState()
     val resultadosBusqueda by viewModel.resultadosBusqueda.collectAsState()
 
@@ -58,7 +61,6 @@ fun HomeView(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // --- SECCIÓN FIJA ---
         Spacer(modifier = Modifier.height(16.dp))
         HomeHeader(padding = horizontalPadding, cartCount = cartCount, onCartClick = onCartClick)
         Spacer(modifier = Modifier.height(16.dp))
@@ -66,23 +68,17 @@ fun HomeView(
         Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
             SearchBar(
                 query = searchQuery,
-                // 👇 AVISAMOS AL VIEWMODEL CADA VEZ QUE EL USUARIO ESCRIBE UNA LETRA
                 onQueryChange = { viewModel.actualizarBusqueda(it) }
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- SECCIÓN DESPLAZABLE ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-
-            // 👇 IF MÁGICO DE COMPOSE: CONDICIONAMOS LA PANTALLA
             if (searchQuery.isNotBlank()) {
-
-                // SI HAY TEXTO, SOLO MOSTRAMOS ESTO:
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader(title = "Resultados de búsqueda", actionText = null, padding = horizontalPadding)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -92,10 +88,7 @@ fun HomeView(
                     padding = horizontalPadding,
                     onAddToCart = onAddToCart
                 )
-
             } else {
-
-                // SI ESTÁ VACÍO, MOSTRAMOS LA PANTALLA DE INICIO NORMAL:
                 SectionHeader(title = "Categorías", actionText = null, padding = horizontalPadding)
                 Spacer(modifier = Modifier.height(16.dp))
                 CategoryRow(
@@ -379,6 +372,9 @@ fun RecommendationCard(
     storeName: String,
     onAddToCartClick: () -> Unit
 ) {
+    // 👇 Referencia para la vibración más fuerte
+    val haptic = LocalHapticFeedback.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -416,7 +412,13 @@ fun RecommendationCard(
                 Surface(
                     modifier = Modifier
                         .size(32.dp)
-                        .clickable { onAddToCartClick() },
+                        .clickable {
+                            // 👇 Disparamos el golpe de vibración sólido
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                            // 👇 Ejecutamos la lógica de agregar al carrito
+                            onAddToCartClick()
+                        },
                     shape = CircleShape,
                     color = PrimaryOrange
                 ) {

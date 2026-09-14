@@ -1,300 +1,574 @@
 package com.example.fila_virtual.features.user.billetera
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.fila_virtual.core.theme.DarkGray
+import com.example.fila_virtual.core.theme.MediumGray
+import com.example.fila_virtual.core.theme.PrimaryOrange
 import com.example.fila_virtual.features.user.UserViewModel
-import com.example.fila_virtual.core.LocalWindowSize
-import com.example.fila_virtual.core.theme.*
 
-// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
-import org.jetbrains.compose.resources.stringResource
-import fila_virtual.composeapp.generated.resources.* // <-- Asegúrate de que este sea tu import de Res
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormularioTarjetaScreen(
     viewModel: UserViewModel,
+    onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
-    val windowSize = LocalWindowSize.current
-    val colorScheme = MaterialTheme.colorScheme
-    val typography = MaterialTheme.typography
+    LaunchedEffect(Unit) {
+        viewModel.clearWalletMessage()
+    }
 
-    // Detectamos si el mensaje del ViewModel indica que fue un éxito
-    val isSuccessMsg = viewModel.errorMessage.contains("correctamente", ignoreCase = true) ||
-            viewModel.errorMessage.contains("éxito", ignoreCase = true)
+    val numeroVisible =
+        formatearNumeroTarjeta(
+            viewModel.numeroTarjeta
+        )
+
+    val fechaVisible =
+        formatearFecha(
+            viewModel.fechaExpiracion
+        )
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, bottom = 32.dp, top = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .verticalScroll(rememberScrollState())
+            .padding(
+                start = 24.dp,
+                end = 24.dp,
+                top = 4.dp,
+                bottom = 40.dp
+            )
     ) {
-        if (isSuccessMsg) {
-            // --- PANTALLA DE ÉXITO ESTANDARIZADA ---
-            Spacer(modifier = Modifier.height(16.dp))
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .background(Color(0xFFE8F5E9), CircleShape), // Fondo verde claro
-                contentAlignment = Alignment.Center
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = {
+                    viewModel.clearWalletMessage()
+                    onBack()
+                }
             ) {
                 Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(30.dp)
+                    imageVector =
+                        Icons.Default.ArrowBack,
+                    contentDescription =
+                        "Regresar"
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(Res.string.wallet_success_title),
-                style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = DarkGray
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(Res.string.wallet_success_desc),
-                style = typography.bodyMedium,
-                color = MediumGray,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    // 1. Recargamos los datos del usuario ahora que estamos listos
-                    viewModel.loadUserData()
-                    // 3. Cerramos el Bottom Sheet
-                    onSuccess()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(stringResource(Res.string.wallet_accept_button), style = typography.titleMedium.copy(color = Color.White))
-            }
-        } else {
-            // --- FORMULARIO ORIGINAL DE CAPTURA ---
-            Text(
-                text = stringResource(Res.string.wallet_enter_card_title),
-                style = typography.titleLarge.copy(
-                    fontSize = windowSize.adaptiveSp(20)
-                ),
-                color = colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 24.dp)
+            Spacer(
+                modifier =
+                    Modifier.width(4.dp)
             )
 
-            // Número de Tarjeta con máscara (separado de 4 en 4)
-            OutlinedTextField(
-                value = viewModel.numeroTarjeta,
-                onValueChange = { viewModel.onNumeroTarjetaChange(it.filter { char -> char.isDigit() }) },
-                label = { Text(stringResource(Res.string.wallet_card_number), style = typography.bodyMedium) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.CreditCard,
-                        contentDescription = null,
-                        tint = MediumGray
-                    )
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = CardNumberVisualTransformation(),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = colorScheme.primary,
-                    unfocusedBorderColor = BorderGray,
-                    focusedLabelColor = colorScheme.primary,
-                    cursorColor = colorScheme.primary
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Nombre del Titular
-            OutlinedTextField(
-                value = viewModel.nombreTitular,
-                onValueChange = { viewModel.onNombreTitularChange(it.uppercase()) },
-                label = { Text(stringResource(Res.string.wallet_card_name), style = typography.bodyMedium) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = colorScheme.primary,
-                    unfocusedBorderColor = BorderGray,
-                    focusedLabelColor = colorScheme.primary,
-                    cursorColor = colorScheme.primary
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Fecha con máscara (MM/YY)
-                OutlinedTextField(
-                    value = viewModel.fechaExpiracion,
-                    onValueChange = { viewModel.onFechaExpiracionChange(it.filter { char -> char.isDigit() }) },
-                    label = { Text(stringResource(Res.string.wallet_card_expiry), style = typography.bodyMedium) },
-                    placeholder = { Text(stringResource(Res.string.wallet_card_expiry_placeholder), style = typography.bodyMedium) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    visualTransformation = ExpirationDateVisualTransformation(),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colorScheme.primary,
-                        unfocusedBorderColor = BorderGray,
-                        focusedLabelColor = colorScheme.primary,
-                        cursorColor = colorScheme.primary
-                    )
-                )
-
-                // CVV
-                OutlinedTextField(
-                    value = viewModel.cvv,
-                    onValueChange = { viewModel.onCvvChange(it.filter { char -> char.isDigit() }) },
-                    label = { Text(stringResource(Res.string.wallet_card_cvv), style = typography.bodyMedium) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colorScheme.primary,
-                        unfocusedBorderColor = BorderGray,
-                        focusedLabelColor = colorScheme.primary,
-                        cursorColor = colorScheme.primary
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Mensaje de error
-            if (viewModel.errorMessage.isNotEmpty()) {
+            Column {
                 Text(
-                    text = viewModel.errorMessage,
-                    color = colorScheme.error,
-                    style = typography.bodyMedium.copy(
-                        fontSize = windowSize.adaptiveSp(14)
-                    ),
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    text =
+                        "Agregar tarjeta",
+                    style =
+                        MaterialTheme.typography.titleLarge,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        "Ingresa los datos tal como aparecen en tu tarjeta.",
+                    style =
+                        MaterialTheme.typography.bodySmall,
+                    color =
+                        MediumGray
+                )
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(24.dp)
+        )
+
+        Surface(
+            modifier =
+                Modifier.fillMaxWidth(),
+            shape =
+                RoundedCornerShape(14.dp),
+            color =
+                Color(0xFFF4F8FF)
+        ) {
+            Row(
+                modifier =
+                    Modifier.padding(14.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Default.Lock,
+                    contentDescription =
+                        null,
+                    tint =
+                        Color(0xFF1976D2),
+                    modifier =
+                        Modifier.size(20.dp)
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(10.dp)
+                )
+
+                Text(
+                    text =
+                        "Validamos primero el formato localmente y después intentamos tokenizar la tarjeta con Mercado Pago.",
+                    style =
+                        MaterialTheme.typography.bodySmall,
+                    color =
+                        DarkGray
+                )
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(24.dp)
+        )
+
+        Text(
+            text =
+                "Número de tarjeta",
+            fontWeight =
+                FontWeight.SemiBold,
+            color =
+                DarkGray
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(8.dp)
+        )
+
+        OutlinedTextField(
+            value =
+                numeroVisible,
+            onValueChange = { valor ->
+                viewModel.onNumeroTarjetaChange(
+                    valor
+                )
+            },
+            modifier =
+                Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    "1234 5678 9012 3456"
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector =
+                        Icons.Default.CreditCard,
+                    contentDescription =
+                        null
+                )
+            },
+            singleLine =
+                true,
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType =
+                        KeyboardType.Number,
+                    imeAction =
+                        ImeAction.Next
+                ),
+            shape =
+                RoundedCornerShape(14.dp)
+        )
+
+        Text(
+            text =
+                "Si el número es inválido, te explicaremos exactamente por qué.",
+            style =
+                MaterialTheme.typography.labelSmall,
+            color =
+                MediumGray,
+            modifier =
+                Modifier.padding(
+                    start = 4.dp,
+                    top = 5.dp
+                )
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+        Text(
+            text =
+                "Nombre del titular",
+            fontWeight =
+                FontWeight.SemiBold,
+            color =
+                DarkGray
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(8.dp)
+        )
+
+        OutlinedTextField(
+            value =
+                viewModel.nombreTitular,
+            onValueChange = { valor ->
+                viewModel.onNombreTitularChange(
+                    valor
+                )
+            },
+            modifier =
+                Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    "Ej. Juan Pérez"
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector =
+                        Icons.Default.Person,
+                    contentDescription =
+                        null
+                )
+            },
+            singleLine =
+                true,
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType =
+                        KeyboardType.Text,
+                    imeAction =
+                        ImeAction.Next
+                ),
+            shape =
+                RoundedCornerShape(14.dp)
+        )
+
+        Text(
+            text =
+                "Solo letras, espacios, apóstrofes y guiones.",
+            style =
+                MaterialTheme.typography.labelSmall,
+            color =
+                MediumGray,
+            modifier =
+                Modifier.padding(
+                    start = 4.dp,
+                    top = 5.dp
+                )
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(12.dp)
+        ) {
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text(
+                    text =
+                        "Vencimiento",
+                    fontWeight =
+                        FontWeight.SemiBold,
+                    color =
+                        DarkGray
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
+
+                OutlinedTextField(
+                    value =
+                        fechaVisible,
+                    onValueChange = { valor ->
+                        viewModel.onFechaExpiracionChange(
+                            valor
+                        )
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text("MM/AA")
+                    },
+                    singleLine =
+                        true,
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Number,
+                            imeAction =
+                                ImeAction.Next
+                        ),
+                    shape =
+                        RoundedCornerShape(14.dp)
                 )
             }
 
-            Button(
-                onClick = {
-                    viewModel.procesarPagoSeguro()
-                },
-                modifier = Modifier
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text(
+                    text =
+                        "CVV",
+                    fontWeight =
+                        FontWeight.SemiBold,
+                    color =
+                        DarkGray
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
+
+                OutlinedTextField(
+                    value =
+                        viewModel.cvv,
+                    onValueChange = { valor ->
+                        viewModel.onCvvChange(
+                            valor
+                        )
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text("•••")
+                    },
+                    singleLine =
+                        true,
+                    visualTransformation =
+                        PasswordVisualTransformation(),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Number,
+                            imeAction =
+                                ImeAction.Done
+                        ),
+                    shape =
+                        RoundedCornerShape(14.dp)
+                )
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(22.dp)
+        )
+
+        viewModel.walletMessage
+            ?.let { mensaje ->
+
+                val esError =
+                    viewModel.walletMessageIsError
+
+                Surface(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        RoundedCornerShape(14.dp),
+                    color =
+                        if (esError) {
+                            MaterialTheme
+                                .colorScheme
+                                .errorContainer
+                        } else {
+                            Color(0xFFE8F5E9)
+                        }
+                ) {
+                    Row(
+                        modifier =
+                            Modifier.padding(14.dp),
+                        verticalAlignment =
+                            Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector =
+                                if (esError) {
+                                    Icons.Default.Warning
+                                } else {
+                                    Icons.Default.CheckCircle
+                                },
+                            contentDescription =
+                                null,
+                            tint =
+                                if (esError) {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .error
+                                } else {
+                                    Color(0xFF2E7D32)
+                                }
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(10.dp)
+                        )
+
+                        Column {
+                            Text(
+                                text =
+                                    if (esError) {
+                                        "Revisa los datos"
+                                    } else {
+                                        "Validación correcta"
+                                    },
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Spacer(
+                                modifier =
+                                    Modifier.height(3.dp)
+                            )
+
+                            Text(
+                                text =
+                                    mensaje,
+                                style =
+                                    MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(18.dp)
+                )
+            }
+
+        Button(
+            onClick = {
+                viewModel.procesarPagoSeguro(
+                    onSuccess = {
+                        onSuccess()
+                    }
+                )
+            },
+            enabled =
+                !viewModel.isLoading,
+            modifier =
+                Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primary,
-                    contentColor = colorScheme.onPrimary
-                ),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !viewModel.isLoading && viewModel.numeroTarjeta.length == 16 && viewModel.cvv.isNotEmpty()
-            ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator(
-                        color = colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Text(
-                        text = stringResource(Res.string.wallet_link_card_button),
-                        style = typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = windowSize.adaptiveSp(16)
-                        ),
-                        color = colorScheme.onPrimary
-                    )
-                }
+            shape =
+                RoundedCornerShape(16.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor =
+                        PrimaryOrange
+                )
+        ) {
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(
+                    color =
+                        Color.White,
+                    strokeWidth =
+                        2.dp,
+                    modifier =
+                        Modifier.size(24.dp)
+                )
+            } else {
+                Icon(
+                    imageVector =
+                        Icons.Default.Lock,
+                    contentDescription =
+                        null,
+                    tint =
+                        Color.White
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Validar y vincular tarjeta",
+                    color =
+                        Color.White,
+                    fontWeight =
+                        FontWeight.Bold
+                )
             }
         }
+
+        Spacer(
+            modifier =
+                Modifier.height(12.dp)
+        )
+
+        Text(
+            text =
+                "Esta acción valida y tokeniza el método de pago. No realiza ningún cobro.",
+            style =
+                MaterialTheme.typography.labelSmall,
+            color =
+                MediumGray
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
     }
 }
 
-// ==============================================================================
-// UTILIDADES
-// ==============================================================================
-
-class CardNumberVisualTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val trimmed = if (text.text.length >= 16) text.text.substring(0..15) else text.text
-        var out = ""
-        for (i in trimmed.indices) {
-            out += trimmed[i]
-            if (i % 4 == 3 && i != 15) out += " "
-        }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 3) return offset
-                if (offset <= 7) return offset + 1
-                if (offset <= 11) return offset + 2
-                if (offset <= 16) return offset + 3
-                return 19
-            }
-            override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 4) return offset
-                if (offset <= 9) return offset - 1
-                if (offset <= 14) return offset - 2
-                if (offset <= 19) return offset - 3
-                return 16
-            }
-        }
-        return TransformedText(AnnotatedString(out), offsetMapping)
-    }
+private fun formatearNumeroTarjeta(
+    numero: String
+): String {
+    return numero
+        .chunked(4)
+        .joinToString(" ")
 }
 
-class ExpirationDateVisualTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val trimmed = if (text.text.length >= 4) text.text.substring(0..3) else text.text
-        var out = ""
-        for (i in trimmed.indices) {
-            out += trimmed[i]
-            if (i == 1) out += "/"
-        }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 1) return offset
-                if (offset <= 4) return offset + 1
-                return 5
-            }
-            override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 2) return offset
-                if (offset <= 5) return offset - 1
-                return 4
-            }
-        }
-        return TransformedText(AnnotatedString(out), offsetMapping)
+private fun formatearFecha(
+    fecha: String
+): String {
+    return if (fecha.length <= 2) {
+        fecha
+    } else {
+        fecha.take(2) +
+                "/" +
+                fecha.drop(2)
     }
 }
