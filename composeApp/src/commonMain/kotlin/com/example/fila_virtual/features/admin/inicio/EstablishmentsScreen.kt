@@ -21,6 +21,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
@@ -64,7 +66,7 @@ fun EstablishmentsScreen(
         containerColor = LightBackground,
         topBar = {
             FormHeader(
-                title = "Mis Establecimientos",
+                title = stringResource(Res.string.est_title_manage),
                 onBack = onBack
             )
         },
@@ -75,7 +77,7 @@ fun EstablishmentsScreen(
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Registrar Nuevo Local")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.est_title_add))
             }
         }
     ) { paddingValues ->
@@ -135,7 +137,7 @@ fun EstablishmentsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (searchQuery.isEmpty()) "No hay establecimientos registrados" else "No se encontraron resultados",
+                        text = if (searchQuery.isEmpty()) stringResource(Res.string.est_empty) else stringResource(Res.string.est_no_results),
                         color = MediumGray
                     )
                 }
@@ -205,7 +207,7 @@ fun EstablishmentsScreen(
                     
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = est.nombre.ifEmpty { "Sin Nombre" },
+                            text = est.nombre.ifEmpty { stringResource(Res.string.est_no_name) },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = DarkGray,
@@ -217,7 +219,7 @@ fun EstablishmentsScreen(
                             Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MediumGray, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = est.ubicacion.direccion.ifEmpty { "Sin dirección" },
+                                text = est.ubicacion.direccion.ifEmpty { stringResource(Res.string.est_no_address) },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MediumGray,
                                 maxLines = 1,
@@ -249,7 +251,7 @@ fun EstablishmentsScreen(
                                 color = DarkGray
                             )
                             Text(
-                                text = "Visibilidad en la app para clientes",
+                                text = stringResource(Res.string.est_visibility),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MediumGray
                             )
@@ -302,7 +304,7 @@ fun EstablishmentsScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             Text("CATEGORÍA", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
                             Text(
-                                est.categorias.firstOrNull() ?: "Sin categoría",
+                                est.categorias.firstOrNull() ?: stringResource(Res.string.est_no_category),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = DarkGray,
                                 fontWeight = FontWeight.Bold,
@@ -326,9 +328,9 @@ fun EstablishmentsScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text("HORARIO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            val horario = est.horario["todos"]
+                            val horario = est.horario[stringResource(Res.string.est_all)]
                             Text(
-                                if (horario == null) "Sin horario" else "${horario.apertura} - ${horario.cierre}",
+                                if (horario == null) stringResource(Res.string.est_no_schedule) else "${horario.apertura} - ${horario.cierre}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = DarkGray,
                                 fontWeight = FontWeight.Bold,
@@ -411,7 +413,7 @@ fun EstablishmentsScreen(
                             selectedEstablecimiento = null
                         }
                     ) {
-                        Text("Eliminar", fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                        Text(stringResource(Res.string.menu_delete_btn), fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
                     }
                 },
                 dismissButton = {
@@ -508,7 +510,7 @@ fun EstablecimientoCard(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = establecimiento.nombre.ifEmpty { "Sin Nombre" },
+                    text = establecimiento.nombre.ifEmpty { stringResource(Res.string.est_no_name) },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
@@ -525,7 +527,7 @@ fun EstablecimientoCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = establecimiento.ubicacion.direccion.ifEmpty { "Sin dirección" },
+                        text = establecimiento.ubicacion.direccion.ifEmpty { stringResource(Res.string.est_no_address) },
                         style = MaterialTheme.typography.bodySmall,
                         color = MediumGray,
                         maxLines = 1
@@ -543,7 +545,7 @@ fun EstablecimientoCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Opciones",
+                    contentDescription = stringResource(Res.string.est_options),
                     tint = MediumGray
                 )
             }

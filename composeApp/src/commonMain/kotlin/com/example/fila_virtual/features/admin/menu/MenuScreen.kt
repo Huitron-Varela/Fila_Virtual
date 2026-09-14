@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
@@ -90,7 +92,7 @@ fun MenuScreen(
                 contentColor = LightSurface,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Platillo")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.menu_title_add))
             }
         }
     ) {
@@ -105,7 +107,7 @@ fun MenuScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Gestión de Menú",
+                    text = stringResource(Res.string.menu_title_manage),
                     style = MaterialTheme.typography.headlineSmall,
                     color = DarkGray,
                     fontWeight = FontWeight.Bold,
@@ -181,7 +183,7 @@ fun MenuScreen(
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "Buscar platillos...",
+                placeholder = stringResource(Res.string.menu_search),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -217,7 +219,7 @@ fun MenuScreen(
                         text = if (ownerUid.isEmpty())
                             "Inicia sesión para ver tu menú" 
                         else if (searchQuery.isEmpty()) 
-                            "No hay platillos registrados aún" 
+                            stringResource(Res.string.menu_empty) 
                         else 
                             "No se encontraron resultados para '$searchQuery'",
                         color = MediumGray,
@@ -379,13 +381,13 @@ fun MenuScreen(
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Activo en Menú",
+                                text = stringResource(Res.string.menu_dish_active),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = DarkGray
                             )
                             Text(
-                                text = "Visible para clientes",
+                                text = stringResource(Res.string.menu_dish_active_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MediumGray
                             )
@@ -426,7 +428,7 @@ fun MenuScreen(
                 ) {
                     Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Editar Platillo", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.menu_title_edit), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -443,7 +445,7 @@ fun MenuScreen(
                 ) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Eliminar Platillo", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.menu_delete_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
             }
         }
@@ -455,7 +457,7 @@ fun MenuScreen(
                     Text("Eliminar platillo", fontWeight = FontWeight.Bold)
                 },
                 text = {
-                    Text("¿Estás seguro de que deseas eliminar este platillo? Esta acción no se puede deshacer.")
+                    Text(stringResource(Res.string.menu_delete_confirm))
                 },
                 confirmButton = {
                     TextButton(
@@ -465,7 +467,7 @@ fun MenuScreen(
                             selectedProducto = null
                         }
                     ) {
-                        Text("Eliminar", fontWeight = FontWeight.Bold, color = TrafficRed)
+                        Text(stringResource(Res.string.menu_delete_btn), fontWeight = FontWeight.Bold, color = TrafficRed)
                     }
                 },
                 dismissButton = {
@@ -562,7 +564,7 @@ private fun CardMenuItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Opciones",
+                    contentDescription = stringResource(Res.string.est_options),
                     tint = MediumGray
                 )
             }

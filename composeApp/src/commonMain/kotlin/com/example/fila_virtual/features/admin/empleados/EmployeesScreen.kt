@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
@@ -110,7 +112,7 @@ fun EmployeesScreen(
                     contentColor = Color.White,
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Agregar Empleado")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.emp_title_add))
                 }
             }
         }
@@ -213,7 +215,7 @@ fun EmployeesScreen(
                 SearchBar(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it },
-                    placeholder = "Buscar empleados...",
+                    placeholder = stringResource(Res.string.emp_search),
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
 
@@ -276,7 +278,7 @@ fun EmployeesScreen(
                         ) {
                             Text(
                                 text = if (searchQuery.isEmpty())
-                                    "No hay empleados registrados aún"
+                                    stringResource(Res.string.emp_empty)
                                 else
                                     "No se encontraron resultados para \"$searchQuery\"",
                                 color = MediumGray,
@@ -472,7 +474,7 @@ fun EmployeesScreen(
                             showDeleteDialog = false
                             selectedEmpleado = null
                         }) {
-                            Text("Eliminar", fontWeight = FontWeight.Bold, color = TrafficRed)
+                            Text(stringResource(Res.string.menu_delete_btn), fontWeight = FontWeight.Bold, color = TrafficRed)
                         }
                     },
                     dismissButton = {
@@ -565,7 +567,7 @@ fun CardEmpleado(
 
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "Opciones",
+                contentDescription = stringResource(Res.string.est_options),
                 tint = MediumGray,
                 modifier = Modifier
                     .size(24.dp)

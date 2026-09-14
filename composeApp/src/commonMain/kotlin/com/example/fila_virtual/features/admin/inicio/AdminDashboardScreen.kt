@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
@@ -60,9 +62,9 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    MetricSmallCard(Modifier.weight(1f), "VENTAS", "$45,230", "+ 12%", TrafficGreen)
-                    MetricSmallCard(Modifier.weight(1f), "ÓRDENES", "128", "- 8.4%", TrafficRed)
-                    MetricSmallCard(Modifier.weight(1f), "TICKET", "$350", "- 0.0%", MediumGray)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.dashboard_sales), "$45,230", "+ 12%", TrafficGreen)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.dashboard_orders), "128", "- 8.4%", TrafficRed)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.dashboard_ticket), "$350", "- 0.0%", MediumGray)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -92,13 +94,13 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Gestionar Establecimientos",
+                                text = stringResource(Res.string.dashboard_manage_establishments),
                                 fontWeight = FontWeight.Bold,
                                 color = DarkGray,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "ADMINISTRAR SUCURSALES Y LOCALES",
+                                text = stringResource(Res.string.dashboard_manage_desc),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MediumGray
                             )
@@ -123,11 +125,11 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                         verticalAlignment = Alignment.Top
                     ) {
                         Column {
-                            Text("TENDENCIA DE VENTAS", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("Rendimiento Semanal", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
+                            Text(stringResource(Res.string.dashboard_sales_trend), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.dashboard_weekly_performance), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
                         }
                         Surface(color = SoftOrangeBg, shape = RoundedCornerShape(8.dp)) {
-                            Text("ESTA SEMANA", color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Text(stringResource(Res.string.dashboard_this_week), color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                         }
                     }
 
@@ -167,7 +169,7 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
 
             // 4. SECCIÓN: MÁS VENDIDOS
             item {
-                Text("MÁS VENDIDOS", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                Text(stringResource(Res.string.dashboard_top_selling), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
             }
 
             val topProducts = DEMO_TOP_PRODUCTS
@@ -195,13 +197,13 @@ fun AdminHeader(padding: Dp) {
     ) {
         Column {
             Text(
-                text = "Panel de Control 👋",
+                text = stringResource(Res.string.dashboard_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = DarkGray
             )
             Text(
-                text = "ADMIN DASHBOARD",
+                text = stringResource(Res.string.dashboard_subtitle),
                 style = MaterialTheme.typography.labelSmall,
                 color = MediumGray,
                 letterSpacing = 1.sp,
