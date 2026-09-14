@@ -5,7 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fila_virtual.core.ErrorMessages // <-- ESTE IMPORT ARREGLA EL PRIMER ERROR
+import com.example.fila_virtual.core.ErrorMessages
+import com.example.fila_virtual.data.EstadoPedido
 import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
@@ -13,96 +14,111 @@ import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.repository.UserRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
+import io.ktor.client.HttpClient
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlin.math.round
 
-// Importaciones de Ktor para conectarnos a Mercado Pago
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.*
+class UserViewModel(
+    private val repository: UserRepository = UserRepository()
+) : ViewModel() {
 
-class UserViewModel(private val repository: UserRepository = UserRepository()) : ViewModel() {
-
-    // Llaves de prueba de Mercado Pago
     private val MERCADO_PAGO_PUBLIC_KEY = "TEST-f1ae3349-69ba-4fed-b8b4-72166ffb423d"
-    private val MERCADO_PAGO_ACCESS_TOKEN = "TEST-5274885548194765-041905-2ab93399cf879f1f6a2de1078fe249fd-2922185240"
 
     var usuario by mutableStateOf<Usuario?>(null)
         private set
-
     var isLoading by mutableStateOf(false)
         private set
-
     var errorMessage by mutableStateOf("")
         private set
-
     var numeroTarjeta by mutableStateOf("")
         private set
-
     var nombreTitular by mutableStateOf("")
         private set
-
     var fechaExpiracion by mutableStateOf("")
         private set
-
     var cvv by mutableStateOf("")
         private set
+    var walletMessage by mutableStateOf<String?>(null)
+        private set
+    var walletMessageIsError by mutableStateOf(false)
+        private set
+    var pendingWalletAction by mutableStateOf<String?>(null)
+        private set
+
+    private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
+    val carrito: StateFlow<List<ProductoCarrito>> = _carrito
 
     init {
         loadUserData()
     }
 
+    fun updatePendingWalletAction(action: String) { pendingWalletAction = action }
+    fun clearPendingWalletAction() { pendingWalletAction = null }
+
+    fun clearWalletMessage() {
+        walletMessage = null
+        walletMessageIsError = false
+    }
+
     fun loadUserData() {
         val uid = repository.getCurrentUserUid()
-        if (uid != null) {
-            viewModelScope.launch {
-                isLoading = true
-                errorMessage = ""
-                try {
-                    val data = repository.getUserData(uid)
-                    if (data != null) {
-                        usuario = data
-                    } else {
-                        errorMessage = ErrorMessages.USER_NOT_FOUND
-                    }
-                } catch (e: Exception) {
-                    errorMessage = ErrorMessages.DATABASE_ERROR
-                    println("Error técnico en loadUserData: ${e.message}")
-                } finally {
-                    isLoading = false
+        if (uid == null) return
+
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = ""
+            try {
+                val data = repository.getUserData(uid)
+                if (data != null) {
+                    usuario = data
+                } else {
+                    errorMessage = ErrorMessages.USER_NOT_FOUND
                 }
+            } catch (e: Exception) {
+                println("USER_VM: Error cargando usuario: ${e.message}")
+                errorMessage = ErrorMessages.DATABASE_ERROR
+            } finally {
+                isLoading = false
             }
         }
     }
 
     fun updateProfile(nombre: String, telefono: String, fotoUrl: String?, onResult: (Boolean) -> Unit) {
         val uid = repository.getCurrentUserUid()
-        if (uid != null) {
-            viewModelScope.launch {
-                val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
-                val updates = mutableMapOf<String, Any?>(
-                    "nombre" to nombre,
-                    "telefono" to telefono,
-                    "updatedAt" to now
-                )
-                if (fotoUrl != null) {
-                    updates["fotoUrl"] = fotoUrl
-                }
+        if (uid == null) {
+            onResult(false)
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val now = Timestamp.now().seconds * 1000
+                val updates = mutableMapOf<String, Any?>("nombre" to nombre, "telefono" to telefono, "updatedAt" to now)
+                if (fotoUrl != null) updates["fotoUrl"] = fotoUrl
 
                 val success = repository.updateUserData(uid, updates)
-                if (success) {
-                    loadUserData() // Recargar datos locales tras la actualización
-                }
+                if (success) loadUserData()
                 onResult(success)
+            } catch (e: Exception) {
+                println("USER_VM: Error actualizando perfil: ${e.message}")
+                onResult(false)
             }
-        } else {
-            onResult(false)
         }
     }
 
@@ -114,210 +130,228 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
     }
 
     fun onNumeroTarjetaChange(nuevoNumero: String) {
-        if (nuevoNumero.length <= 16) numeroTarjeta = nuevoNumero
+        numeroTarjeta = nuevoNumero.filter { it.isDigit() }.take(19)
+        limpiarErrorWalletAlEditar()
     }
 
     fun onNombreTitularChange(nuevoNombre: String) {
-        nombreTitular = nuevoNombre
+        if (nuevoNombre.any { it.isDigit() }) {
+            walletMessage = "El nombre del titular no puede contener números."
+            walletMessageIsError = true
+        } else {
+            limpiarErrorWalletAlEditar()
+        }
+        nombreTitular = nuevoNombre.filter { it.isLetter() || it.isWhitespace() || it == '\'' || it == '-' }.take(50)
     }
 
     fun onFechaExpiracionChange(nuevaFecha: String) {
-        if (nuevaFecha.length <= 4) fechaExpiracion = nuevaFecha
+        fechaExpiracion = nuevaFecha.filter { it.isDigit() }.take(4)
+        limpiarErrorWalletAlEditar()
     }
 
     fun onCvvChange(nuevoCvv: String) {
-        if (nuevoCvv.length <= 4) cvv = nuevoCvv
+        cvv = nuevoCvv.filter { it.isDigit() }.take(4)
+        limpiarErrorWalletAlEditar()
     }
 
-    fun procesarPagoSeguro() {
-        if (numeroTarjeta.length < 16) {
-            errorMessage = ErrorMessages.INVALID_CARD_NUMBER
-            return
+    private fun limpiarErrorWalletAlEditar() {
+        if (walletMessageIsError) {
+            walletMessage = null
+            walletMessageIsError = false
         }
+    }
 
-        if (cvv.length < 3) {
-            errorMessage = ErrorMessages.INVALID_CVV
-            return
-        }
+    private fun mostrarErrorWallet(mensaje: String) {
+        walletMessage = mensaje
+        walletMessageIsError = true
+        isLoading = false
+    }
 
-        if (fechaExpiracion.length < 4) {
-            errorMessage = ErrorMessages.INVALID_EXPIRATION_DATE
-            return
-        }
+    private fun validarNombreTitular(nombre: String): String? {
+        val limpio = nombre.trim()
+        if (limpio.isBlank()) return "Escribe el nombre del titular de la tarjeta."
+        if (limpio.count { it.isLetter() } < 2) return "El nombre del titular debe contener al menos dos letras."
+        if (limpio.any { it.isDigit() }) return "El nombre del titular no puede contener números."
+        val caracteresValidos = limpio.all { it.isLetter() || it.isWhitespace() || it == '\'' || it == '-' }
+        if (!caracteresValidos) return "El nombre solo puede contener letras, espacios, apóstrofes y guiones."
+        return null
+    }
 
-        val mes = fechaExpiracion.substring(0, 2).toIntOrNull() ?: 0
-        if (mes !in 1..12) {
-            errorMessage = ErrorMessages.INVALID_EXPIRATION_DATE
-            return
-        }
+    private fun validarNumeroTarjeta(numero: String): String? {
+        if (numero.isBlank()) return "Ingresa el número de la tarjeta."
+        if (!numero.all { it.isDigit() }) return "El número de tarjeta solo puede contener números."
+        if (numero.length !in 13..19) return "El número está incompleto. Debe contener entre 13 y 19 dígitos."
+        if (numero.all { it == numero.first() }) return "Número rechazado: todos los dígitos son iguales. Ese patrón no corresponde a una tarjeta válida."
+        if (!cumpleAlgoritmoLuhn(numero)) return "Número rechazado: no supera la validación Luhn. Revisa que hayas escrito correctamente todos los dígitos."
+        return null
+    }
 
-        isLoading = true
-        errorMessage = ""
-
-        viewModelScope.launch {
-            try {
-                val anio = "20" + fechaExpiracion.substring(2, 4)
-
-                val client = HttpClient {
-                    install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-                }
-
-                // <-- ESTO ARREGLA EL SEGUNDO ERROR (La variable response existe de nuevo)
-                val response: HttpResponse = client.post("https://api.mercadopago.com/v1/card_tokens?public_key=$MERCADO_PAGO_PUBLIC_KEY") {
-                    contentType(ContentType.Application.Json)
-                    setBody(buildJsonObject {
-                        put("card_number", numeroTarjeta)
-                        put("expiration_month", mes)
-                        put("expiration_year", anio.toInt())
-                        put("security_code", cvv)
-                        put("cardholder", buildJsonObject {
-                            put("name", nombreTitular.ifEmpty { "ALTOQUE USER" })
-                        })
-                    })
-                }
-
-                if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
-                    val jsonResponse = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-                    val tokenId = jsonResponse["id"]?.jsonPrimitive?.content ?: ""
-
-                    val userId = Firebase.auth.currentUser?.uid
-                    if (userId != null) {
-                        val ultimos4 = numeroTarjeta.takeLast(4)
-                        val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
-                        val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
-
-                        val nuevaTarjeta = TarjetaGuardada(
-                            ultimos4 = ultimos4,
-                            marca = "VISA",
-                            nombreTitular = nombreTitular,
-                            expiracion = expiracionFormateada,
-                            tokenId = tokenId
-                        )
-
-                        val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
-                        val yaExiste = currentMethods.any { it.ultimos4 == ultimos4 }
-
-                        if (yaExiste) {
-                            isLoading = false
-                            errorMessage = ErrorMessages.DUPLICATE_CARD
-                            return@launch
-                        }
-
-                        currentMethods.add(nuevaTarjeta)
-
-                        val metodosComoMapa = currentMethods.map { t ->
-                            mapOf(
-                                "ultimos4" to t.ultimos4,
-                                "marca" to t.marca,
-                                "nombreTitular" to t.nombreTitular,
-                                "expiracion" to t.expiracion,
-                                "tokenId" to t.tokenId
-                            )
-                        }
-
-                        Firebase.firestore.collection("usuarios").document(userId)
-                            .update(
-                                "metodosPago" to metodosComoMapa,
-                                "card_token" to tokenId,
-                                "updatedAt" to now
-                            )
-
-                        isLoading = false
-                        errorMessage = "¡Tarjeta vinculada correctamente!"
-
-                        numeroTarjeta = ""
-                        nombreTitular = ""
-                        fechaExpiracion = ""
-                        cvv = ""
-                    } else {
-                        isLoading = false
-                        errorMessage = ErrorMessages.SESSION_EXPIRED
-                    }
-                } else {
-                    isLoading = false
-                    errorMessage = ErrorMessages.PAYMENT_REJECTED
-                }
-            } catch (e: Exception) {
-                isLoading = false
-                errorMessage = ErrorMessages.NETWORK_ERROR
-                println("Error de red en procesarPagoSeguro: ${e.message}")
+    private fun cumpleAlgoritmoLuhn(numero: String): Boolean {
+        var suma = 0
+        var duplicar = false
+        for (i in numero.length - 1 downTo 0) {
+            var digito = numero[i].digitToInt()
+            if (duplicar) {
+                digito *= 2
+                if (digito > 9) digito -= 9
             }
+            suma += digito
+            duplicar = !duplicar
         }
+        return suma % 10 == 0
     }
 
-    fun realizarCobroPrueba() {
-        isLoading = true
-        errorMessage = "Procesando pago de \$15.00..."
+    private fun validarFechaExpiracion(fecha: String): String? {
+        if (fecha.length != 4) return "Ingresa la fecha de vencimiento completa en formato MM/AA."
+        if (!fecha.all { it.isDigit() }) return "La fecha de vencimiento solo puede contener números."
+        val mes = fecha.substring(0, 2).toIntOrNull() ?: return "El mes de vencimiento no es válido."
+        if (mes !in 1..12) return "El mes de vencimiento debe estar entre 01 y 12."
+        return null
+    }
+
+    private fun validarCvv(codigo: String): String? {
+        if (codigo.length !in 3..4) return "El código de seguridad debe tener 3 o 4 dígitos."
+        if (!codigo.all { it.isDigit() }) return "El código de seguridad solo puede contener números."
+        return null
+    }
+
+    fun eliminarTarjeta(ultimos4: String) {
+        val userId = Firebase.auth.currentUser?.uid ?: return
+        val metodosActuales = usuario?.metodosPago ?: return
+        val nuevosMetodos = metodosActuales.filter { it.ultimos4 != ultimos4 }
 
         viewModelScope.launch {
+            isLoading = true
             try {
-                val userId = Firebase.auth.currentUser?.uid
-                if (userId == null) {
-                    errorMessage = ErrorMessages.SESSION_EXPIRED
-                    isLoading = false
-                    return@launch
+                val metodosComoMapa = nuevosMetodos.map { tarjeta ->
+                    mapOf(
+                        "ultimos4" to tarjeta.ultimos4,
+                        "marca" to tarjeta.marca,
+                        "nombreTitular" to tarjeta.nombreTitular,
+                        "expiracion" to tarjeta.expiracion,
+                        "tokenId" to tarjeta.tokenId
+                    )
                 }
-
-                val userDoc = Firebase.firestore.collection("usuarios").document(userId).get()
-
-                val cardToken = if (userDoc.contains("card_token")) userDoc.get<String>("card_token") else ""
-                val userEmail = if (userDoc.contains("email")) userDoc.get<String>("email") else "test@test.com"
-
-                if (cardToken.isEmpty()) {
-                    errorMessage = ErrorMessages.NO_PAYMENT_METHOD_SELECTED
-                    isLoading = false
-                    return@launch
-                }
-
-                val client = HttpClient {
-                    install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-                }
-
-                // <-- AQUÍ TAMBIÉN ESTÁ LA VARIABLE RESPONSE
-                val response: HttpResponse = client.post("https://api.mercadopago.com/v1/payments") {
-                    header(HttpHeaders.Authorization, "Bearer $MERCADO_PAGO_ACCESS_TOKEN")
-                    contentType(ContentType.Application.Json)
-                    setBody(buildJsonObject {
-                        put("transaction_amount", 15.00)
-                        put("token", cardToken)
-                        put("description", "Orden de prueba en la cafetería El Naranjo")
-                        put("installments", 1)
-                        put("payment_method_id", "visa")
-                        put("payer", buildJsonObject {
-                            put("email", userEmail)
-                        })
-                    })
-                }
-
-                if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
-                    val jsonResponse = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-                    val statusPago = jsonResponse["status"]?.jsonPrimitive?.content ?: ""
-
-                    if (statusPago == "approved") {
-                        errorMessage = "¡Cobro exitoso! El dinero ya está en Mercado Pago."
-                    } else {
-                        errorMessage = ErrorMessages.PAYMENT_REJECTED
-                    }
-                } else {
-                    errorMessage = ErrorMessages.PAYMENT_REJECTED
-                    println("ERROR MERCADO PAGO: ${response.bodyAsText()}")
-                }
-
+                Firebase.firestore.collection("usuarios").document(userId)
+                    .update("metodosPago" to metodosComoMapa, "updatedAt" to Timestamp.now().seconds * 1000)
+                usuario = usuario?.copy(metodosPago = nuevosMetodos)
             } catch (e: Exception) {
-                errorMessage = ErrorMessages.NETWORK_ERROR
-                println("Fallo de conexión al cobrar: ${e.message}")
+                println("WALLET: Error eliminando tarjeta: ${e.message}")
+                errorMessage = "No se pudo eliminar la tarjeta."
             } finally {
                 isLoading = false
             }
         }
     }
 
-    // ==========================================
-    // 🛒 LÓGICA DEL CARRITO DE COMPRAS
-    // ==========================================
+    fun procesarPagoSeguro(onSuccess: () -> Unit = {}) {
+        clearWalletMessage()
 
-    private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
-    val carrito: StateFlow<List<ProductoCarrito>> = _carrito
+        validarNumeroTarjeta(numeroTarjeta)?.let { mostrarErrorWallet(it); return }
+        validarNombreTitular(nombreTitular)?.let { mostrarErrorWallet(it); return }
+        validarFechaExpiracion(fechaExpiracion)?.let { mostrarErrorWallet(it); return }
+        validarCvv(cvv)?.let { mostrarErrorWallet(it); return }
+
+        val userId = Firebase.auth.currentUser?.uid
+        if (userId == null) {
+            mostrarErrorWallet("Tu sesión expiró. Inicia sesión nuevamente.")
+            return
+        }
+
+        isLoading = true
+
+        viewModelScope.launch {
+            val client = HttpClient { expectSuccess = false }
+            try {
+                val mes = fechaExpiracion.substring(0, 2).toInt()
+                val anio = ("20" + fechaExpiracion.substring(2, 4)).toInt()
+                val body = buildJsonObject {
+                    put("card_number", numeroTarjeta)
+                    put("expiration_month", mes)
+                    put("expiration_year", anio)
+                    put("security_code", cvv)
+                    put("cardholder", buildJsonObject { put("name", nombreTitular.trim()) })
+                }.toString()
+
+                val response: HttpResponse = client.post("https://api.mercadopago.com/v1/card_tokens?public_key=$MERCADO_PAGO_PUBLIC_KEY") {
+                    header("Content-Type", "application/json")
+                    setBody(body)
+                }
+
+                val responseText = response.bodyAsText()
+                println("MERCADO_PAGO_TOKEN: HTTP ${response.status.value}")
+
+                if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
+                    val jsonResponse = Json.parseToJsonElement(responseText).jsonObject
+                    val tokenId = jsonResponse["id"]?.jsonPrimitive?.content ?: ""
+
+                    if (tokenId.isBlank()) {
+                        mostrarErrorWallet("Mercado Pago respondió, pero no fue posible validar la tarjeta.")
+                        return@launch
+                    }
+
+                    val ultimos4 = numeroTarjeta.takeLast(4)
+                    val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
+                    val marcaReal = detectarMarcaTarjeta(numeroTarjeta)
+                    val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
+
+                    val yaExiste = currentMethods.any { tarjeta ->
+                        tarjeta.ultimos4 == ultimos4 && tarjeta.marca == marcaReal && tarjeta.expiracion == expiracionFormateada
+                    }
+
+                    if (yaExiste) {
+                        mostrarErrorWallet("Esta tarjeta ya está vinculada a tu Wallet.")
+                        return@launch
+                    }
+
+                    val nuevaTarjeta = TarjetaGuardada(ultimos4, marcaReal, nombreTitular.trim(), expiracionFormateada, tokenId)
+                    currentMethods.add(nuevaTarjeta)
+
+                    val metodosComoMapa = currentMethods.map { tarjeta ->
+                        mapOf(
+                            "ultimos4" to tarjeta.ultimos4,
+                            "marca" to tarjeta.marca,
+                            "nombreTitular" to tarjeta.nombreTitular,
+                            "expiracion" to tarjeta.expiracion,
+                            "tokenId" to tarjeta.tokenId
+                        )
+                    }
+
+                    Firebase.firestore.collection("usuarios").document(userId)
+                        .update("metodosPago" to metodosComoMapa, "card_token" to tokenId, "updatedAt" to Timestamp.now().seconds * 1000)
+
+                    usuario = usuario?.copy(metodosPago = currentMethods)
+                    numeroTarjeta = ""; nombreTitular = ""; fechaExpiracion = ""; cvv = ""
+                    walletMessage = "¡Tarjeta validada y vinculada correctamente!"
+                    walletMessageIsError = false
+                    errorMessage = ""
+                    onSuccess()
+                } else {
+                    println("MERCADO_PAGO_TOKEN_ERROR: $responseText")
+                    if (response.status.value == 400) {
+                        mostrarErrorWallet("Mercado Pago rechazó los datos. Revisa el número, la fecha de vencimiento y el CVV.")
+                    } else {
+                        mostrarErrorWallet("No fue posible validar la tarjeta con Mercado Pago. Inténtalo nuevamente.")
+                    }
+                }
+            } catch (e: Exception) {
+                println("MERCADO_PAGO_TOKEN_EXCEPTION: ${e.message}")
+                mostrarErrorWallet("No pudimos conectarnos con Mercado Pago. Revisa tu conexión e inténtalo nuevamente.")
+            } finally {
+                client.close()
+                isLoading = false
+            }
+        }
+    }
+
+    private fun detectarMarcaTarjeta(numero: String): String {
+        return when {
+            numero.startsWith("4") -> "VISA"
+            numero.startsWith("34") || numero.startsWith("37") -> "AMEX"
+            numero.length >= 2 && numero.take(2).toIntOrNull() in 51..55 -> "MASTERCARD"
+            else -> "TARJETA"
+        }
+    }
 
     fun agregarAlCarrito(idProducto: String, nombre: String, precio: Double) {
         val listaActual = _carrito.value.toMutableList()
@@ -332,21 +366,40 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         _carrito.value = listaActual
     }
 
-    fun vaciarCarrito() {
-        _carrito.value = emptyList()
+    fun incrementarCantidad(idProducto: String) {
+        val listaActual = _carrito.value.toMutableList()
+        val index = listaActual.indexOfFirst { it.idProducto == idProducto }
+
+        if (index != -1) {
+            val item = listaActual[index]
+            listaActual[index] = item.copy(cantidad = item.cantidad + 1)
+            _carrito.value = listaActual
+        }
     }
 
-    fun calcularTotalCarrito(): Double {
-        return _carrito.value.sumOf { it.precio * it.cantidad }
+    fun decrementarCantidad(idProducto: String) {
+        val listaActual = _carrito.value.toMutableList()
+        val index = listaActual.indexOfFirst { it.idProducto == idProducto }
+
+        if (index != -1) {
+            val item = listaActual[index]
+            if (item.cantidad > 1) {
+                listaActual[index] = item.copy(cantidad = item.cantidad - 1)
+            } else {
+                listaActual.removeAt(index)
+            }
+            _carrito.value = listaActual
+        }
     }
 
-    // ==========================================
-    // 💳 FUNCIÓN DE COBRO + CREACIÓN DE PEDIDO REAL
-    // ==========================================
+    fun vaciarCarrito() { _carrito.value = emptyList() }
+    fun calcularTotalCarrito(): Double { return _carrito.value.sumOf { it.precio * it.cantidad } }
+    fun calcularCantidadTotalItems(): Int { return _carrito.value.sumOf { it.cantidad } }
 
     fun procesarCompraDelCarrito(
         establecimientoId: String,
         establecimientoNombre: String,
+        tarjetaSeleccionada: TarjetaGuardada?,
         onSuccess: () -> Unit
     ) {
         if (_carrito.value.isEmpty()) {
@@ -366,17 +419,17 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     return@launch
                 }
 
-                // 1. SIMULAMOS EL TIEMPO DE PAGO
-                kotlinx.coroutines.delay(1500)
+                val subtotal = calcularTotalCarrito()
+                val tarifaServicio = 5.0
+                val total = round((subtotal + tarifaServicio) * 100) / 100.0
 
-                // 2. Extraemos los datos reales del carrito
-                val descripcionReal = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
-                val montoTotalReal = calcularTotalCarrito()
+                val descripcion = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
+                println("DEMO_PAGO: Procesando pago...")
+                delay(800)
+                println("DEMO_PAGO: Pago aprobado (simulación).")
 
-                // 3. Preparamos los datos para Firebase NoSQL
-                val turnoGenerado = (1..99).random()
-                val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
-
+                val turno = (1..99).random()
+                val now = Timestamp.now().seconds * 1000
                 val pedidosRef = Firebase.firestore.collection("pedidos")
                 val nuevoPedidoRef = pedidosRef.document
 
@@ -385,26 +438,33 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     userId = userId,
                     establecimientoId = establecimientoId,
                     establecimientoNombre = establecimientoNombre,
-                    descripcion = descripcionReal,
-                    total = montoTotalReal,
-                    estado = "RECIBIDO",
-                    turno = turnoGenerado,
-                    createdAt = now
+                    descripcion = descripcion,
+                    total = total,
+                    estado = EstadoPedido.RECIBIDO,
+                    turno = turno,
+                    createdAt = now,
+                    productos = _carrito.value // 🔥 MAGIA: GUARDAMOS LOS PRODUCTOS REALES CON SU ID
                 )
 
-                // 4. Subimos el pedido y limpiamos todo
                 nuevoPedidoRef.set(nuevoPedido)
-
                 vaciarCarrito()
 
-                errorMessage = ""
                 isLoading = false
+                errorMessage = ""
                 onSuccess()
 
+                delay(4000)
+                nuevoPedidoRef.update("estado" to EstadoPedido.EN_PREPARACION.name)
+
+                delay(6000)
+                nuevoPedidoRef.update("estado" to EstadoPedido.LISTO.name)
+
+                delay(8000)
+                nuevoPedidoRef.update("estado" to EstadoPedido.ENTREGADO.name)
             } catch (e: Exception) {
-                errorMessage = ErrorMessages.TURN_GENERATION_FAILED
-                println("Error NoSQL al guardar el pedido: ${e.message}")
                 isLoading = false
+                errorMessage = "No se pudo generar el pedido."
+                println("DEMO_PEDIDO_ERROR: ${e.message}")
             }
         }
     }
