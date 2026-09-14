@@ -44,6 +44,7 @@ fun AddEstablishmentScreen(
 ) {
     val windowSize = LocalWindowSize.current
     val formPadding = windowSize.compactDp(16)
+    val allText = stringResource(Res.string.est_all)
     val uiState by viewModel.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current
     BackHandler(onBack = onBack)
@@ -66,9 +67,9 @@ fun AddEstablishmentScreen(
     }
     
     // Horario
-    var apertura by remember { mutableStateOf(establecimientoToEdit?.horario?.get(stringResource(Res.string.est_all))?.apertura ?: "09:00 AM") }
-    var cierre by remember { mutableStateOf(establecimientoToEdit?.horario?.get(stringResource(Res.string.est_all))?.cierre ?: "10:00 PM") }
-    
+    var apertura by remember { mutableStateOf(establecimientoToEdit?.horario?.get(allText)?.apertura ?: "09:00 AM") }
+    var cierre by remember { mutableStateOf(establecimientoToEdit?.horario?.get(allText)?.cierre ?: "10:00 PM") }
+
     // Estados para diálogos y selectores
     var showAperturaPicker by remember { mutableStateOf(false) }
     var showCierrePicker by remember { mutableStateOf(false) }
@@ -190,7 +191,7 @@ fun AddEstablishmentScreen(
                 activo = establecimientoToEdit?.activo ?: false,
                 ownerUid = ownerUid,
                 categorias = categoriasSeleccionadas,
-                horario = mapOf(stringResource(Res.string.est_all) to HorarioDia(apertura = apertura, cierre = cierre)),
+                horario = mapOf(allText to HorarioDia(apertura = apertura, cierre = cierre)),
                 logoUrl = establecimientoToEdit?.logoUrl ?: "",
                 createdAt = establecimientoToEdit?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()

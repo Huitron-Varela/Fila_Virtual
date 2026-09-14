@@ -86,9 +86,9 @@ fun EmployeesScreen(
     }
 
     val sucursalActual = when (currentEstablecimientoId) {
-        "TODOS" -> "Todos los Empleados"
-        "" -> "Seleccionar Sucursal"
-        else -> establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: "Sucursal desconocida"
+        "TODOS" -> stringResource(Res.string.emp_all_employees)
+        "" -> stringResource(Res.string.emp_select_branch)
+        else -> establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: stringResource(Res.string.emp_unknown_branch)
     }
 
     Scaffold(
@@ -127,7 +127,7 @@ fun EmployeesScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Gestión de Empleados",
+                    text = stringResource(Res.string.emp_title_manage),
                     style = MaterialTheme.typography.headlineSmall,
                     color = DarkGray,
                     fontWeight = FontWeight.Bold,
@@ -188,7 +188,7 @@ fun EmployeesScreen(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Todos los Empleados", fontWeight = FontWeight.Bold, color = PrimaryOrange)
+                                    Text(stringResource(Res.string.emp_all_employees), fontWeight = FontWeight.Bold, color = PrimaryOrange)
                                 }
                             },
                             onClick = {
@@ -225,7 +225,7 @@ fun EmployeesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Personal",
+                        text = stringResource(Res.string.emp_staff_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray
@@ -235,7 +235,7 @@ fun EmployeesScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = "${listaFiltrada.size} TOTAL",
+                            text = "${listaFiltrada.size} ${stringResource(Res.string.emp_total_label)}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
@@ -280,7 +280,7 @@ fun EmployeesScreen(
                                 text = if (searchQuery.isEmpty())
                                     stringResource(Res.string.emp_empty)
                                 else
-                                    "No se encontraron resultados para \"$searchQuery\"",
+                                    stringResource(Res.string.emp_no_results_query, searchQuery),
                                 color = MediumGray,
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
@@ -310,7 +310,7 @@ fun EmployeesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Selecciona una sucursal para ver los empleados",
+                        text = stringResource(Res.string.emp_select_branch_instruction),
                         color = MediumGray,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
@@ -361,10 +361,21 @@ fun EmployeesScreen(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
+                    
+                    // Traducción de roles
+                    val rolesText = emp.roles.map { role ->
+                        when (role.lowercase()) {
+                            "cajero" -> stringResource(Res.string.emp_role_cashier)
+                            "cocina" -> stringResource(Res.string.emp_role_kitchen)
+                            "entrega" -> stringResource(Res.string.emp_role_delivery)
+                            "supervisor" -> stringResource(Res.string.emp_role_supervisor)
+                            "admin" -> stringResource(Res.string.emp_role_admin_local)
+                            else -> role
+                        }
+                    }.joinToString(" • ")
+
                     Text(
-                        text = emp.roles.joinToString(" • ") { role ->
-                            role.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                        },
+                        text = rolesText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MediumGray
                     )
@@ -385,7 +396,7 @@ fun EmployeesScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (emp.activo) "ACTIVO" else "INACTIVO",
+                                text = if (emp.activo) stringResource(Res.string.emp_status_active) else stringResource(Res.string.emp_status_inactive),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (emp.activo) TrafficGreen else MediumGray
@@ -395,7 +406,7 @@ fun EmployeesScreen(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    val dateStr = if (emp.joinedAt > 0) "Registrado" else "N/A"
+                    val dateStr = if (emp.joinedAt > 0) stringResource(Res.string.emp_registered) else stringResource(Res.string.emp_not_available)
                     
                     // Mail card
                     Row(
@@ -407,7 +418,7 @@ fun EmployeesScreen(
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("CORREO ELECTRÓNICO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.emp_email_label), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
                             Text(emp.correo, style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                     }
@@ -422,7 +433,7 @@ fun EmployeesScreen(
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("CONTRATACIÓN", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.emp_joined_label), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
                             Text(dateStr, style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Medium)
                         }
                     }
@@ -442,7 +453,7 @@ fun EmployeesScreen(
                     ) {
                         Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Editar Perfil", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(Res.string.profile_edit_profile), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -458,7 +469,7 @@ fun EmployeesScreen(
                     ) {
                         Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Eliminar Empleado", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(Res.string.emp_delete_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
@@ -466,8 +477,8 @@ fun EmployeesScreen(
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Eliminar Empleado", fontWeight = FontWeight.Bold) },
-                    text = { Text("¿Estás seguro de que deseas eliminar a este empleado del establecimiento?") },
+                    title = { Text(stringResource(Res.string.emp_delete_title), fontWeight = FontWeight.Bold) },
+                    text = { Text(stringResource(Res.string.emp_delete_confirm)) },
                     confirmButton = {
                         TextButton(onClick = { 
                             viewModel.eliminarEmpleado(currentEstablecimientoId, emp.uid)
@@ -479,7 +490,7 @@ fun EmployeesScreen(
                     },
                     dismissButton = {
                         TextButton(onClick = { showDeleteDialog = false }) {
-                            Text("Cancelar", color = DarkGray)
+                            Text(stringResource(Res.string.btn_cancel), color = DarkGray)
                         }
                     }
                 )
@@ -544,8 +555,21 @@ fun CardEmpleado(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
+                
+                // Traducción de roles
+                val rolesText = empleado.roles.map { role ->
+                    when (role.lowercase()) {
+                        "cajero" -> stringResource(Res.string.emp_role_cashier)
+                        "cocina" -> stringResource(Res.string.emp_role_kitchen)
+                        "entrega" -> stringResource(Res.string.emp_role_delivery)
+                        "supervisor" -> stringResource(Res.string.emp_role_supervisor)
+                        "admin" -> stringResource(Res.string.emp_role_admin_local)
+                        else -> role
+                    }
+                }.joinToString(" • ").uppercase()
+
                 Text(
-                    text = empleado.roles.joinToString(" • ") { it.uppercase() },
+                    text = rolesText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = PrimaryOrange,
                     fontWeight = FontWeight.Bold
@@ -556,7 +580,7 @@ fun CardEmpleado(
                 val badgeColor = if (empleado.activo) TrafficGreen else MediumGray
                 Surface(color = badgeBg, shape = RoundedCornerShape(8.dp)) {
                     Text(
-                        text = if (empleado.activo) "ACTIVO" else "INACTIVO",
+                        text = if (empleado.activo) stringResource(Res.string.emp_status_active) else stringResource(Res.string.emp_status_inactive),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = badgeColor,
@@ -591,7 +615,7 @@ private fun EmployeeAvatar(
         if (fotoUrl.isNotBlank()) {
             KamelImage(
                 resource = asyncPainterResource(fotoUrl),
-                contentDescription = "Foto de perfil",
+                contentDescription = stringResource(Res.string.emp_profile_photo),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 onFailure = {

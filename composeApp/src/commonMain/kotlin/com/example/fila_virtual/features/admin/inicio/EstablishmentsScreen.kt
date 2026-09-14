@@ -92,7 +92,7 @@ fun EstablishmentsScreen(
                 SearchBar(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it },
-                    placeholder = "Buscar sucursal...",
+                    placeholder = stringResource(Res.string.est_search_placeholder),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -107,7 +107,7 @@ fun EstablishmentsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Sucursales",
+                    text = stringResource(Res.string.est_list_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -120,7 +120,7 @@ fun EstablishmentsScreen(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = "${listaFiltrada.size} TOTAL",
+                        text = "${listaFiltrada.size} ${stringResource(Res.string.emp_total_label)}",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -245,7 +245,7 @@ fun EstablishmentsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Estado del Local",
+                                text = stringResource(Res.string.est_status_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = DarkGray
@@ -258,7 +258,7 @@ fun EstablishmentsScreen(
                         }
                         
                         Text(
-                            text = if (est.activo) "ABIERTO" else "CERRADO",
+                            text = if (est.activo) stringResource(Res.string.est_status_open) else stringResource(Res.string.est_status_closed),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = if (est.activo) PrimaryOrange else MediumGray
@@ -302,7 +302,7 @@ fun EstablishmentsScreen(
                                 Icon(Icons.Default.Storefront, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(6.dp))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("CATEGORÍA", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.est_category_label), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
                             Text(
                                 est.categorias.firstOrNull() ?: stringResource(Res.string.est_no_category),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -327,7 +327,7 @@ fun EstablishmentsScreen(
                                 Icon(Icons.Outlined.Timer, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(6.dp))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("HORARIO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.est_schedule_label), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
                             val horario = est.horario[stringResource(Res.string.est_all)]
                             Text(
                                 if (horario == null) stringResource(Res.string.est_no_schedule) else "${horario.apertura} - ${horario.cierre}",
@@ -357,7 +357,7 @@ fun EstablishmentsScreen(
                 ) {
                     Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Administrar Establecimiento", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.est_admin_button), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -375,7 +375,7 @@ fun EstablishmentsScreen(
                 ) {
                     Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Editar Establecimiento", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.est_edit_button), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -391,7 +391,7 @@ fun EstablishmentsScreen(
                 ) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Eliminar Establecimiento", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.est_delete_button), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
             }
         }
@@ -400,10 +400,10 @@ fun EstablishmentsScreen(
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 title = {
-                    Text("Eliminar establecimiento", fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.est_delete_confirmation_title), fontWeight = FontWeight.Bold)
                 },
                 text = {
-                    Text("¿Estás seguro de que deseas eliminar este establecimiento? Esta acción no se puede deshacer.")
+                    Text(stringResource(Res.string.est_delete_confirmation_msg))
                 },
                 confirmButton = {
                     TextButton(
@@ -420,7 +420,7 @@ fun EstablishmentsScreen(
                     TextButton(
                         onClick = { showDeleteDialog = false }
                     ) {
-                        Text("Cancelar", color = DarkGray)
+                        Text(stringResource(Res.string.btn_cancel), color = DarkGray)
                     }
                 }
             )
@@ -493,7 +493,7 @@ fun EstablecimientoCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (establecimiento.activo) "ABIERTO" else "CERRADO",
+                            text = if (establecimiento.activo) stringResource(Res.string.est_status_open) else stringResource(Res.string.est_status_closed),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = badgeTextColor

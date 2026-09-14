@@ -225,7 +225,7 @@ fun ProfileComponent(
                     Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(windowSize.adaptiveDp(32)))
                 }
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(20)))
-                Text(stringResource(Res.string.profile_logout_confirm_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(stringResource(Res.string.profile_logout_confirm), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
                 Button(onClick = { showLogoutSheet = false; onLogout() }, modifier = Modifier.fillMaxWidth().height(windowSize.adaptiveDp(54)), shape = RoundedCornerShape(windowSize.adaptiveDp(14)), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
                     Text(stringResource(Res.string.profile_logout_confirm_btn), color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold)

@@ -84,9 +84,9 @@ fun AddEmployeeScreen(
     var expandedEstablecimiento by remember { mutableStateOf(false) }
 
     val sucursalActual = if (selectedEstablecimientoId.isEmpty()) {
-        "Seleccionar Sucursal"
+        stringResource(Res.string.emp_select_branch)
     } else {
-        establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: "Sucursal desconocida"
+        establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: stringResource(Res.string.emp_unknown_branch)
     }
 
     LaunchedEffect(uiState) {
@@ -97,13 +97,13 @@ fun AddEmployeeScreen(
     }
 
     BaseFormScreen(
-        title = if (isEditing) stringResource(Res.string.emp_title_edit) else "Añadir Empleado",
+        title = if (isEditing) stringResource(Res.string.emp_title_edit) else stringResource(Res.string.emp_add_employee),
         onBack = onNavigateBack,
         //isLoading = uiState is FormState.Loading,
-        saveButtonText = if (isEditing) stringResource(Res.string.est_save_changes) else "Vincular Empleado",
+        saveButtonText = if (isEditing) stringResource(Res.string.est_save_changes) else stringResource(Res.string.emp_bind_employee),
         onSave = {
             if (selectedEstablecimientoId.isEmpty()) {
-                localError = "Debes seleccionar una sucursal."
+                localError = "emp_error_no_branch" // we resolve via stringResource or keep key logic
             } else {
                 localError = ""
                 focusManager.clearFocus()
@@ -125,9 +125,12 @@ fun AddEmployeeScreen(
             }
         }
     ) {
+        // Resolve error message properly
+        val errorTextToShow = if (localError == "emp_error_no_branch") stringResource(Res.string.emp_error_no_branch) else localError
+
         if (!isEditing) {
             Text(
-                text = "El usuario debe tener una cuenta registrada en la app antes de poder vincularlo al establecimiento.",
+                text = stringResource(Res.string.emp_warning_registered_account),
                 color = PrimaryOrange,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
@@ -147,7 +150,7 @@ fun AddEmployeeScreen(
                         modifier = Modifier.padding(formPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Invitación enviada", fontWeight = FontWeight.Bold, color = DarkGray)
+                        Text(stringResource(Res.string.emp_invitation_sent), fontWeight = FontWeight.Bold, color = DarkGray)
                         Text(
                             text = invitationToken,
                             color = PrimaryOrange,
@@ -160,10 +163,10 @@ fun AddEmployeeScreen(
                         ) {
                             Icon(Icons.Default.ContentCopy, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Copiar código")
+                            Text(stringResource(Res.string.emp_copy_code))
                         }
                         Text(
-                            "También se envió al correo. Caduca en 24 horas.",
+                            stringResource(Res.string.emp_invitation_expiry),
                             style = MaterialTheme.typography.bodySmall,
                             color = MediumGray,
                             textAlign = TextAlign.Center,
@@ -174,7 +177,7 @@ fun AddEmployeeScreen(
             }
         } else {
             Text(
-                text = "Editando el rol de: ${empleado?.nombre}",
+                text = stringResource(Res.string.emp_editing_role, empleado?.nombre ?: ""),
                 color = DarkGray,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
@@ -183,7 +186,7 @@ fun AddEmployeeScreen(
         }
 
         InputField(
-            label = "Correo electrónico del usuario",
+            label = stringResource(Res.string.emp_user_email_label),
             value = correo,
             onValueChange = { correo = it },
             placeholder = "ejemplo@correo.com",
@@ -199,7 +202,7 @@ fun AddEmployeeScreen(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Sucursal",
+            text = stringResource(Res.string.emp_branch),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = DarkGray
@@ -258,7 +261,7 @@ fun AddEmployeeScreen(
                         onClick = {
                             selectedEstablecimientoId = sucursal.id
                             expandedEstablecimiento = false
-                            localError = ""
+                            if (localError == "emp_error_no_branch") localError = ""
                         }
                     )
                 }
@@ -267,7 +270,7 @@ fun AddEmployeeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Roles en el establecimiento",
+            text = stringResource(Res.string.emp_roles_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = DarkGray
@@ -303,15 +306,15 @@ fun AddEmployeeScreen(
             }
         )
         Text(
-            text = if (rolesSeleccionados.isEmpty()) "Selecciona al menos un rol" else "Puedes asignar varios roles",
+            text = if (rolesSeleccionados.isEmpty()) stringResource(Res.string.emp_error_no_role) else stringResource(Res.string.emp_info_multiple_roles),
             color = if (rolesSeleccionados.isEmpty()) TrafficRed else MediumGray,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        if (localError.isNotEmpty() || uiState is FormState.Error) {
+        if (errorTextToShow.isNotEmpty() || uiState is FormState.Error) {
             Spacer(modifier = Modifier.height(16.dp))
-            val errorMessage = if (localError.isNotEmpty()) localError else (uiState as FormState.Error).message
+            val errorMessage = if (errorTextToShow.isNotEmpty()) errorTextToShow else (uiState as FormState.Error).message
             Text(
                 text = errorMessage,
                 color = TrafficRed,
@@ -337,12 +340,12 @@ private fun RoleRow(
         roles.forEach { role ->
             RoleChip(
                 label = when (role) {
-                    "cajero" -> "Cajero"
-                    "cocina" -> "Cocina"
-                    "entrega" -> "Entrega"
-                    "supervisor" -> "Supervisor"
-                    stringResource(Res.string.est_all) -> "Todos"
-                    else -> "Admin Local"
+                    "cajero" -> stringResource(Res.string.emp_role_cashier)
+                    "cocina" -> stringResource(Res.string.emp_role_kitchen)
+                    "entrega" -> stringResource(Res.string.emp_role_delivery)
+                    "supervisor" -> stringResource(Res.string.emp_role_supervisor)
+                    stringResource(Res.string.est_all) -> stringResource(Res.string.emp_role_all)
+                    else -> stringResource(Res.string.emp_role_admin_local)
                 },
                 isSelected = if (role == stringResource(Res.string.est_all)) selectedRoles.containsAll(listOf("cajero", "cocina", "entrega", "supervisor", "admin")) else role in selectedRoles,
                 onClick = { onRoleClick(role) },

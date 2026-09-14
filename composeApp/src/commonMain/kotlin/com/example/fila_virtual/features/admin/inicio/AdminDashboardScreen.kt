@@ -26,23 +26,33 @@ import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
-import org.jetbrains.compose.resources.stringResource
-import fila_virtual.composeapp.generated.resources.Res
-import fila_virtual.composeapp.generated.resources.*
 
 // Datos de demostración para el dashboard — en producción vendrían del ViewModel
 private val DEMO_DAYS = listOf("L", "M", "M", "J", "V", "S", "D")
 private val DEMO_VALUES = listOf(0.4f, 0.3f, 0.6f, 0.8f, 1.0f, 0.7f, 0.5f)
-private val DEMO_TOP_PRODUCTS = listOf(
-    TopProduct("Hamburguesa Clásica", "84 unidades vendidas", "$1,250", "+ 5% hoy", TrafficGreen),
-    TopProduct("Pizza Familiar", "22 unidades vendidas", "$2,100", "Sin cambios", MediumGray)
-)
 
 @Composable
 fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.compactDp(24)
     val isCompact = windowSize.isSmallScreen
+
+    val topProducts = listOf(
+        TopProduct(
+            "Hamburguesa Clásica",
+            stringResource(Res.string.admin_dashboard_units_sold, "84"),
+            "$1,250",
+            "+ 5% ${stringResource(Res.string.admin_dashboard_today)}",
+            TrafficGreen
+        ),
+        TopProduct(
+            "Pizza Familiar",
+            stringResource(Res.string.admin_dashboard_units_sold, "22"),
+            "$2,100",
+            stringResource(Res.string.admin_dashboard_no_changes),
+            MediumGray
+        )
+    )
 
     Column(
         modifier = Modifier
@@ -175,8 +185,6 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                 Text(stringResource(Res.string.admin_dashboard_best_sellers), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
             }
 
-            val topProducts = DEMO_TOP_PRODUCTS
-
             items(topProducts) { product ->
                 TopProductCard(product)
                 Spacer(modifier = Modifier.height(12.dp))
@@ -223,7 +231,7 @@ fun AdminHeader(padding: Dp) {
         ) {
             Icon(
                 imageVector = Icons.Default.NotificationsNone,
-                contentDescription = "Notificaciones",
+                contentDescription = stringResource(Res.string.admin_dashboard_notifications),
                 modifier = Modifier.padding(10.dp),
                 tint = DarkGray
             )
