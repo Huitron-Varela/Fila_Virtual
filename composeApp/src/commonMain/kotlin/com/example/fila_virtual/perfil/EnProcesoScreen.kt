@@ -11,24 +11,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.core.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnProcesoScreen(
-    titulo: String = "Próximamente",
+    titulo: String? = null,
     onBack: () -> Unit
 ) {
     BackHandler(onBack = onBack)
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(titulo) },
+                title = { Text(titulo ?: stringResource(Res.string.in_process_default_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Regresar"
+                            contentDescription = stringResource(Res.string.in_process_back)
                         )
                     }
                 }
@@ -53,7 +55,7 @@ fun EnProcesoScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Página en proceso",
+                text = stringResource(Res.string.in_process_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -63,7 +65,7 @@ fun EnProcesoScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Estamos trabajando en esta sección. Pronto estará disponible.",
+                text = stringResource(Res.string.in_process_desc),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -75,7 +77,7 @@ fun EnProcesoScreen(
                 onClick = onBack,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Volver al perfil")
+                Text(stringResource(Res.string.in_process_btn))
             }
         }
     }

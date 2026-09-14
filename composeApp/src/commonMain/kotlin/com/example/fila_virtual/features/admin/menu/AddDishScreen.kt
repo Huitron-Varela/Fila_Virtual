@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BaseFormScreen
@@ -121,7 +123,7 @@ fun AddDishScreen(
                 )
                 
                 Text(
-                    text = if (productoToEdit == null) "¡Platillo Guardado!" else "¡Platillo Actualizado!",
+                    text = if (productoToEdit == null) stringResource(Res.string.menu_saved_success) else stringResource(Res.string.menu_updated_success),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -131,7 +133,7 @@ fun AddDishScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = if (productoToEdit == null) "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes." else "Los datos del platillo se han actualizado correctamente.",
+                    text = if (productoToEdit == null) stringResource(Res.string.menu_saved_success_desc) else stringResource(Res.string.menu_updated_success_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
@@ -220,7 +222,7 @@ fun AddDishScreen(
     }
 
     BaseFormScreen(
-        title = if (productoToEdit == null) "Agregar Platillo" else "Editar Platillo",
+        title = if (productoToEdit == null) stringResource(Res.string.menu_title_add) else stringResource(Res.string.menu_title_edit),
         onBack = onBack,
         isSaveEnabled = isFormValid,
         onSave = {
@@ -244,10 +246,10 @@ fun AddDishScreen(
                 )
             }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (productoToEdit == null) "Guardar Platillo" else "Guardar Cambios"
+        saveButtonText = if (uiState is FormState.Loading) stringResource(Res.string.est_saving) else if (productoToEdit == null) stringResource(Res.string.menu_dish_save) else stringResource(Res.string.est_save_changes)
     ) {
         FormImagePicker(
-            label = "IMAGEN DEL PLATILLO",
+            label = stringResource(Res.string.menu_dish_image),
             onClick = requestImage,
             hasImage = selectedImage != null || !productoToEdit?.imagenUrl.isNullOrBlank(),
             imageUrl = productoToEdit?.imagenUrl ?: "",
@@ -257,7 +259,7 @@ fun AddDishScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         FormTextField(
-            label = "Nombre del Platillo",
+            label = stringResource(Res.string.menu_dish_name),
             value = nombre,
             onValueChange = { nombre = it },
             placeholder = "Ej. Hamburguesa Especial AlToque"
@@ -266,10 +268,10 @@ fun AddDishScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         FormTextField(
-            label = "Descripción",
+            label = stringResource(Res.string.menu_dish_desc),
             value = descripcion,
             onValueChange = { descripcion = it },
-            placeholder = "Describe los ingredientes, alérgenos y detalles especiales...",
+            placeholder = stringResource(Res.string.menu_dish_desc_placeholder),
             singleLine = false,
             minHeight = 120
         )
@@ -277,7 +279,7 @@ fun AddDishScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         FormTextField(
-            label = "Precio",
+            label = stringResource(Res.string.menu_dish_price),
             value = precio,
             onValueChange = { precio = it },
             placeholder = "0.00",
@@ -365,7 +367,7 @@ fun AddDishScreen(
 
         // 6. CATEGORÍA
         Text(
-            text = "Categoría",
+            text = stringResource(Res.string.est_category),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = MediumGray

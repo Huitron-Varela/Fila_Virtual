@@ -30,6 +30,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.data.EmpleadoDetalle
@@ -95,10 +97,10 @@ fun AddEmployeeScreen(
     }
 
     BaseFormScreen(
-        title = if (isEditing) "Editar Empleado" else "Añadir Empleado",
+        title = if (isEditing) stringResource(Res.string.emp_title_edit) else "Añadir Empleado",
         onBack = onNavigateBack,
         //isLoading = uiState is FormState.Loading,
-        saveButtonText = if (isEditing) "Guardar Cambios" else "Vincular Empleado",
+        saveButtonText = if (isEditing) stringResource(Res.string.est_save_changes) else "Vincular Empleado",
         onSave = {
             if (selectedEstablecimientoId.isEmpty()) {
                 localError = "Debes seleccionar una sucursal."
@@ -289,10 +291,10 @@ fun AddEmployeeScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
         RoleRow(
-            roles = listOf("entrega", "todos"),
+            roles = listOf("entrega", stringResource(Res.string.est_all)),
             selectedRoles = rolesSeleccionados,
             onRoleClick = { role ->
-                rolesSeleccionados = if (role == "todos") {
+                rolesSeleccionados = if (role == stringResource(Res.string.est_all)) {
                     if (rolesSeleccionados.containsAll(rolesDisponibles)) emptyList() else rolesDisponibles
                 } else {
                     toggleRole(rolesSeleccionados, role)
@@ -338,10 +340,10 @@ private fun RoleRow(
                     "cocina" -> "Cocina"
                     "entrega" -> "Entrega"
                     "supervisor" -> "Supervisor"
-                    "todos" -> "Todos"
+                    stringResource(Res.string.est_all) -> "Todos"
                     else -> "Admin Local"
                 },
-                isSelected = if (role == "todos") selectedRoles.containsAll(listOf("cajero", "cocina", "entrega", "supervisor", "admin")) else role in selectedRoles,
+                isSelected = if (role == stringResource(Res.string.est_all)) selectedRoles.containsAll(listOf("cajero", "cocina", "entrega", "supervisor", "admin")) else role in selectedRoles,
                 onClick = { onRoleClick(role) },
                 modifier = Modifier.weight(1f)
             )
