@@ -290,11 +290,12 @@ fun AddEmployeeScreen(
             }
         )
         Spacer(modifier = Modifier.height(12.dp))
+        val allRolesText = stringResource(Res.string.est_all)
         RoleRow(
-            roles = listOf("entrega", stringResource(Res.string.est_all)),
+            roles = listOf("entrega", allRolesText),
             selectedRoles = rolesSeleccionados,
             onRoleClick = { role ->
-                rolesSeleccionados = if (role == stringResource(Res.string.est_all)) {
+                rolesSeleccionados = if (role == allRolesText) {
                     if (rolesSeleccionados.containsAll(rolesDisponibles)) emptyList() else rolesDisponibles
                 } else {
                     toggleRole(rolesSeleccionados, role)
