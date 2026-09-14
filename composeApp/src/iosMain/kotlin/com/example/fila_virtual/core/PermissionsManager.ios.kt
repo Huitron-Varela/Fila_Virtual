@@ -1,16 +1,28 @@
 package com.example.fila_virtual.core
 
 import androidx.compose.runtime.*
+import platform.Photos.PHAccessLevelReadWrite
+import platform.Photos.PHAuthorizationStatusAuthorized
+import platform.Photos.PHAuthorizationStatusLimited
+import platform.Photos.PHAuthorizationStatusNotDetermined
+import platform.Photos.PHPhotoLibrary
 
 class IosPermissionsManager : PermissionsManager {
     override fun askPermission(permission: PermissionType, callback: (Boolean) -> Unit) {
-        // En iOS los permisos se manejan de forma distinta (Info.plist)
-        // Por ahora simulamos que siempre se conceden para que compile
-        callback(true)
+        if (permission != PermissionType.GALLERY) {
+            callback(true)
+            return
+        }
+
+        PHPhotoLibrary.requestAuthorizationForAccessLevel(PHAccessLevelReadWrite) { status ->
+            callback(status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited)
+        }
     }
 
     override fun isPermissionGranted(permission: PermissionType): Boolean {
-        return true
+        if (permission != PermissionType.GALLERY) return true
+        val status = PHPhotoLibrary.authorizationStatusForAccessLevel(PHAccessLevelReadWrite)
+        return status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited
     }
 }
 

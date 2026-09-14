@@ -17,9 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
@@ -27,15 +30,29 @@ import com.example.fila_virtual.core.theme.*
 // Datos de demostración para el dashboard — en producción vendrían del ViewModel
 private val DEMO_DAYS = listOf("L", "M", "M", "J", "V", "S", "D")
 private val DEMO_VALUES = listOf(0.4f, 0.3f, 0.6f, 0.8f, 1.0f, 0.7f, 0.5f)
-private val DEMO_TOP_PRODUCTS = listOf(
-    TopProduct("Hamburguesa Clásica", "84 unidades vendidas", "$1,250", "+ 5% hoy", TrafficGreen),
-    TopProduct("Pizza Familiar", "22 unidades vendidas", "$2,100", "Sin cambios", MediumGray)
-)
 
 @Composable
-fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
+fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
-    val horizontalPadding = windowSize.adaptiveDp(24).value.dp
+    val horizontalPadding = windowSize.compactDp(24)
+    val isCompact = windowSize.isSmallScreen
+
+    val topProducts = listOf(
+        TopProduct(
+            "Hamburguesa Clásica",
+            stringResource(Res.string.admin_dashboard_units_sold, "84"),
+            "$1,250",
+            "+ 5% ${stringResource(Res.string.admin_dashboard_today)}",
+            TrafficGreen
+        ),
+        TopProduct(
+            "Pizza Familiar",
+            stringResource(Res.string.admin_dashboard_units_sold, "22"),
+            "$2,100",
+            stringResource(Res.string.admin_dashboard_no_changes),
+            MediumGray
+        )
+    )
 
     Column(
         modifier = Modifier
@@ -58,9 +75,9 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    MetricSmallCard(Modifier.weight(1f), "VENTAS", "$45,230", "+ 12%", TrafficGreen)
-                    MetricSmallCard(Modifier.weight(1f), "ÓRDENES", "128", "- 8.4%", TrafficRed)
-                    MetricSmallCard(Modifier.weight(1f), "TICKET", "$350", "- 0.0%", MediumGray)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.admin_dashboard_sales), "$45,230", "+ 12%", TrafficGreen)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.admin_dashboard_orders), "128", "- 8.4%", TrafficRed)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.admin_dashboard_ticket), "$350", "- 0.0%", MediumGray)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -71,7 +88,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onNavigateToManage() },
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = LightSurface),
                     shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -90,13 +107,13 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Gestionar Establecimientos",
+                                text = stringResource(Res.string.admin_dashboard_manage_establishments),
                                 fontWeight = FontWeight.Bold,
                                 color = DarkGray,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "ADMINISTRAR SUCURSALES Y LOCALES",
+                                text = stringResource(Res.string.admin_dashboard_manage_desc),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MediumGray
                             )
@@ -112,8 +129,8 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(24.dp))
-                        .padding(20.dp)
+                        .background(LightSurface, RoundedCornerShape(24.dp))
+                        .padding(if (isCompact) 16.dp else 20.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -121,11 +138,11 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                         verticalAlignment = Alignment.Top
                     ) {
                         Column {
-                            Text("TENDENCIA DE VENTAS", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("Rendimiento Semanal", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
+                            Text(stringResource(Res.string.admin_dashboard_sales_trend), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.admin_dashboard_weekly_performance), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
                         }
                         Surface(color = SoftOrangeBg, shape = RoundedCornerShape(8.dp)) {
-                            Text("ESTA SEMANA", color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Text(stringResource(Res.string.admin_dashboard_this_week), color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                         }
                     }
 
@@ -147,7 +164,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                                 }
                                 Box(
                                     modifier = Modifier
-                                        .width(30.dp)
+                                        .width(if (isCompact) 24.dp else 30.dp)
                                         .fillMaxHeight(DEMO_VALUES[index])
                                         .background(
                                             if (day == "V") PrimaryOrange else ExtraLightGray,
@@ -165,10 +182,8 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
 
             // 4. SECCIÓN: MÁS VENDIDOS
             item {
-                Text("MÁS VENDIDOS", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                Text(stringResource(Res.string.admin_dashboard_best_sellers), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
             }
-
-            val topProducts = DEMO_TOP_PRODUCTS
 
             items(topProducts) { product ->
                 TopProductCard(product)
@@ -193,13 +208,13 @@ fun AdminHeader(padding: Dp) {
     ) {
         Column {
             Text(
-                text = "Panel de Control 👋",
+                text = stringResource(Res.string.admin_dashboard_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = DarkGray
             )
             Text(
-                text = "ADMIN DASHBOARD",
+                text = stringResource(Res.string.admin_dashboard_subtitle),
                 style = MaterialTheme.typography.labelSmall,
                 color = MediumGray,
                 letterSpacing = 1.sp,
@@ -216,7 +231,7 @@ fun AdminHeader(padding: Dp) {
         ) {
             Icon(
                 imageVector = Icons.Default.NotificationsNone,
-                contentDescription = "Notificaciones",
+                contentDescription = stringResource(Res.string.admin_dashboard_notifications),
                 modifier = Modifier.padding(10.dp),
                 tint = DarkGray
             )
@@ -228,7 +243,7 @@ fun AdminHeader(padding: Dp) {
 fun MetricSmallCard(modifier: Modifier, title: String, value: String, trend: String, trendColor: Color) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -255,7 +270,7 @@ data class TopProduct(val name: String, val sold: String, val price: String, val
 fun TopProductCard(product: TopProduct) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {

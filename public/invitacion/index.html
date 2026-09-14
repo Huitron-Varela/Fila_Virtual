@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aceptar invitación | AlToque</title>
+  <style>
+    :root { font-family: Arial, sans-serif; color: #252525; background: #fff8f3; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; }
+    main { width: min(420px, calc(100% - 40px)); padding: 32px; text-align: center; background: white; border: 1px solid #f0dfd5; border-radius: 16px; box-sizing: border-box; }
+    h1 { margin: 0 0 12px; font-size: 26px; }
+    p { color: #666; line-height: 1.5; }
+    a { display: inline-block; margin-top: 16px; padding: 14px 22px; border-radius: 8px; background: #ff5a36; color: white; text-decoration: none; font-weight: bold; }
+    #fallback { display: none; margin-top: 20px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Invitación de equipo</h1>
+    <p id="message">Abriendo AlToque...</p>
+    <a id="open-app" href="#">Abrir aplicación</a>
+    <p id="fallback">Si la aplicación no está instalada, instálala y vuelve a abrir este enlace.</p>
+  </main>
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token');
+    const message = document.getElementById('message');
+    const openApp = document.getElementById('open-app');
+    const fallback = document.getElementById('fallback');
+    const appUrl = token ? `filavirtual://invitacion?token=${encodeURIComponent(token)}` : null;
+
+    if (!appUrl) {
+      message.textContent = 'El enlace de invitación no es válido.';
+      openApp.style.display = 'none';
+    } else {
+      openApp.href = appUrl;
+      window.setTimeout(() => {
+        window.location.href = appUrl;
+        window.setTimeout(() => {
+          message.textContent = 'Pulsa el botón para continuar en la aplicación.';
+          fallback.style.display = 'block';
+        }, 1200);
+      }, 300);
+    }
+  </script>
+</body>
+</html>

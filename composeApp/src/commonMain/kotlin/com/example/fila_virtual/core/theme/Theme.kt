@@ -16,7 +16,8 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Color.White,
     onBackground = DarkGray,
     onSurface = DarkGray,
-    error = TrafficRed
+    error = TrafficRed,
+    onError = Color.White
 )
 
 @Composable

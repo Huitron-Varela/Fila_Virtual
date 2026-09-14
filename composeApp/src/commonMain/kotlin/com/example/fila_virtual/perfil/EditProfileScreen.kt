@@ -14,19 +14,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.core.PhoneVisualTransformation
 import com.example.fila_virtual.core.isValidName
 import com.example.fila_virtual.core.isValidPhone
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.rememberPermissionsManager
@@ -45,6 +44,7 @@ fun EditProfileScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val permissions = rememberPermissionsManager()
+    val windowSize = LocalWindowSize.current
 
     var nombre by remember { mutableStateOf(usuario?.nombre ?: "") }
     var telefono by remember { mutableStateOf(if (usuario?.telefono == "Sin registrar") "" else (usuario?.telefono ?: "")) }
@@ -59,14 +59,14 @@ fun EditProfileScreen(
     if (showConfirmSheet) {
         ModalBottomSheet(
             onDismissRequest = { showConfirmSheet = false },
-            containerColor = LightSurface,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = windowSize.adaptiveDp(24), topEnd = windowSize.adaptiveDp(24))
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Confirmar cambios", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("¿Estás seguro de que deseas guardar los cambios realizados?", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(32.dp))
+            Column(modifier = Modifier.fillMaxWidth().padding(windowSize.adaptiveDp(24)).padding(bottom = windowSize.adaptiveDp(32)), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Confirmar cambios", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
+                Text("¿Estás seguro de que deseas guardar los cambios realizados?", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
                 Button(
                     onClick = {
                         showConfirmSheet = false
@@ -78,37 +78,39 @@ fun EditProfileScreen(
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                    shape = RoundedCornerShape(16.dp)
-                ) { Text("Confirmar y Guardar", color = Color.White, fontWeight = FontWeight.Bold) }
+                    modifier = Modifier.fillMaxWidth().height(windowSize.adaptiveDp(56)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(windowSize.adaptiveDp(16))
+                ) { Text("Confirmar y Guardar", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold) }
             }
         }
     }
 
     // MODAL DE FOTO
     if (showPhotoSheet) {
-        ModalBottomSheet(onDismissRequest = { showPhotoSheet = false }) {
-            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+        ModalBottomSheet(onDismissRequest = { showPhotoSheet = false }, containerColor = MaterialTheme.colorScheme.surface) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = windowSize.adaptiveDp(32))) {
                 ListItem(
-                    headlineContent = { Text("Tomar foto") },
-                    leadingContent = { Icon(Icons.Default.CameraAlt, contentDescription = null, tint = PrimaryOrange) },
+                    headlineContent = { Text("Tomar foto", color = MaterialTheme.colorScheme.onSurface) },
+                    leadingContent = { Icon(Icons.Default.CameraAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     modifier = Modifier.clickable {
                         permissions.askPermission(PermissionType.CAMERA) { granted ->
                             if (granted) { /* Lógica Cámara */ }
                             showPhotoSheet = false
                         }
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
                 )
                 ListItem(
-                    headlineContent = { Text("Elegir de la galería") },
-                    leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = PrimaryOrange) },
+                    headlineContent = { Text("Elegir de la galería", color = MaterialTheme.colorScheme.onSurface) },
+                    leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     modifier = Modifier.clickable {
                         permissions.askPermission(PermissionType.GALLERY) { granted ->
                             if (granted) { /* Lógica Galería */ }
                             showPhotoSheet = false
                         }
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
         }
@@ -120,7 +122,7 @@ fun EditProfileScreen(
         onSave = { showConfirmSheet = true },
         saveButtonText = if (isSaving) "Guardando..." else "Guardar Cambios"
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(windowSize.adaptiveDp(8)))
 
         // FOTO CON BOTÓN EDITAR
         Box(
@@ -131,15 +133,15 @@ fun EditProfileScreen(
                 ProfileHeader(usuario)
                 Surface(
                     onClick = { showPhotoSheet = true },
-                    modifier = Modifier.size(36.dp).offset(x = 4.dp, y = 4.dp),
+                    modifier = Modifier.size(windowSize.adaptiveDp(36)).offset(x = windowSize.adaptiveDp(4), y = windowSize.adaptiveDp(4)),
                     shape = CircleShape,
-                    color = PrimaryOrange,
-                    border = BorderStroke(2.dp, Color.White)
-                ) { Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.padding(8.dp)) }
+                    color = MaterialTheme.colorScheme.primary,
+                    border = BorderStroke(windowSize.adaptiveDp(2), MaterialTheme.colorScheme.surface)
+                ) { Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.padding(windowSize.adaptiveDp(8))) }
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
 
         // INPUTS
         InputField(
@@ -153,7 +155,7 @@ fun EditProfileScreen(
             isError = nombre.isNotEmpty() && nombre.length < 3
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
 
         InputField(
             label = stringResource(Res.string.label_phone),
@@ -166,19 +168,19 @@ fun EditProfileScreen(
             visualTransformation = PhoneVisualTransformation(),
             isError = telefono.isNotEmpty() && !isValidPhone(telefono)
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
 
         // EMAIL BLOQUEADO (Solo ver)
         Column(modifier = Modifier.fillMaxWidth()) {
             Text("Correo electrónico", style = MaterialTheme.typography.labelMedium, color = MediumGray, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(windowSize.adaptiveDp(8)))
             OutlinedTextField(
                 value = email, onValueChange = {}, readOnly = true, enabled = false,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(windowSize.adaptiveDp(12)),
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledBorderColor = BorderGray,
-                    disabledContainerColor = Color.White,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
                     disabledTextColor = MediumGray
                 ),
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MediumGray) }

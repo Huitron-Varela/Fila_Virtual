@@ -32,6 +32,19 @@ class EmpleadoRepository {
         }
     }
 
+    suspend fun eliminarEmpleado(establecimientoId: String, uid: String): Result<Unit> {
+        return try {
+            db.collection("establecimientos")
+                .document(establecimientoId)
+                .collection("empleados")
+                .document(uid)
+                .delete()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun obtenerEmpleados(establecimientoId: String): Result<List<Empleado>> {
         if (establecimientoId.isBlank()) return Result.success(emptyList())
         

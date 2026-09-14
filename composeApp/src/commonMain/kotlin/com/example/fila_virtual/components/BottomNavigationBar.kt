@@ -101,9 +101,9 @@ object NavigationDefaults {
 
     @Composable
     fun adminItems() = listOf(
-        NavigationItem("Inicio", Icons.Default.Dashboard, 0),
-        NavigationItem("Empleados", Icons.Default.People, 1),
-        NavigationItem("Menú", Icons.Default.RestaurantMenu, 2),
-        NavigationItem("Perfil", Icons.Default.Person, 3)
+        NavigationItem(stringResource(Res.string.admin_nav_dashboard), Icons.Default.Dashboard, 0),
+        NavigationItem(stringResource(Res.string.admin_nav_employees), Icons.Default.People, 1),
+        NavigationItem(stringResource(Res.string.admin_nav_menu), Icons.Default.RestaurantMenu, 2),
+        NavigationItem(stringResource(Res.string.admin_nav_profile), Icons.Default.Person, 3)
     )
 }

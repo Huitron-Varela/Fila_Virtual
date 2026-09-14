@@ -10,16 +10,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
 import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.data.EmpleadoDetalle
 import com.example.fila_virtual.data.Producto
-import com.example.fila_virtual.features.admin.empleados.AnadirEmpleadoScreen
-import com.example.fila_virtual.features.admin.empleados.EmpleadoDetalle
-import com.example.fila_virtual.features.admin.empleados.ScreenEmpleados
-import com.example.fila_virtual.features.admin.inicio.AñadirEstablecimientoScreen
-import com.example.fila_virtual.features.admin.inicio.EstablecimientosScreen
-import com.example.fila_virtual.features.admin.inicio.InicioAdminScreen
-import com.example.fila_virtual.features.admin.menu.AgregarPlatilloScreen
-import com.example.fila_virtual.features.admin.menu.ScreenMenu
+import com.example.fila_virtual.features.admin.empleados.AddEmployeeScreen
+import com.example.fila_virtual.features.admin.empleados.EmployeesScreen
+import com.example.fila_virtual.features.admin.inicio.AddEstablishmentScreen
+import com.example.fila_virtual.features.admin.inicio.EstablishmentsScreen
+import com.example.fila_virtual.features.admin.inicio.AdminDashboardScreen
+import com.example.fila_virtual.features.admin.menu.AddDishScreen
+import com.example.fila_virtual.features.admin.menu.MenuScreen
 import com.example.fila_virtual.perfil.EditProfileScreen
+import com.example.fila_virtual.perfil.EnProcesoScreen
+import com.example.fila_virtual.core.LegalConstants
+import com.example.fila_virtual.core.navigation.LegalScreen
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.perfil.ProfileComponent
 import kotlinx.coroutines.launch
@@ -38,6 +41,9 @@ fun AdminMainScreen(
     var isAddingEmployee by remember { mutableStateOf(false) }
     var isManagingEstablecimientos by remember { mutableStateOf(false) }
     var isAddingEstablecimiento by remember { mutableStateOf(false) }
+    var showSecurity by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
+    var showTerms by remember { mutableStateOf(false) }
     
     var selectedEstablecimientoId by remember { mutableStateOf("") }
     
@@ -46,7 +52,7 @@ fun AdminMainScreen(
     var establecimientoToEdit by remember { mutableStateOf<Establecimiento?>(null) }
 
     if (isAddingDish) {
-        AgregarPlatilloScreen(
+        AddDishScreen(
             establecimientoId = selectedEstablecimientoId,
             ownerUid = usuario.uid,
             productoToEdit = productoToEdit,
@@ -56,9 +62,10 @@ fun AdminMainScreen(
             }
         )
     } else if (isAddingEmployee) {
-        AnadirEmpleadoScreen(
+        AddEmployeeScreen(
             empleado = empleadoToEdit,
             establecimientoId = selectedEstablecimientoId,
+            ownerUid = usuario.uid,
             viewModel = viewModel(),
             onNavigateBack = {
                 isAddingEmployee = false
@@ -72,7 +79,7 @@ fun AdminMainScreen(
             onBack = { isEditingProfile = false }
         )
     } else if (isAddingEstablecimiento) {
-        AñadirEstablecimientoScreen(
+        AddEstablishmentScreen(
             ownerUid = usuario.uid,
             establecimientoToEdit = establecimientoToEdit,
             onBack = { 
@@ -81,7 +88,7 @@ fun AdminMainScreen(
             }
         )
     } else if (isManagingEstablecimientos) {
-        EstablecimientosScreen(
+        EstablishmentsScreen(
             currentAdminUid = usuario.uid,
             onBack = { isManagingEstablecimientos = false },
             onSelectEstablecimiento = { id ->
@@ -95,12 +102,23 @@ fun AdminMainScreen(
             onEditEstablecimiento = { est ->
                 establecimientoToEdit = est
                 isAddingEstablecimiento = true
-            },
-            onAddDish = { id ->
-                selectedEstablecimientoId = id
-                isAddingDish = true
-                isManagingEstablecimientos = false
             }
+        )
+    } else if (showSecurity) {
+        EnProcesoScreen(
+            titulo = "Configuración de Seguridad",
+            onBack = { showSecurity = false }
+        )
+    } else if (showHelp) {
+        EnProcesoScreen(
+            titulo = "Centro de Ayuda",
+            onBack = { showHelp = false }
+        )
+    } else if (showTerms) {
+        LegalScreen(
+            title = "Términos y Condiciones",
+            content = LegalConstants.TERMINOS_Y_CONDICIONES,
+            onBack = { showTerms = false }
         )
     } else {
         Scaffold(
@@ -119,12 +137,14 @@ fun AdminMainScreen(
                 modifier = Modifier.padding(padding)
             ) { page ->
                 when (page) {
-                    0 -> InicioAdminScreen(
+                    0 -> AdminDashboardScreen(
                         onNavigateToManage = { isManagingEstablecimientos = true }
                     )
-                    1 -> ScreenEmpleados(
+                    1 -> EmployeesScreen(
                         establecimientoId = selectedEstablecimientoId,
-                        onNavigateToAdd = { 
+                        ownerUid = usuario.uid,
+                        onNavigateToAdd = { establecimientoId ->
+                            selectedEstablecimientoId = establecimientoId
                             isAddingEmployee = true
                         },
                         onEditEmpleado = { emp ->
@@ -132,7 +152,7 @@ fun AdminMainScreen(
                             isAddingEmployee = true
                         }
                     )
-                    2 -> ScreenMenu(
+                    2 -> MenuScreen(
                         establecimientoId = selectedEstablecimientoId,
                         ownerUid = usuario.uid,
                         onNavigateToAdd = {
@@ -147,7 +167,10 @@ fun AdminMainScreen(
                         usuario = usuario,
                         viewModel = viewModel,
                         onLogout = { viewModel.signOut(onLogout) },
-                        onNavigateToEdit = { isEditingProfile = true }
+                        onNavigateToEdit = { isEditingProfile = true },
+                        onNavigateToSecurity = { showSecurity = true },
+                        onNavigateToHelp = { showHelp = true },
+                        onNavigateToTerms = { showTerms = true }
                     )
                 }
             }

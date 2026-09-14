@@ -12,6 +12,8 @@ import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.MainScreen
+import com.example.fila_virtual.features.empleados.AceptarInvitacionScreen
+import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.rememberResponsiveSize
 
@@ -24,7 +26,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun App(
     onGoogleSignIn: () -> Unit = {},
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    invitationToken: String? = null
 ) {
     BoxWithConstraints {
         // OPTIMIZACIÓN: Utilizamos el 'remember' que definiste en tu ResponsiveUtils
@@ -38,6 +41,8 @@ fun App(
                 var currentScreen by remember { mutableStateOf(startScreen) }
 
                 val scope = rememberCoroutineScope()
+                val mainUserViewModel = remember { UserViewModel() }
+                var pendingInvitationToken by remember { mutableStateOf(invitationToken) }
 
                 // FIX PARA GOOGLE: Escuchamos el cambio de sesión
                 LaunchedEffect(Unit) {
@@ -62,14 +67,30 @@ fun App(
                             )
                         }
                         Screens.Home -> {
-                            MainScreen(
-                                onLogout = {
-                                    scope.launch {
-                                        onSignOut()
-                                        currentScreen = Screens.Login
+                            if (pendingInvitationToken != null) {
+                                AceptarInvitacionScreen(
+                                    token = pendingInvitationToken!!,
+                                    onAccepted = {
+                                        mainUserViewModel.loadUserData()
+                                        pendingInvitationToken = null
+                                        currentScreen = Screens.Home
+                                    },
+                                    onCancel = {
+                                        pendingInvitationToken = null
+                                        currentScreen = Screens.Home
                                     }
-                                }
-                            )
+                                )
+                            } else {
+                                MainScreen(
+                                    viewModel = mainUserViewModel,
+                                    onLogout = {
+                                        scope.launch {
+                                            onSignOut()
+                                            currentScreen = Screens.Login
+                                        }
+                                    }
+                                )
+                            }
                         }
                         else -> {}
                     }

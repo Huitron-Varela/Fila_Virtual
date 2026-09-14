@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BaseFormScreen
@@ -31,12 +33,18 @@ import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.features.admin.ProductoViewModel
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.core.SelectedImage
+import com.example.fila_virtual.core.PermissionType
+import com.example.fila_virtual.core.rememberPermissionsManager
+import com.example.fila_virtual.core.rememberImagePicker
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.fila_virtual.core.LocalWindowSize
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AgregarPlatilloScreen(
+fun AddDishScreen(
     establecimientoId: String,
     ownerUid: String,
     productoToEdit: Producto? = null,
@@ -44,6 +52,9 @@ fun AgregarPlatilloScreen(
     viewModel: ProductoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
+    val windowSize = LocalWindowSize.current
+    val formPadding = windowSize.compactDp(16)
+    val isCompact = windowSize.isSmallScreen
     val uiState by viewModel.uiState.collectAsState()
 
     var selectedEstablecimientoId by remember { mutableStateOf(productoToEdit?.establecimientoId?.takeIf { it.isNotBlank() } ?: establecimientoId) }
@@ -63,8 +74,20 @@ fun AgregarPlatilloScreen(
     var nombre by remember { mutableStateOf(productoToEdit?.nombre ?: "") }
     var descripcion by remember { mutableStateOf(productoToEdit?.descripcion ?: "") }
     var precio by remember { mutableStateOf(productoToEdit?.precio?.toString() ?: "") }
+    var selectedImage by remember { mutableStateOf<SelectedImage?>(null) }
+    val imagePicker = rememberImagePicker { selectedImage = it }
+    val permissions = rememberPermissionsManager()
+    val requestImage = {
+        if (permissions.isPermissionGranted(PermissionType.GALLERY)) {
+            imagePicker()
+        } else {
+            permissions.askPermission(PermissionType.GALLERY) { granted ->
+                if (granted) imagePicker()
+            }
+        }
+    }
 
-    val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
+    val categorias = ProductMenuCategories.options
     var categoriaSeleccionada by remember { mutableStateOf(productoToEdit?.categoria ?: "") }
     
     var showSuccessSheet by remember { mutableStateOf(false) }
@@ -83,7 +106,7 @@ fun AgregarPlatilloScreen(
                 viewModel.resetState()
                 onBack() 
             },
-            containerColor = Color.White
+            containerColor = LightSurface
         ) {
             Column(
                 modifier = Modifier
@@ -100,7 +123,7 @@ fun AgregarPlatilloScreen(
                 )
                 
                 Text(
-                    text = if (productoToEdit == null) "¡Platillo Guardado!" else "¡Platillo Actualizado!",
+                    text = if (productoToEdit == null) stringResource(Res.string.menu_saved_success) else stringResource(Res.string.menu_updated_success),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -110,11 +133,11 @@ fun AgregarPlatilloScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = if (productoToEdit == null) "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes." else "Los datos del platillo se han actualizado correctamente.",
+                    text = if (productoToEdit == null) stringResource(Res.string.menu_saved_success_desc) else stringResource(Res.string.menu_updated_success_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = formPadding)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -125,7 +148,7 @@ fun AgregarPlatilloScreen(
                         viewModel.resetState()
                         onBack() 
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(windowSize.compactDp(56)),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -133,7 +156,7 @@ fun AgregarPlatilloScreen(
                         "Entendido",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color.White
+                        color = LightSurface
                     )
                 }
             }
@@ -143,10 +166,10 @@ fun AgregarPlatilloScreen(
     if (showNoEstablecimientosAlert) {
         ModalBottomSheet(
             onDismissRequest = { showNoEstablecimientosAlert = false },
-            containerColor = Color.White
+            containerColor = LightSurface
         ) {
             Column(
-                modifier = Modifier
+            modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 40.dp),
@@ -176,14 +199,14 @@ fun AgregarPlatilloScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = formPadding)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
                     onClick = { showNoEstablecimientosAlert = false },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(windowSize.compactDp(56)),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -191,7 +214,7 @@ fun AgregarPlatilloScreen(
                         "Entendido",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color.White
+                        color = LightSurface
                     )
                 }
             }
@@ -199,7 +222,7 @@ fun AgregarPlatilloScreen(
     }
 
     BaseFormScreen(
-        title = if (productoToEdit == null) "Agregar Platillo" else "Editar Platillo",
+        title = if (productoToEdit == null) stringResource(Res.string.menu_title_add) else stringResource(Res.string.menu_title_edit),
         onBack = onBack,
         isSaveEnabled = isFormValid,
         onSave = {
@@ -214,23 +237,29 @@ fun AgregarPlatilloScreen(
                     descripcion = descripcion.trim(),
                     precio = precioDouble,
                     categoria = categoriaSeleccionada,
+                    imagenUrl = productoToEdit?.imagenUrl ?: "",
+                    imageBytes = selectedImage?.bytes,
+                    imageMimeType = selectedImage?.mimeType ?: "image/jpeg",
                     onSuccess = {
                         showSuccessSheet = true
                     }
                 )
             }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (productoToEdit == null) "Guardar Platillo" else "Guardar Cambios"
+        saveButtonText = if (uiState is FormState.Loading) stringResource(Res.string.est_saving) else if (productoToEdit == null) stringResource(Res.string.menu_dish_save) else stringResource(Res.string.est_save_changes)
     ) {
         FormImagePicker(
-            label = "IMAGEN DEL PLATILLO",
-            onClick = { /* Selector de imagen */ }
+            label = stringResource(Res.string.menu_dish_image),
+            onClick = requestImage,
+            hasImage = selectedImage != null || !productoToEdit?.imagenUrl.isNullOrBlank(),
+            imageUrl = productoToEdit?.imagenUrl ?: "",
+            previewBytes = selectedImage?.bytes
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         FormTextField(
-            label = "Nombre del Platillo",
+            label = stringResource(Res.string.menu_dish_name),
             value = nombre,
             onValueChange = { nombre = it },
             placeholder = "Ej. Hamburguesa Especial AlToque"
@@ -239,10 +268,10 @@ fun AgregarPlatilloScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         FormTextField(
-            label = "Descripción",
+            label = stringResource(Res.string.menu_dish_desc),
             value = descripcion,
             onValueChange = { descripcion = it },
-            placeholder = "Describe los ingredientes, alérgenos y detalles especiales...",
+            placeholder = stringResource(Res.string.menu_dish_desc_placeholder),
             singleLine = false,
             minHeight = 120
         )
@@ -250,7 +279,7 @@ fun AgregarPlatilloScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         FormTextField(
-            label = "Precio",
+            label = stringResource(Res.string.menu_dish_price),
             value = precio,
             onValueChange = { precio = it },
             placeholder = "0.00",
@@ -278,7 +307,7 @@ fun AgregarPlatilloScreen(
 
         Box {
             Surface(
-                color = Color.White,
+                color = LightSurface,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -320,7 +349,7 @@ fun AgregarPlatilloScreen(
             DropdownMenu(
                 expanded = showSucursalSelector,
                 onDismissRequest = { showSucursalSelector = false },
-                modifier = Modifier.background(Color.White)
+                modifier = Modifier.background(LightSurface)
             ) {
                 establecimientos.forEach { sucursal ->
                     DropdownMenuItem(
@@ -338,7 +367,7 @@ fun AgregarPlatilloScreen(
 
         // 6. CATEGORÍA
         Text(
-            text = "Categoría",
+            text = stringResource(Res.string.est_category),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = MediumGray
@@ -353,14 +382,14 @@ fun AgregarPlatilloScreen(
             categorias.forEach { categoria ->
                 val isSelected = categoria == categoriaSeleccionada
                 Surface(
-                    color = if (isSelected) PrimaryOrange else Color.White,
+                    color = if (isSelected) PrimaryOrange else LightSurface,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.clickable { categoriaSeleccionada = categoria },
                     border = if (!isSelected) BorderStroke(1.dp, BorderGray) else null
                 ) {
                     Text(
                         text = categoria,
-                        color = if (isSelected) Color.White else DarkGray,
+                        color = if (isSelected) LightSurface else DarkGray,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal

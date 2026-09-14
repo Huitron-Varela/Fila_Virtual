@@ -36,6 +36,16 @@ class EstablecimientoRepository {
         }
     }
 
+    suspend fun eliminarEstablecimiento(id: String): Result<Unit> {
+        if (id.isEmpty()) return Result.failure(Exception("ID no válido"))
+        return try {
+            establecimientosRef.document(id).delete()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun getEstablecimientos(): Flow<List<Establecimiento>> {
         return establecimientosRef.snapshots.map { snapshot ->
             snapshot.documents.map { it.data<Establecimiento>() }

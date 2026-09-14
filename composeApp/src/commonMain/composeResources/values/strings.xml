@@ -1,14 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ========================================== -->
+    <!-- GENERAL Y APP                              -->
+    <!-- ========================================== -->
     <string name="app_name">AlToque</string>
-    <string name="login_welcome">¡Qué bueno verte de nuevo!</string>
-    <string name="register_welcome">¡Es un gusto tenerte aquí!</string>
-    <string name="create_account">Crear cuenta</string>
     <string name="app_title_fila">Fila </string>
     <string name="app_title_virtual">Virtual</string>
     <string name="btn_get_started">Comenzar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="general_edit">Editar</string>
+    <string name="general_summary">Resumen</string>
+    <string name="general_subtotal">Subtotal</string>
+    <string name="general_service_fee">Tarifa de servicio</string>
+    <string name="general_total">Total</string>
+    <string name="general_attention">Atención</string>
+    <string name="general_understood">Entendido</string>
+
+    <!-- ========================================== -->
+    <!-- NAVEGACIÓN PRINCIPAL                       -->
+    <!-- ========================================== -->
+    <string name="nav_home">INICIO</string>
+    <string name="nav_orders">ÓRDENES</string>
+    <string name="nav_wallet">BILLETERA</string>
+    <string name="nav_profile">PERFIL</string>
+
+    <!-- ========================================== -->
+    <!-- AUTENTICACIÓN (LOGIN Y REGISTRO)           -->
+    <!-- ========================================== -->
+    <string name="login_welcome">¡Qué bueno verte de nuevo!</string>
+    <string name="register_welcome">¡Es un gusto tenerte aquí!</string>
+    <string name="create_account">Crear cuenta</string>
     <string name="btn_login">Iniciar sesión</string>
     <string name="btn_register">Registrarse</string>
     <string name="social_login_label">O regístrate con</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="no_account">¿No tienes una cuenta? </string>
+    <string name="already_have_account">¿Ya tienes una cuenta? </string>
+    <string name="error_fill_fields">Por favor llena todos los campos</string>
+
+    <!-- Etiquetas y Placeholders (Formularios) -->
     <string name="label_name">Nombre completo</string>
     <string name="label_phone">Teléfono</string>
     <string name="label_email">Correo electrónico</string>
@@ -19,36 +49,16 @@
     <string name="placeholder_email">ejemplo@correo.com</string>
     <string name="placeholder_password">Mínimo 8 caracteres</string>
     <string name="placeholder_confirm_password">Confirma tu contraseña</string>
-    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
-    <string name="no_account">¿No tienes una cuenta? </string>
-    <string name="already_have_account">¿Ya tienes una cuenta? </string>
+
+    <!-- Términos y Condiciones -->
     <string name="terms_accept">Acepto los </string>
     <string name="terms_user_agreement">Términos y Condiciones</string>
     <string name="terms_and"> y la </string>
     <string name="terms_privacy_policy">Política de Privacidad.</string>
-    <string name="error_fill_fields">Por favor llena todos los campos</string>
 
-    <string name="profile_section_account">MI CUENTA</string>
-    <string name="profile_personal_info">Información Personal</string>
-    <string name="profile_addresses">Direcciones</string>
-    <string name="profile_section_preferences">PREFERENCIAS</string>
-    <string name="profile_language">Idioma</string>
-    <string name="profile_notifications">Notificaciones</string>
-    <string name="profile_section_support">SOPORTE</string>
-    <string name="profile_help">Ayuda</string>
-    <string name="profile_about">Acerca de</string>
-    <string name="profile_logout">Cerrar Sesión</string>
-    <string name="profile_logout_confirm">¿Cerrar Sesión?</string>
-    <string name="profile_logout_msg">Tendrás que volver a ingresar tus datos.</string>
-    <string name="profile_select_language">Selecciona Idioma</string>
-    <string name="btn_cancel">Cancelar</string>
-    <string name="member_since">MIEMBRO DESDE 2024</string>
-
-    <string name="nav_home">INICIO</string>
-    <string name="nav_orders">ÓRDENES</string>
-    <string name="nav_wallet">BILLETERA</string>
-    <string name="nav_profile">PERFIL</string>
-
+    <!-- ========================================== -->
+    <!-- INICIO (HOME)                              -->
+    <!-- ========================================== -->
     <string name="home_greeting">Hola,</string>
     <string name="home_welcome">Bienvenido</string>
     <string name="home_search_placeholder">¿Qué se te antoja hoy?</string>
@@ -57,25 +67,28 @@
     <string name="home_featured">Establecimientos destacados</string>
     <string name="home_see_all_establishments">VER TODOS</string>
 
+    <!-- ========================================== -->
+    <!-- ÓRDENES                                    -->
+    <!-- ========================================== -->
     <string name="orders_title">Mis Órdenes</string>
     <string name="orders_empty">Aún no tienes órdenes</string>
     <string name="orders_empty_desc">¡Pide algo delicioso ahora!</string>
 
+    <!-- ========================================== -->
+    <!-- BILLETERA Y MÉTODOS DE PAGO                -->
+    <!-- ========================================== -->
     <string name="wallet_title">Mi Billetera</string>
     <string name="wallet_balance_label">Saldo disponible</string>
     <string name="wallet_add_money">Recargar Dinero</string>
     <string name="wallet_recent_transactions">Transacciones recientes</string>
     <string name="wallet_no_movements">No hay movimientos recientes</string>
-
     <string name="wallet_payment_methods_title">Métodos de Pago</string>
     <string name="wallet_no_linked_cards">No tienes tarjetas vinculadas</string>
     <string name="wallet_linked_account">Cuenta vinculada</string>
     <string name="wallet_add_new_method">Añadir nuevo método de pago</string>
-
     <string name="wallet_how_to_pay">¿Cómo quieres pagar?</string>
     <string name="wallet_mp_subtitle">Dinero en cuenta y cuotas</string>
     <string name="wallet_new_card">Nueva Tarjeta</string>
-
     <string name="wallet_enter_card_title">Ingresa tu tarjeta</string>
     <string name="wallet_card_number">Número de la tarjeta</string>
     <string name="wallet_card_name">Nombre como aparece en la tarjeta</string>
@@ -83,29 +96,224 @@
     <string name="wallet_card_expiry_placeholder">MMAA</string>
     <string name="wallet_card_cvv">CVV</string>
     <string name="wallet_link_card_button">Vincular Tarjeta</string>
-
     <string name="wallet_success_title">¡Tarjeta vinculada!</string>
     <string name="wallet_success_desc">Tu método de pago se ha guardado correctamente y está listo para usarse en AlToque.</string>
     <string name="wallet_accept_button">Aceptar</string>
 
-
-    <string name="cart_ending_in">terminada en</string>
-    <string name="cart_expires">Expira</string>
-    <string name="cart_no_cards_message">No tienes tarjetas vinculadas. Agrega una desde la pestaña Billetera.</string>
+    <!-- ========================================== -->
+    <!-- CARRITO Y CHECKOUT                         -->
+    <!-- ========================================== -->
     <string name="cart_title">Carrito</string>
-    <string name="cart_info_title">Tu pedido generará un turno de atención</string>
-    <string name="cart_info_desc">Acércate al mostrador cuando tu turno aparezca en pantalla.</string>
     <string name="cart_empty">El carrito está vacío</string>
     <string name="cart_your_order">Tu Pedido</string>
+    <string name="cart_info_title">Tu pedido generará un turno de atención</string>
+    <string name="cart_info_desc">Acércate al mostrador cuando tu turno aparezca en pantalla.</string>
     <string name="cart_payment_method">Método de Pago</string>
     <string name="cart_no_payment">Sin método de pago</string>
+    <string name="cart_no_cards_message">No tienes tarjetas vinculadas. Agrega una desde la pestaña Billetera.</string>
     <string name="cart_tap_to_select">Toca para seleccionar o agregar</string>
-    <string name="cart_pay_button">Pagar y Generar Turno</string>
     <string name="cart_select_payment">Selecciona método de pago</string>
+    <string name="cart_pay_button">Pagar y Generar Turno</string>
+    <string name="cart_ending_in">terminada en</string>
+    <string name="cart_expires">Expira</string>
 
-    <string name="general_edit">Editar</string>
-    <string name="general_summary">Resumen</string>
-    <string name="general_subtotal">Subtotal</string>
-    <string name="general_service_fee">Tarifa de servicio</string>
-    <string name="general_total">Total</string>
+    <!-- ========================================== -->
+    <!-- PERFIL DE USUARIO                          -->
+    <!-- ========================================== -->
+    <string name="profile_screen_title">Perfil</string>
+    <string name="profile_default_user">Usuario</string>
+    <string name="member_since">MIEMBRO DESDE 2024</string>
+    <string name="profile_verified_account">Cuenta Verificada</string>
+    <string name="profile_edit">Editar Perfil</string>
+    <string name="profile_edit_profile">Editar Perfil</string>
+
+    <!-- Secciones del Perfil -->
+    <string name="profile_section_account">MI CUENTA</string>
+    <string name="profile_personal_info">Información Personal</string>
+    <string name="profile_addresses">Direcciones</string>
+
+    <string name="profile_section_preferences">PREFERENCIAS</string>
+    <string name="profile_language">Idioma</string>
+    <string name="profile_select_language">Selecciona Idioma</string>
+    <string name="profile_changing_language">Cambiando idioma...</string>
+    <string name="profile_notifications">Notificaciones</string>
+
+    <string name="profile_section_support">SOPORTE</string>
+    <string name="profile_help">Ayuda</string>
+    <string name="profile_about">Acerca de</string>
+    <string name="profile_help_center">Centro de Ayuda</string>
+
+    <string name="profile_security">Seguridad</string>
+    <string name="profile_security_section">Seguridad</string>
+    <string name="profile_security_config">Configuración de Seguridad</string>
+
+    <string name="profile_others">Otros</string>
+    <string name="profile_others_section">Otros</string>
+    <string name="profile_terms">Términos y Condiciones</string>
+
+    <!-- Cerrar Sesión -->
+    <string name="profile_logout">Cerrar Sesión</string>
+    <string name="profile_logout_confirm">¿Cerrar Sesión?</string>
+    <string name="profile_logout_msg">Tendrás que volver a ingresar tus datos.</string>
+    <string name="profile_logout_btn">Sí, cerrar sesión</string>
+    <string name="profile_logout_confirm_btn">Sí, cerrar sesión</string>
+
+    <!-- ========================================== -->
+    <!-- PANEL DE ADMINISTRADOR (DASHBOARD)         -->
+    <!-- ========================================== -->
+    <string name="admin_dashboard_title">Panel de Control 👋</string>
+    <string name="admin_dashboard_subtitle">RESUMEN GENERAL</string>
+    <string name="admin_dashboard_sales">VENTAS</string>
+    <string name="admin_dashboard_orders">ÓRDENES</string>
+    <string name="admin_dashboard_ticket">TICKET</string>
+    <string name="admin_dashboard_manage_establishments">Gestionar Establecimientos</string>
+    <string name="admin_dashboard_manage_desc">ADMINISTRAR SUCURSALES Y LOCALES</string>
+    <string name="admin_dashboard_sales_trend">TENDENCIA DE VENTAS</string>
+    <string name="admin_dashboard_weekly_performance">Rendimiento Semanal</string>
+    <string name="admin_dashboard_this_week">ESTA SEMANA</string>
+    <string name="admin_dashboard_best_sellers">MÁS VENDIDOS</string>
+    <string name="admin_dashboard_units_sold">%1$s unidades vendidas</string>
+    <string name="admin_dashboard_no_changes">Sin cambios</string>
+    <string name="admin_dashboard_today">hoy</string>
+    <string name="admin_dashboard_notifications">Notificaciones</string>
+
+    <!-- Menú de Administrador -->
+    <string name="admin_nav_dashboard">INICIO</string>
+    <string name="admin_nav_menu">MENÚ</string>
+    <string name="admin_nav_employees">EMPLEADOS</string>
+    <string name="admin_nav_profile">PERFIL</string>
+    <string name="nav_admin_home">Inicio</string>
+    <string name="nav_admin_employees">Empleados</string>
+    <string name="nav_admin_menu">Menú</string>
+
+    <!-- ========================================== -->
+    <!-- ESTABLECIMIENTOS                           -->
+    <!-- ========================================== -->
+    <string name="est_search_placeholder">Buscar sucursal...</string>
+    <string name="est_list_title">Sucursales</string>
+    <string name="est_status_title">Estado del Local</string>
+    <string name="est_status_open">ABIERTO</string>
+    <string name="est_status_closed">CERRADO</string>
+    <string name="est_category_label">CATEGORÍA</string>
+    <string name="est_schedule_label">HORARIO</string>
+    <string name="est_admin_button">Administrar Establecimiento</string>
+    <string name="est_edit_button">Editar Establecimiento</string>
+    <string name="est_delete_button">Eliminar Establecimiento</string>
+    <string name="est_delete_confirmation_title">Eliminar Establecimiento</string>
+    <string name="est_delete_confirmation_msg">¿Estás seguro de que deseas eliminar este establecimiento? Esta acción no se puede deshacer.</string>
+    <string name="est_all_branches">Todas las Sucursales</string>
+    <string name="est_select_branch">Seleccionar Sucursal</string>
+
+    <!-- ========================================== -->
+    <!-- EMPLEADOS                                  -->
+    <!-- ========================================== -->
+    <string name="emp_search">Buscar empleado...</string>
+    <string name="emp_title_manage">Gestión de Empleados</string>
+    <string name="emp_title_add">Añadir Empleado</string>
+    <string name="emp_title_edit">Editar Empleado</string>
+    <string name="emp_delete_title">Eliminar empleado</string>
+    <string name="emp_delete_confirm">¿Estás seguro de que deseas eliminar a este empleado de tu establecimiento? Esta acción no se puede deshacer.</string>
+    <string name="emp_staff_title">Personal</string>
+    <string name="emp_total_label">TOTAL</string>
+    <string name="emp_all_employees">Todos los Empleados</string>
+    <string name="emp_no_results_query">No se encontraron resultados para \"%1$s\"</string>
+    <string name="emp_select_branch_instruction">Selecciona una sucursal para ver los empleados</string>
+    <string name="emp_status_active">ACTIVO</string>
+    <string name="emp_status_inactive">INACTIVO</string>
+    <string name="emp_joined_label">CONTRATACIÓN</string>
+    <string name="emp_email_label">CORREO ELECTRÓNICO</string>
+    <string name="emp_profile_photo">Foto de perfil</string>
+    <string name="emp_registered">Registrado</string>
+    <string name="emp_not_available">N/A</string>
+
+    <!-- Títulos y Botones -->
+    <string name="emp_add_employee">Añadir Empleado</string>
+    <string name="emp_bind_employee">Vincular Empleado</string>
+    <string name="emp_copy_code">Copiar código</string>
+
+    <!-- Campos de Texto, Etiquetas y Selectores -->
+    <string name="emp_user_email_label">Correo electrónico del usuario</string>
+    <string name="emp_branch">Sucursal</string>
+    <string name="emp_select_branch">Seleccionar Sucursal</string>
+    <string name="emp_unknown_branch">Sucursal desconocida</string>
+    <string name="emp_roles_title">Roles en el establecimiento</string>
+
+    <!-- Mensajes, Avisos y Errores -->
+    <string name="emp_warning_registered_account">El usuario debe tener una cuenta registrada en la app antes de poder vincularlo al establecimiento.</string>
+    <string name="emp_invitation_sent">Invitación enviada</string>
+    <string name="emp_invitation_expiry">También se envió al correo. Caduca en 24 horas.</string>
+    <string name="emp_error_no_branch">Debes seleccionar una sucursal.</string>
+    <string name="emp_error_no_role">Selecciona al menos un rol</string>
+    <string name="emp_info_multiple_roles">Puedes asignar varios roles</string>
+    <string name="emp_editing_role">Editando el rol de: %1$s</string>
+    <string name="emp_empty">No hay empleados registrados aún</string>
+
+    <!-- Nombres de Roles (Visual) -->
+    <string name="emp_role_cashier">Cajero</string>
+    <string name="emp_role_kitchen">Cocina</string>
+    <string name="emp_role_delivery">Entrega</string>
+    <string name="emp_role_supervisor">Supervisor</string>
+    <string name="emp_role_admin_local">Admin Local</string>
+    <string name="emp_role_all">Todos</string>
+
+    <!-- ========================================== -->
+    <!-- GESTIÓN DE ESTABLECIMIENTOS (DASHBOARD)     -->
+    <!-- ========================================== -->
+    <string name="est_title_manage">Mis Establecimientos</string>
+    <string name="est_title_add">Registrar Nuevo Local</string>
+    <string name="est_title_edit">Editar Local</string>
+    <string name="est_no_results">No se encontraron resultados</string>
+    <string name="est_empty">No hay establecimientos registrados</string>
+    <string name="est_options">Opciones</string>
+    <string name="est_name">Nombre del Establecimiento</string>
+    <string name="est_category">Categoría</string>
+    <string name="est_address">Dirección Completa</string>
+    <string name="est_schedule">Horario de Atención (Ej. L-V 9am - 10pm)</string>
+    <string name="est_save">Guardar Establecimiento</string>
+    <string name="est_save_changes">Guardar Cambios</string>
+    <string name="est_saving">Guardando...</string>
+    <string name="est_all">todos</string>
+    <string name="est_visibility">Visibilidad en la app para clientes</string>
+    <string name="est_no_name">Sin Nombre</string>
+    <string name="est_no_category">Sin categoría</string>
+    <string name="est_no_address">Sin dirección</string>
+    <string name="est_no_schedule">Sin horario</string>
+
+    <!-- ========================================== -->
+    <!-- MENÚ / PLATILLOS                           -->
+    <!-- ========================================== -->
+    <string name="menu_title_manage">Gestión de Menú</string>
+    <string name="menu_title_add">Añadir Platillo</string>
+    <string name="menu_title_edit">Editar Platillo</string>
+    <string name="menu_search">Buscar en el menú...</string>
+    <string name="menu_empty">El menú está vacío</string>
+    <string name="menu_dish_name">Nombre del platillo</string>
+    <string name="menu_dish_desc">Descripción</string>
+    <string name="menu_dish_desc_placeholder">Ej. Deliciosa hamburguesa con queso, lechuga y tomate...</string>
+    <string name="menu_dish_price">Precio</string>
+    <string name="menu_dish_image">Foto del platillo</string>
+    <string name="menu_dish_save">Guardar Platillo</string>
+    <string name="menu_dish_active">Activo en Menú</string>
+    <string name="menu_dish_active_desc">Visible para los clientes en la app</string>
+    <string name="menu_saved_success">¡Platillo guardado!</string>
+    <string name="menu_saved_success_desc">El platillo se ha guardado correctamente en tu menú.</string>
+    <string name="menu_updated_success">¡Platillo actualizado!</string>
+    <string name="menu_updated_success_desc">Los cambios se han guardado correctamente.</string>
+    <string name="menu_delete_title">Eliminar platillo</string>
+    <string name="menu_delete_confirm">¿Estás seguro de que deseas eliminar este platillo? Esta acción no se puede deshacer.</string>
+    <string name="menu_delete_btn">Eliminar</string>
+    <string name="menu_login_required">Inicia sesión para ver tu menú</string>
+    <string name="menu_no_results">No se encontraron resultados para \"%1$s\"</string>
+    <string name="menu_no_description">Sin descripción disponible.</string>
+    <string name="menu_no_establishments_desc">No tienes ningún establecimiento creado. Debes crear un establecimiento primero antes de poder agregar platillos a un menú.</string>
+
+    <!-- ========================================== -->
+    <!-- PÁGINAS EN PROCESO                         -->
+    <!-- ========================================== -->
+    <string name="in_process_default_title">Próximamente</string>
+    <string name="in_process_back">Volver</string>
+    <string name="in_process_title">Página en proceso</string>
+    <string name="in_process_desc">Estamos trabajando en esta sección. Estará disponible muy pronto.</string>
+    <string name="in_process_btn">Volver al perfil</string>
+
 </resources>

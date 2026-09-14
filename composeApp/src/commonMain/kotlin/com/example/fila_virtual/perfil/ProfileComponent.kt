@@ -24,12 +24,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +42,10 @@ fun ProfileComponent(
     usuario: Usuario?,
     viewModel: UserViewModel,
     onLogout: () -> Unit,
-    onNavigateToEdit: () -> Unit
+    onNavigateToEdit: () -> Unit,
+    onNavigateToSecurity: () -> Unit = {},
+    onNavigateToHelp: () -> Unit = {},
+    onNavigateToTerms: () -> Unit = {}
 ) {
     val windowSize = LocalWindowSize.current
 
@@ -47,7 +55,9 @@ fun ProfileComponent(
     val logoutSheetState = rememberModalBottomSheetState()
     val languageSheetState = rememberModalBottomSheetState()
 
-    var selectedLanguage by remember { mutableStateOf("Español") }
+    var selectedLanguage by remember { 
+        mutableStateOf(if (com.example.fila_virtual.core.getCurrentLanguage().startsWith("en")) "English" else "Español") 
+    }
 
     Column(
         modifier = Modifier
@@ -55,7 +65,7 @@ fun ProfileComponent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         Text(
-            text = "Perfil",
+            text = stringResource(Res.string.profile_screen_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -84,7 +94,7 @@ fun ProfileComponent(
                     Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
 
                     Text(
-                        text = usuario?.nombre ?: "Usuario",
+                        text = usuario?.nombre ?: stringResource(Res.string.profile_default_user),
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(22)),
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -108,7 +118,7 @@ fun ProfileComponent(
                         ) {
                             Icon(Icons.Default.Verified, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(windowSize.adaptiveDp(16)))
                             Spacer(modifier = Modifier.width(windowSize.adaptiveDp(6)))
-                            Text("Cuenta Verificada", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                            Text(stringResource(Res.string.profile_verified_account), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -116,24 +126,24 @@ fun ProfileComponent(
 
             Spacer(modifier = Modifier.height(windowSize.adaptiveDp(24)))
 
-            ProfileSectionCard(icon = Icons.Default.PersonOutline, title = "Información Personal", iconTint = MaterialTheme.colorScheme.primary) {
+            ProfileSectionCard(icon = Icons.Default.PersonOutline, title = stringResource(Res.string.profile_personal_info), iconTint = MaterialTheme.colorScheme.primary) {
                 ProfileOptionItem(
                     icon = Icons.Default.Edit,
-                    title = "Editar Perfil",
+                    title = stringResource(Res.string.profile_edit_profile),
                     onClick = onNavigateToEdit
                 )
             }
 
-            ProfileSectionCard(icon = Icons.Default.Security, title = "Seguridad", iconTint = MaterialTheme.colorScheme.primary) {
-                ProfileOptionItem(icon = Icons.Default.Lock, title = "Configuración de Seguridad")
+            ProfileSectionCard(icon = Icons.Default.Security, title = stringResource(Res.string.profile_security_section), iconTint = MaterialTheme.colorScheme.primary) {
+                ProfileOptionItem(icon = Icons.Default.Lock, title = stringResource(Res.string.profile_security_config), onClick = onNavigateToSecurity)
             }
 
-            ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = "Otros", iconTint = MaterialTheme.colorScheme.primary) {
-                ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = "Centro de Ayuda")
-                ProfileOptionItem(icon = Icons.Default.Description, title = "Términos y Condiciones")
+            ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = stringResource(Res.string.profile_others_section), iconTint = MaterialTheme.colorScheme.primary) {
+                ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = stringResource(Res.string.profile_help_center), onClick = onNavigateToHelp)
+                ProfileOptionItem(icon = Icons.Default.Description, title = stringResource(Res.string.profile_terms), onClick = onNavigateToTerms)
                 ProfileOptionItem(
                     icon = Icons.Default.Translate,
-                    title = "Idioma",
+                    title = stringResource(Res.string.profile_language),
                     extraText = if (selectedLanguage == "Español") "ES" else "EN",
                     onClick = { showLanguageSheet = true }
                 )
@@ -147,25 +157,64 @@ fun ProfileComponent(
                 shape = RoundedCornerShape(windowSize.adaptiveDp(16)),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.onError)
                 Spacer(modifier = Modifier.width(windowSize.adaptiveDp(8)))
-                Text("Cerrar Sesión", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.profile_logout), color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
 
             Spacer(modifier = Modifier.height(windowSize.adaptiveDp(40)))
         }
     }
 
+    var isChangingLanguage by remember { mutableStateOf(false) }
+
     if (showLanguageSheet) {
         ModalBottomSheet(onDismissRequest = { showLanguageSheet = false }, sheetState = languageSheetState, containerColor = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.fillMaxWidth().padding(windowSize.adaptiveDp(24)).padding(bottom = windowSize.adaptiveDp(32)), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Seleccionar idioma", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(stringResource(Res.string.profile_select_language), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(24)))
-                LanguageOption("🇲🇽", "Español", selectedLanguage == "Español") { selectedLanguage = "Español"; showLanguageSheet = false }
-                LanguageOption("🇺🇸", "English", selectedLanguage == "English") { selectedLanguage = "English"; showLanguageSheet = false }
+                LanguageOption("🇲🇽", "Español", selectedLanguage == "Español") {
+                    showLanguageSheet = false
+                    if (selectedLanguage != "Español") {
+                        selectedLanguage = "Español"
+                        isChangingLanguage = true
+                        com.example.fila_virtual.core.changeAppLanguage("es")
+                    }
+                }
+                LanguageOption("🇺🇸", "English", selectedLanguage == "English") {
+                    showLanguageSheet = false
+                    if (selectedLanguage != "English") {
+                        selectedLanguage = "English"
+                        isChangingLanguage = true
+                        com.example.fila_virtual.core.changeAppLanguage("en")
+                    }
+                }
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
-                TextButton(onClick = { showLanguageSheet = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar", color = MediumGray) }
+                TextButton(onClick = { showLanguageSheet = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.btn_cancel), color = MediumGray) }
             }
+        }
+    }
+
+    if (isChangingLanguage) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { }) {
+            Box(
+                modifier = Modifier
+                    .size(windowSize.adaptiveDp(200))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(windowSize.adaptiveDp(16))),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
+                    Text(stringResource(Res.string.profile_changing_language), color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+        
+        // Hide the dialog after a short delay since recomposition will happen
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(1500)
+            isChangingLanguage = false
         }
     }
 
@@ -176,12 +225,12 @@ fun ProfileComponent(
                     Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(windowSize.adaptiveDp(32)))
                 }
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(20)))
-                Text("¿Cerrar sesión?", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(stringResource(Res.string.profile_logout_confirm), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
                 Button(onClick = { showLogoutSheet = false; onLogout() }, modifier = Modifier.fillMaxWidth().height(windowSize.adaptiveDp(54)), shape = RoundedCornerShape(windowSize.adaptiveDp(14)), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                    Text("Sí, cerrar sesión", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.profile_logout_confirm_btn), color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold)
                 }
-                TextButton(onClick = { showLogoutSheet = false }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar", color = MaterialTheme.colorScheme.onSurface) }
+                TextButton(onClick = { showLogoutSheet = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.btn_cancel), color = MaterialTheme.colorScheme.onSurface) }
             }
         }
     }

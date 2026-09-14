@@ -54,6 +54,15 @@ class ProductoRepository {
         }
     }
 
+    suspend fun eliminarProducto(productoId: String): Result<Unit> {
+        return try {
+            productosRef.document(productoId).delete()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun getProductosGlobales(): Flow<List<Producto>> {
         return productosRef
             .snapshots
