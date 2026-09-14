@@ -52,9 +52,9 @@ fun AddEmployeeScreen(
     establecimientoId: String,
     ownerUid: String,
     viewModel: EmpleadoViewModel,
-    establecimientoViewModel: EstablecimientoViewModel = viewModel(),
     onNavigateBack: () -> Unit
 ) {
+    val establecimientoViewModel: EstablecimientoViewModel = viewModel()
     val windowSize = LocalWindowSize.current
     val formPadding = windowSize.compactDp(16)
     val uiState by viewModel.uiState.collectAsState()
@@ -104,24 +104,24 @@ fun AddEmployeeScreen(
         onSave = {
             if (selectedEstablecimientoId.isEmpty()) {
                 localError = "Debes seleccionar una sucursal."
-                return@BaseFormScreen
-            }
-            localError = ""
-            focusManager.clearFocus()
-            if (isEditing) {
-                viewModel.guardarEmpleadoPorCorreo(
-                    correoBusqueda = correo,
-                    roles = rolesSeleccionados,
-                    establecimientoId = selectedEstablecimientoId,
-                    onSuccess = onNavigateBack
-                )
             } else {
-                viewModel.enviarInvitacionPorCorreo(
-                    correo = correo,
-                    roles = rolesSeleccionados,
-                    establecimientoId = selectedEstablecimientoId,
-                    onSent = { invitationToken = it }
-                )
+                localError = ""
+                focusManager.clearFocus()
+                if (isEditing) {
+                    viewModel.guardarEmpleadoPorCorreo(
+                        correoBusqueda = correo,
+                        roles = rolesSeleccionados,
+                        establecimientoId = selectedEstablecimientoId,
+                        onSuccess = onNavigateBack
+                    )
+                } else {
+                    viewModel.enviarInvitacionPorCorreo(
+                        correo = correo,
+                        roles = rolesSeleccionados,
+                        establecimientoId = selectedEstablecimientoId,
+                        onSent = { invitationToken = it }
+                    )
+                }
             }
         }
     ) {

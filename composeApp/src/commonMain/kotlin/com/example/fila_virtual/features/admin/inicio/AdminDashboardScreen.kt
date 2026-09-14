@@ -26,6 +26,9 @@ import fila_virtual.composeapp.generated.resources.*
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 // Datos de demostración para el dashboard — en producción vendrían del ViewModel
 private val DEMO_DAYS = listOf("L", "M", "M", "J", "V", "S", "D")
@@ -62,9 +65,9 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.dashboard_sales), "$45,230", "+ 12%", TrafficGreen)
-                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.dashboard_orders), "128", "- 8.4%", TrafficRed)
-                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.dashboard_ticket), "$350", "- 0.0%", MediumGray)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.admin_dashboard_sales), "$45,230", "+ 12%", TrafficGreen)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.admin_dashboard_orders), "128", "- 8.4%", TrafficRed)
+                    MetricSmallCard(Modifier.weight(1f), stringResource(Res.string.admin_dashboard_ticket), "$350", "- 0.0%", MediumGray)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -94,13 +97,13 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(Res.string.dashboard_manage_establishments),
+                                text = stringResource(Res.string.admin_dashboard_manage_establishments),
                                 fontWeight = FontWeight.Bold,
                                 color = DarkGray,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = stringResource(Res.string.dashboard_manage_desc),
+                                text = stringResource(Res.string.admin_dashboard_manage_desc),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MediumGray
                             )
@@ -125,11 +128,11 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
                         verticalAlignment = Alignment.Top
                     ) {
                         Column {
-                            Text(stringResource(Res.string.dashboard_sales_trend), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text(stringResource(Res.string.dashboard_weekly_performance), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
+                            Text(stringResource(Res.string.admin_dashboard_sales_trend), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.admin_dashboard_weekly_performance), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
                         }
                         Surface(color = SoftOrangeBg, shape = RoundedCornerShape(8.dp)) {
-                            Text(stringResource(Res.string.dashboard_this_week), color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            Text(stringResource(Res.string.admin_dashboard_this_week), color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                         }
                     }
 
@@ -169,7 +172,7 @@ fun AdminDashboardScreen(onNavigateToManage: () -> Unit = {}) {
 
             // 4. SECCIÓN: MÁS VENDIDOS
             item {
-                Text(stringResource(Res.string.dashboard_top_selling), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                Text(stringResource(Res.string.admin_dashboard_best_sellers), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
             }
 
             val topProducts = DEMO_TOP_PRODUCTS
@@ -197,13 +200,13 @@ fun AdminHeader(padding: Dp) {
     ) {
         Column {
             Text(
-                text = stringResource(Res.string.dashboard_title),
+                text = stringResource(Res.string.admin_dashboard_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = DarkGray
             )
             Text(
-                text = stringResource(Res.string.dashboard_subtitle),
+                text = stringResource(Res.string.admin_dashboard_subtitle),
                 style = MaterialTheme.typography.labelSmall,
                 color = MediumGray,
                 letterSpacing = 1.sp,

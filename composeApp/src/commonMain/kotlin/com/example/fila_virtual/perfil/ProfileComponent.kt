@@ -32,6 +32,9 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +65,7 @@ fun ProfileComponent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         Text(
-            text = stringResource(Res.string.nav_profile),
+            text = stringResource(Res.string.profile_screen_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -91,7 +94,7 @@ fun ProfileComponent(
                     Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
 
                     Text(
-                        text = usuario?.nombre ?: "Usuario",
+                        text = usuario?.nombre ?: stringResource(Res.string.profile_default_user),
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(22)),
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -126,16 +129,16 @@ fun ProfileComponent(
             ProfileSectionCard(icon = Icons.Default.PersonOutline, title = stringResource(Res.string.profile_personal_info), iconTint = MaterialTheme.colorScheme.primary) {
                 ProfileOptionItem(
                     icon = Icons.Default.Edit,
-                    title = stringResource(Res.string.profile_edit),
+                    title = stringResource(Res.string.profile_edit_profile),
                     onClick = onNavigateToEdit
                 )
             }
 
-            ProfileSectionCard(icon = Icons.Default.Security, title = "Seguridad", iconTint = MaterialTheme.colorScheme.primary) {
+            ProfileSectionCard(icon = Icons.Default.Security, title = stringResource(Res.string.profile_security_section), iconTint = MaterialTheme.colorScheme.primary) {
                 ProfileOptionItem(icon = Icons.Default.Lock, title = stringResource(Res.string.profile_security_config), onClick = onNavigateToSecurity)
             }
 
-            ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = "Otros", iconTint = MaterialTheme.colorScheme.primary) {
+            ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = stringResource(Res.string.profile_others_section), iconTint = MaterialTheme.colorScheme.primary) {
                 ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = stringResource(Res.string.profile_help_center), onClick = onNavigateToHelp)
                 ProfileOptionItem(icon = Icons.Default.Description, title = stringResource(Res.string.profile_terms), onClick = onNavigateToTerms)
                 ProfileOptionItem(
