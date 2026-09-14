@@ -108,4 +108,37 @@
     <string name="general_subtotal">Subtotal</string>
     <string name="general_service_fee">Tarifa de servicio</string>
     <string name="general_total">Total</string>
+
+    <!-- Admin Dashboard -->
+    <string name="admin_dashboard_title">Panel de Control 👋</string>
+    <string name="admin_dashboard_subtitle">RESUMEN GENERAL</string>
+    <string name="admin_dashboard_sales">VENTAS</string>
+    <string name="admin_dashboard_orders">ÓRDENES</string>
+    <string name="admin_dashboard_ticket">TICKET</string>
+    <string name="admin_dashboard_manage_establishments">Gestionar Establecimientos</string>
+    <string name="admin_dashboard_manage_desc">ADMINISTRAR SUCURSALES Y LOCALES</string>
+    <string name="admin_dashboard_sales_trend">TENDENCIA DE VENTAS</string>
+    <string name="admin_dashboard_weekly_performance">Rendimiento Semanal</string>
+    <string name="admin_dashboard_this_week">ESTA SEMANA</string>
+    <string name="admin_dashboard_best_sellers">MÁS VENDIDOS</string>
+
+    <!-- Admin Menu -->
+    <string name="admin_nav_dashboard">INICIO</string>
+    <string name="admin_nav_menu">MENÚ</string>
+    <string name="admin_nav_employees">EMPLEADOS</string>
+    <string name="admin_nav_profile">PERFIL</string>
+
+    <!-- Profile Component -->
+    <string name="profile_screen_title">Perfil</string>
+    <string name="profile_default_user">Usuario</string>
+    <string name="profile_verified_account">Cuenta Verificada</string>
+    <string name="profile_edit_profile">Editar Perfil</string>
+    <string name="profile_security_section">Seguridad</string>
+    <string name="profile_security_config">Configuración de Seguridad</string>
+    <string name="profile_others_section">Otros</string>
+    <string name="profile_help_center">Centro de Ayuda</string>
+    <string name="profile_terms">Términos y Condiciones</string>
+    <string name="profile_changing_language">Cambiando idioma...</string>
+    <string name="profile_logout_btn">Sí, cerrar sesión</string>
+
 </resources>

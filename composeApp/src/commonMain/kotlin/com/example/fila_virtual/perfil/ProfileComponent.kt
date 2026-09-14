@@ -30,6 +30,9 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +63,7 @@ fun ProfileComponent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         Text(
-            text = "Perfil",
+            text = stringResource(Res.string.profile_screen_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -89,7 +92,7 @@ fun ProfileComponent(
                     Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
 
                     Text(
-                        text = usuario?.nombre ?: "Usuario",
+                        text = usuario?.nombre ?: stringResource(Res.string.profile_default_user),
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(22)),
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -113,7 +116,7 @@ fun ProfileComponent(
                         ) {
                             Icon(Icons.Default.Verified, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(windowSize.adaptiveDp(16)))
                             Spacer(modifier = Modifier.width(windowSize.adaptiveDp(6)))
-                            Text("Cuenta Verificada", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                            Text(stringResource(Res.string.profile_verified_account), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -121,24 +124,24 @@ fun ProfileComponent(
 
             Spacer(modifier = Modifier.height(windowSize.adaptiveDp(24)))
 
-            ProfileSectionCard(icon = Icons.Default.PersonOutline, title = "Información Personal", iconTint = MaterialTheme.colorScheme.primary) {
+            ProfileSectionCard(icon = Icons.Default.PersonOutline, title = stringResource(Res.string.profile_personal_info), iconTint = MaterialTheme.colorScheme.primary) {
                 ProfileOptionItem(
                     icon = Icons.Default.Edit,
-                    title = "Editar Perfil",
+                    title = stringResource(Res.string.profile_edit_profile),
                     onClick = onNavigateToEdit
                 )
             }
 
-            ProfileSectionCard(icon = Icons.Default.Security, title = "Seguridad", iconTint = MaterialTheme.colorScheme.primary) {
-                ProfileOptionItem(icon = Icons.Default.Lock, title = "Configuración de Seguridad", onClick = onNavigateToSecurity)
+            ProfileSectionCard(icon = Icons.Default.Security, title = stringResource(Res.string.profile_security_section), iconTint = MaterialTheme.colorScheme.primary) {
+                ProfileOptionItem(icon = Icons.Default.Lock, title = stringResource(Res.string.profile_security_config), onClick = onNavigateToSecurity)
             }
 
-            ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = "Otros", iconTint = MaterialTheme.colorScheme.primary) {
-                ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = "Centro de Ayuda", onClick = onNavigateToHelp)
-                ProfileOptionItem(icon = Icons.Default.Description, title = "Términos y Condiciones", onClick = onNavigateToTerms)
+            ProfileSectionCard(icon = Icons.Default.MoreHoriz, title = stringResource(Res.string.profile_others_section), iconTint = MaterialTheme.colorScheme.primary) {
+                ProfileOptionItem(icon = Icons.AutoMirrored.Filled.Help, title = stringResource(Res.string.profile_help_center), onClick = onNavigateToHelp)
+                ProfileOptionItem(icon = Icons.Default.Description, title = stringResource(Res.string.profile_terms), onClick = onNavigateToTerms)
                 ProfileOptionItem(
                     icon = Icons.Default.Translate,
-                    title = "Idioma",
+                    title = stringResource(Res.string.profile_language),
                     extraText = if (selectedLanguage == "Español") "ES" else "EN",
                     onClick = { showLanguageSheet = true }
                 )
@@ -154,7 +157,7 @@ fun ProfileComponent(
             ) {
                 Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.onError)
                 Spacer(modifier = Modifier.width(windowSize.adaptiveDp(8)))
-                Text("Cerrar Sesión", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.profile_logout), color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
             }
 
             Spacer(modifier = Modifier.height(windowSize.adaptiveDp(40)))
