@@ -36,7 +36,10 @@ data class Usuario(
     val metodosPago: List<TarjetaGuardada> = emptyList(),
     val verificado: Boolean = false,
     val activo: Boolean = true,
+
+    // 🔥 CAMPO NECESARIO PARA LA BILLETERA
+    val mercadoPagoVinculado: Boolean = false,
+
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L
 )
-
