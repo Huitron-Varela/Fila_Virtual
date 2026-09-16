@@ -74,6 +74,19 @@ class UserViewModel(
     fun clearWalletMessage() {
         walletMessage = null
         walletMessageIsError = false
+        errorMessage = "" // Limpiamos errores de MP también
+    }
+
+    fun toggleMercadoPagoVinculado(vincular: Boolean) {
+        val uid = usuario?.uid ?: return
+        viewModelScope.launch {
+            try {
+                Firebase.firestore.collection("usuarios").document(uid).update("mercadoPagoVinculado" to vincular)
+                usuario = usuario?.copy(mercadoPagoVinculado = vincular)
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
     }
 
     fun loadUserData() {
@@ -91,7 +104,6 @@ class UserViewModel(
                     errorMessage = ErrorMessages.USER_NOT_FOUND
                 }
             } catch (e: Exception) {
-                println("USER_VM: Error cargando usuario: ${e.message}")
                 errorMessage = ErrorMessages.DATABASE_ERROR
             } finally {
                 isLoading = false
@@ -116,7 +128,6 @@ class UserViewModel(
                 if (success) loadUserData()
                 onResult(success)
             } catch (e: Exception) {
-                println("USER_VM: Error actualizando perfil: ${e.message}")
                 onResult(false)
             }
         }
@@ -172,46 +183,22 @@ class UserViewModel(
         if (limpio.isBlank()) return "Escribe el nombre del titular de la tarjeta."
         if (limpio.count { it.isLetter() } < 2) return "El nombre del titular debe contener al menos dos letras."
         if (limpio.any { it.isDigit() }) return "El nombre del titular no puede contener números."
-        val caracteresValidos = limpio.all { it.isLetter() || it.isWhitespace() || it == '\'' || it == '-' }
-        if (!caracteresValidos) return "El nombre solo puede contener letras, espacios, apóstrofes y guiones."
         return null
     }
 
     private fun validarNumeroTarjeta(numero: String): String? {
         if (numero.isBlank()) return "Ingresa el número de la tarjeta."
-        if (!numero.all { it.isDigit() }) return "El número de tarjeta solo puede contener números."
-        if (numero.length !in 13..19) return "El número está incompleto. Debe contener entre 13 y 19 dígitos."
-        if (numero.all { it == numero.first() }) return "Número rechazado: todos los dígitos son iguales. Ese patrón no corresponde a una tarjeta válida."
-        if (!cumpleAlgoritmoLuhn(numero)) return "Número rechazado: no supera la validación Luhn. Revisa que hayas escrito correctamente todos los dígitos."
+        if (numero.length !in 13..19) return "El número está incompleto."
         return null
     }
 
-    private fun cumpleAlgoritmoLuhn(numero: String): Boolean {
-        var suma = 0
-        var duplicar = false
-        for (i in numero.length - 1 downTo 0) {
-            var digito = numero[i].digitToInt()
-            if (duplicar) {
-                digito *= 2
-                if (digito > 9) digito -= 9
-            }
-            suma += digito
-            duplicar = !duplicar
-        }
-        return suma % 10 == 0
-    }
-
     private fun validarFechaExpiracion(fecha: String): String? {
-        if (fecha.length != 4) return "Ingresa la fecha de vencimiento completa en formato MM/AA."
-        if (!fecha.all { it.isDigit() }) return "La fecha de vencimiento solo puede contener números."
-        val mes = fecha.substring(0, 2).toIntOrNull() ?: return "El mes de vencimiento no es válido."
-        if (mes !in 1..12) return "El mes de vencimiento debe estar entre 01 y 12."
+        if (fecha.length != 4) return "Ingresa formato MM/AA."
         return null
     }
 
     private fun validarCvv(codigo: String): String? {
-        if (codigo.length !in 3..4) return "El código de seguridad debe tener 3 o 4 dígitos."
-        if (!codigo.all { it.isDigit() }) return "El código de seguridad solo puede contener números."
+        if (codigo.length !in 3..4) return "Debe tener 3 o 4 dígitos."
         return null
     }
 
@@ -236,7 +223,6 @@ class UserViewModel(
                     .update("metodosPago" to metodosComoMapa, "updatedAt" to Timestamp.now().seconds * 1000)
                 usuario = usuario?.copy(metodosPago = nuevosMetodos)
             } catch (e: Exception) {
-                println("WALLET: Error eliminando tarjeta: ${e.message}")
                 errorMessage = "No se pudo eliminar la tarjeta."
             } finally {
                 isLoading = false
@@ -279,14 +265,13 @@ class UserViewModel(
                 }
 
                 val responseText = response.bodyAsText()
-                println("MERCADO_PAGO_TOKEN: HTTP ${response.status.value}")
 
                 if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
                     val jsonResponse = Json.parseToJsonElement(responseText).jsonObject
                     val tokenId = jsonResponse["id"]?.jsonPrimitive?.content ?: ""
 
                     if (tokenId.isBlank()) {
-                        mostrarErrorWallet("Mercado Pago respondió, pero no fue posible validar la tarjeta.")
+                        mostrarErrorWallet("No fue posible validar la tarjeta.")
                         return@launch
                     }
 
@@ -294,15 +279,6 @@ class UserViewModel(
                     val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
                     val marcaReal = detectarMarcaTarjeta(numeroTarjeta)
                     val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
-
-                    val yaExiste = currentMethods.any { tarjeta ->
-                        tarjeta.ultimos4 == ultimos4 && tarjeta.marca == marcaReal && tarjeta.expiracion == expiracionFormateada
-                    }
-
-                    if (yaExiste) {
-                        mostrarErrorWallet("Esta tarjeta ya está vinculada a tu Wallet.")
-                        return@launch
-                    }
 
                     val nuevaTarjeta = TarjetaGuardada(ultimos4, marcaReal, nombreTitular.trim(), expiracionFormateada, tokenId)
                     currentMethods.add(nuevaTarjeta)
@@ -327,16 +303,10 @@ class UserViewModel(
                     errorMessage = ""
                     onSuccess()
                 } else {
-                    println("MERCADO_PAGO_TOKEN_ERROR: $responseText")
-                    if (response.status.value == 400) {
-                        mostrarErrorWallet("Mercado Pago rechazó los datos. Revisa el número, la fecha de vencimiento y el CVV.")
-                    } else {
-                        mostrarErrorWallet("No fue posible validar la tarjeta con Mercado Pago. Inténtalo nuevamente.")
-                    }
+                    mostrarErrorWallet("Mercado Pago rechazó los datos.")
                 }
             } catch (e: Exception) {
-                println("MERCADO_PAGO_TOKEN_EXCEPTION: ${e.message}")
-                mostrarErrorWallet("No pudimos conectarnos con Mercado Pago. Revisa tu conexión e inténtalo nuevamente.")
+                mostrarErrorWallet("No pudimos conectarnos. Revisa tu conexión.")
             } finally {
                 client.close()
                 isLoading = false
@@ -347,7 +317,8 @@ class UserViewModel(
     private fun detectarMarcaTarjeta(numero: String): String {
         return when {
             numero.startsWith("4") -> "VISA"
-            numero.startsWith("34") || numero.startsWith("37") -> "AMEX"
+            numero.startsWith("34") -> "AMEX"
+            numero.startsWith("37") -> "AMEX"
             numero.length >= 2 && numero.take(2).toIntOrNull() in 51..55 -> "MASTERCARD"
             else -> "TARJETA"
         }
@@ -396,16 +367,77 @@ class UserViewModel(
     fun calcularTotalCarrito(): Double { return _carrito.value.sumOf { it.precio * it.cantidad } }
     fun calcularCantidadTotalItems(): Int { return _carrito.value.sumOf { it.cantidad } }
 
+    // 🔥 GENERACIÓN DE LINK CON INYECCIÓN DE ERROR A LA UI 🔥
+    suspend fun generarLinkMercadoPago(): String? {
+        // 🔥 EL NUEVO TOKEN ACTUALIZADO
+        val tokenTest = "APP_USR-260696831028649-091421-ad1ec1fe9f07ba759892dad5a2adf5d2-3690860310"
+
+        return try {
+            val carritoList = _carrito.value
+            if (carritoList.isEmpty()) {
+                errorMessage = "El carrito está vacío"
+                return null
+            }
+
+            val client = HttpClient { expectSuccess = false }
+
+            val itemsJson = carritoList.joinToString(",") { producto ->
+                """
+                {
+                    "title": "${producto.nombre}",
+                    "quantity": ${producto.cantidad},
+                    "unit_price": ${producto.precio},
+                    "currency_id": "MXN"
+                }
+                """.trimIndent()
+            }
+
+            val jsonBody = """
+            {
+                "items": [$itemsJson],
+                "back_urls": {
+                    "success": "altoquefood://success",
+                    "failure": "altoquefood://failure",
+                    "pending": "altoquefood://pending"
+                },
+                "auto_return": "approved"
+            }
+            """.trimIndent()
+
+            val response: HttpResponse = client.post("https://api.mercadopago.com/checkout/preferences") {
+                header("Authorization", "Bearer $tokenTest")
+                header("Content-Type", "application/json")
+                setBody(jsonBody)
+            }
+
+            val responseText = response.bodyAsText()
+            client.close()
+
+            if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
+                val jsonResponse = Json.parseToJsonElement(responseText).jsonObject
+                val payUrl = jsonResponse["sandbox_init_point"]?.jsonPrimitive?.content
+                    ?: jsonResponse["init_point"]?.jsonPrimitive?.content
+
+                errorMessage = "" // Limpiamos cualquier error previo
+                return payUrl
+            } else {
+                // Si MP lo rechaza, mandamos el mensaje exacto a la pantalla
+                errorMessage = "Error MP (${response.status.value}): $responseText"
+                return null
+            }
+        } catch (e: Exception) {
+            // Si Ktor falla (sin internet, etc), lo mandamos a la pantalla
+            errorMessage = "Excepción Ktor: ${e.message}"
+            return null
+        }
+    }
+
     fun procesarCompraDelCarrito(
         establecimientoId: String,
         establecimientoNombre: String,
-        tarjetaSeleccionada: TarjetaGuardada?,
         onSuccess: () -> Unit
     ) {
-        if (_carrito.value.isEmpty()) {
-            errorMessage = ErrorMessages.CART_EMPTY
-            return
-        }
+        if (_carrito.value.isEmpty()) return
 
         isLoading = true
         errorMessage = ""
@@ -420,13 +452,8 @@ class UserViewModel(
                 }
 
                 val subtotal = calcularTotalCarrito()
-                val tarifaServicio = 5.0
-                val total = round((subtotal + tarifaServicio) * 100) / 100.0
-
+                val total = round((subtotal + 5.0) * 100) / 100.0
                 val descripcion = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
-                println("DEMO_PAGO: Procesando pago...")
-                delay(800)
-                println("DEMO_PAGO: Pago aprobado (simulación).")
 
                 val turno = (1..99).random()
                 val now = Timestamp.now().seconds * 1000
@@ -434,37 +461,25 @@ class UserViewModel(
                 val nuevoPedidoRef = pedidosRef.document
 
                 val nuevoPedido = Pedido(
-                    id = nuevoPedidoRef.id,
-                    userId = userId,
-                    establecimientoId = establecimientoId,
-                    establecimientoNombre = establecimientoNombre,
-                    descripcion = descripcion,
-                    total = total,
-                    estado = EstadoPedido.RECIBIDO,
-                    turno = turno,
-                    createdAt = now,
-                    productos = _carrito.value // 🔥 MAGIA: GUARDAMOS LOS PRODUCTOS REALES CON SU ID
+                    id = nuevoPedidoRef.id, userId = userId, establecimientoId = establecimientoId,
+                    establecimientoNombre = establecimientoNombre, descripcion = descripcion, total = total,
+                    estado = EstadoPedido.RECIBIDO, turno = turno, createdAt = now, productos = _carrito.value
                 )
 
                 nuevoPedidoRef.set(nuevoPedido)
                 vaciarCarrito()
-
                 isLoading = false
-                errorMessage = ""
                 onSuccess()
 
                 delay(4000)
                 nuevoPedidoRef.update("estado" to EstadoPedido.EN_PREPARACION.name)
-
                 delay(6000)
                 nuevoPedidoRef.update("estado" to EstadoPedido.LISTO.name)
-
                 delay(8000)
                 nuevoPedidoRef.update("estado" to EstadoPedido.ENTREGADO.name)
             } catch (e: Exception) {
                 isLoading = false
                 errorMessage = "No se pudo generar el pedido."
-                println("DEMO_PEDIDO_ERROR: ${e.message}")
             }
         }
     }

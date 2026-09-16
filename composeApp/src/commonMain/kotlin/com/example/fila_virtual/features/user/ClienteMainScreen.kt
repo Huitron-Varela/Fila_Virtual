@@ -35,7 +35,6 @@ fun ClienteMainScreen(
     val pagerState = rememberPagerState(pageCount = { 4 })
     val carritoActual by viewModel.carrito.collectAsState()
 
-    // ESTADOS PARA NAVEGACIÓN
     var isEditingProfile by remember { mutableStateOf(false) }
     var showCart by remember { mutableStateOf(false) }
     var showSecurity by remember { mutableStateOf(false) }
@@ -43,39 +42,15 @@ fun ClienteMainScreen(
     var showTerms by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
 
-    /*
-     * ==========================================================
-     * MODALES DE PERFIL Y EXTRAS
-     * ==========================================================
-     */
     if (isEditingProfile) {
-        EditProfileScreen(
-            usuario = usuario,
-            viewModel = viewModel,
-            onBack = { isEditingProfile = false }
-        )
+        EditProfileScreen(usuario = usuario, viewModel = viewModel, onBack = { isEditingProfile = false })
     } else if (showSecurity) {
-        EnProcesoScreen(
-            titulo = "Configuración de Seguridad",
-            onBack = { showSecurity = false }
-        )
+        EnProcesoScreen(titulo = "Configuración de Seguridad", onBack = { showSecurity = false })
     } else if (showHelp) {
-        EnProcesoScreen(
-            titulo = "Centro de Ayuda",
-            onBack = { showHelp = false }
-        )
+        EnProcesoScreen(titulo = "Centro de Ayuda", onBack = { showHelp = false })
     } else if (showTerms) {
-        LegalScreen(
-            title = "Términos y Condiciones",
-            content = LegalConstants.TERMINOS_Y_CONDICIONES,
-            onBack = { showTerms = false }
-        )
+        LegalScreen(title = "Términos y Condiciones", content = LegalConstants.TERMINOS_Y_CONDICIONES, onBack = { showTerms = false })
     } else if (showCart) {
-        /*
-         * ==========================================================
-         * CARRITO
-         * ==========================================================
-         */
         CartScreen(
             viewModel = viewModel,
             onBackClick = { showCart = false },
@@ -90,11 +65,6 @@ fun ClienteMainScreen(
             }
         )
     } else if (selectedEstablecimiento != null) {
-        /*
-         * ==========================================================
-         * MENÚ DE ESTABLECIMIENTO
-         * ==========================================================
-         */
         UserMenuScreen(
             establecimientoId = selectedEstablecimiento!!.id,
             nombreEstablecimiento = selectedEstablecimiento!!.nombre,
@@ -102,11 +72,6 @@ fun ClienteMainScreen(
             userViewModel = viewModel
         )
     } else {
-        /*
-         * ==========================================================
-         * NAVEGACIÓN PRINCIPAL (PAGER)
-         * ==========================================================
-         */
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val windowSize = WindowSize(maxWidth, maxHeight)
             val horizontalMargin = if (windowSize.isTablet) (maxWidth - 550.dp) / 2 else 0.dp
@@ -123,46 +88,25 @@ fun ClienteMainScreen(
                     )
                 }
             ) { padding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = horizontalMargin)
-                        .background(MaterialTheme.colorScheme.background)
-                ) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = true
-                    ) { page ->
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = horizontalMargin).background(MaterialTheme.colorScheme.background)) {
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize(), userScrollEnabled = true) { page ->
                         when (page) {
                             0 -> {
                                 HomeView(
                                     usuario = usuario,
-                                    // 🔥 Mantenemos tu corrección perfecta del sumOf
                                     cartCount = carritoActual.sumOf { it.cantidad },
                                     onCartClick = { showCart = true },
                                     onEstablecimientoClick = { local -> selectedEstablecimiento = local },
-                                    onAddToCart = { producto ->
-                                        viewModel.agregarAlCarrito(
-                                            idProducto = producto.id,
-                                            nombre = producto.nombre,
-                                            precio = producto.precio
-                                        )
-                                    }
+                                    onAddToCart = { producto -> viewModel.agregarAlCarrito(producto.id, producto.nombre, producto.precio) }
                                 )
                             }
                             1 -> OrdenesScreen()
                             2 -> BilleteraScreen(viewModel)
                             3 -> {
                                 ProfileComponent(
-                                    usuario = usuario,
-                                    viewModel = viewModel,
-                                    onLogout = { viewModel.signOut(onSuccess = onLogout) },
-                                    onNavigateToEdit = { isEditingProfile = true },
-                                    onNavigateToSecurity = { showSecurity = true },
-                                    onNavigateToHelp = { showHelp = true },
-                                    onNavigateToTerms = { showTerms = true }
+                                    usuario = usuario, viewModel = viewModel, onLogout = { viewModel.signOut(onSuccess = onLogout) },
+                                    onNavigateToEdit = { isEditingProfile = true }, onNavigateToSecurity = { showSecurity = true },
+                                    onNavigateToHelp = { showHelp = true }, onNavigateToTerms = { showTerms = true }
                                 )
                             }
                         }

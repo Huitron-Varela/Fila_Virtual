@@ -14,22 +14,34 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        <!-- 🔥 singleTask ES VITAL PARA QUE NO DUPLIQUE LA APP -->
         <activity
             android:exported="true"
             android:name=".MainActivity"
-            android:configChanges="locale|layoutDirection">
+            android:configChanges="locale|layoutDirection"
+            android:launchMode="singleTask">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="filavirtual" android:host="invitacion" />
             </intent-filter>
+
+            <!-- 🔥 NUESTRO NUEVO DEEP LINK PARA MERCADO PAGO -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="altoquefood" android:host="success" />
+            </intent-filter>
+
         </activity>
     </application>
-
 </manifest>
