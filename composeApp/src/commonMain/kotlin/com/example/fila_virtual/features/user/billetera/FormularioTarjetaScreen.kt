@@ -12,10 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.MediumGray
@@ -31,16 +35,6 @@ fun FormularioTarjetaScreen(
     LaunchedEffect(Unit) {
         viewModel.clearWalletMessage()
     }
-
-    val numeroVisible =
-        formatearNumeroTarjeta(
-            viewModel.numeroTarjeta
-        )
-
-    val fechaVisible =
-        formatearFecha(
-            viewModel.fechaExpiracion
-        )
 
     Column(
         modifier = Modifier
@@ -166,11 +160,11 @@ fun FormularioTarjetaScreen(
 
         OutlinedTextField(
             value =
-                numeroVisible,
+                viewModel.numeroTarjeta,
             onValueChange = { valor ->
-                viewModel.onNumeroTarjetaChange(
-                    valor
-                )
+                // 🔥 FILTRO: Solo números, máximo 16 dígitos
+                val filtrado = valor.filter { it.isDigit() }.take(16)
+                viewModel.onNumeroTarjetaChange(filtrado)
             },
             modifier =
                 Modifier.fillMaxWidth(),
@@ -189,6 +183,8 @@ fun FormularioTarjetaScreen(
             },
             singleLine =
                 true,
+            visualTransformation =
+                CardNumberVisualTransformation(),
             keyboardOptions =
                 KeyboardOptions(
                     keyboardType =
@@ -237,9 +233,8 @@ fun FormularioTarjetaScreen(
             value =
                 viewModel.nombreTitular,
             onValueChange = { valor ->
-                viewModel.onNombreTitularChange(
-                    valor
-                )
+                // 🔥 FILTRO: Máximo 50 caracteres para el nombre
+                viewModel.onNombreTitularChange(valor.take(50))
             },
             modifier =
                 Modifier.fillMaxWidth(),
@@ -314,11 +309,11 @@ fun FormularioTarjetaScreen(
 
                 OutlinedTextField(
                     value =
-                        fechaVisible,
+                        viewModel.fechaExpiracion,
                     onValueChange = { valor ->
-                        viewModel.onFechaExpiracionChange(
-                            valor
-                        )
+                        // 🔥 FILTRO: Solo números, máximo 4 dígitos (MMAA)
+                        val filtrado = valor.filter { it.isDigit() }.take(4)
+                        viewModel.onFechaExpiracionChange(filtrado)
                     },
                     modifier =
                         Modifier.fillMaxWidth(),
@@ -327,6 +322,8 @@ fun FormularioTarjetaScreen(
                     },
                     singleLine =
                         true,
+                    visualTransformation =
+                        ExpiryDateVisualTransformation(),
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType =
@@ -361,9 +358,9 @@ fun FormularioTarjetaScreen(
                     value =
                         viewModel.cvv,
                     onValueChange = { valor ->
-                        viewModel.onCvvChange(
-                            valor
-                        )
+                        // 🔥 FILTRO: Solo números, máximo 4 dígitos
+                        val filtrado = valor.filter { it.isDigit() }.take(4)
+                        viewModel.onCvvChange(filtrado)
                     },
                     modifier =
                         Modifier.fillMaxWidth(),
@@ -553,22 +550,72 @@ fun FormularioTarjetaScreen(
     }
 }
 
-private fun formatearNumeroTarjeta(
-    numero: String
-): String {
-    return numero
-        .chunked(4)
-        .joinToString(" ")
+/*
+ * ====================================================================
+ * TRANSFORMACIONES VISUALES (A PRUEBA DE CRASHES)
+ * ====================================================================
+ */
+
+class CardNumberVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val input = text.text
+        val formatted = buildString {
+            for (i in input.indices) {
+                append(input[i])
+                // Solo agrega espacio si NO es el último digito tecleado
+                if ((i + 1) % 4 == 0 && i != 15 && i != input.lastIndex) {
+                    append(" ")
+                }
+            }
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 8) return offset + 1
+                if (offset <= 12) return offset + 2
+                if (offset <= 16) return offset + 3
+                return 19
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 9) return offset - 1
+                if (offset <= 14) return offset - 2
+                if (offset <= 19) return offset - 3
+                return 16
+            }
+        }
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
+    }
 }
 
-private fun formatearFecha(
-    fecha: String
-): String {
-    return if (fecha.length <= 2) {
-        fecha
-    } else {
-        fecha.take(2) +
-                "/" +
-                fecha.drop(2)
+class ExpiryDateVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val input = text.text
+        val formatted = buildString {
+            for (i in input.indices) {
+                append(input[i])
+                // Solo agrega la diagonal si ya pasaste del mes y NO es el último digito tecleado
+                if (i == 1 && i != input.lastIndex) {
+                    append("/")
+                }
+            }
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 2) return offset
+                if (offset <= 4) return offset + 1
+                return 5
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 2) return offset
+                if (offset <= 5) return offset - 1
+                return 4
+            }
+        }
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
     }
 }
