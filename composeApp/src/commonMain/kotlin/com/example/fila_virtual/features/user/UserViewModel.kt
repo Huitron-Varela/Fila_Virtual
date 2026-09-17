@@ -45,7 +45,7 @@ class UserViewModel(
     var isLoading by mutableStateOf(false)
         private set
     var errorMessage by mutableStateOf("")
-        private set
+        internal set // Cambiado a internal set para modificarlo desde ClienteMainScreen
     var numeroTarjeta by mutableStateOf("")
         private set
     var nombreTitular by mutableStateOf("")
@@ -60,6 +60,9 @@ class UserViewModel(
         private set
     var pendingWalletAction by mutableStateOf<String?>(null)
         private set
+
+    // 🔥 NUEVO ESTADO GLOBAL PARA CONTROLAR LA ESPERA DE MERCADO PAGO
+    var isWaitingForPayment by mutableStateOf(false)
 
     private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
     val carrito: StateFlow<List<ProductoCarrito>> = _carrito
@@ -369,7 +372,6 @@ class UserViewModel(
 
     // 🔥 GENERACIÓN DE LINK CON INYECCIÓN DE ERROR A LA UI 🔥
     suspend fun generarLinkMercadoPago(): String? {
-        // 🔥 EL NUEVO TOKEN ACTUALIZADO
         val tokenTest = "APP_USR-260696831028649-091421-ad1ec1fe9f07ba759892dad5a2adf5d2-3690860310"
 
         return try {

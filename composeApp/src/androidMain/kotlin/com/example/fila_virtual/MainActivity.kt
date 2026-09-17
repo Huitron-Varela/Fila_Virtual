@@ -17,8 +17,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 
-class MainActivity : AppCompatActivity() {
+// 🔥 IMPORTANTE: Importamos el DeepLinkManager que creamos en ClienteMainScreen
+import com.example.fila_virtual.features.user.DeepLinkManager
 
+class MainActivity : AppCompatActivity() {
 
     private lateinit var googleSignInClient: GoogleSignInClient
     private val RC_SIGN_IN = 9001
@@ -27,9 +29,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. Lógica original de invitación
         invitationToken = savedInstanceState?.getString("invitation_token")
             ?: intent.getStringExtra("invitation_token")
-            ?: intent.data?.getQueryParameter("token")
+                    ?: intent.data?.getQueryParameter("token")
+
+        // 🔥 2. NUEVA LÓGICA DE MERCADO PAGO (Cold Start)
+        intent.dataString?.let { uri ->
+            DeepLinkManager.onNewIntent(uri)
+        }
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken("385041919843-v9f3p7kntedtho0612ivkvcdgjsse0jh.apps.googleusercontent.com")
@@ -52,8 +62,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
+        // 1. Lógica original de invitación
         invitationToken = intent.getStringExtra("invitation_token")
             ?: intent.data?.getQueryParameter("token")
+
+        // 🔥 2. NUEVA LÓGICA DE MERCADO PAGO (Background Return)
+        intent.dataString?.let { uri ->
+            DeepLinkManager.onNewIntent(uri)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -82,12 +99,12 @@ class MainActivity : AppCompatActivity() {
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account.idToken!!)
             }  catch (e: ApiException) {
-            // ESTO es lo que verás en el Logcat ahora:
-            android.util.Log.e("GOOGLE_DEBUG", "Error Code: ${e.statusCode}")
-            android.util.Log.e("GOOGLE_DEBUG", "Causa: ${android.util.Log.getStackTraceString(e)}")
+                // ESTO es lo que verás en el Logcat ahora:
+                android.util.Log.e("GOOGLE_DEBUG", "Error Code: ${e.statusCode}")
+                android.util.Log.e("GOOGLE_DEBUG", "Causa: ${android.util.Log.getStackTraceString(e)}")
 
                 Toast.makeText(this, "ERROR GOOGLE: ${e.statusCode}", Toast.LENGTH_LONG).show()
-        }
+            }
         }
     }
 
@@ -106,8 +123,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
-
-    // Archivo: /home/mhuitron/Documentos/git/Fila_Virtual/composeApp/src/androidMain/kotlin/com/example/fila_virtual/MainActivity.kt
 
     private fun saveUserToFirestore(uid: String, name: String?, email: String?, photoUrl: String?) {
         val db = FirebaseFirestore.getInstance()

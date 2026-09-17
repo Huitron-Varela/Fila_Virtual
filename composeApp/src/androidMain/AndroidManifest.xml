@@ -35,11 +35,12 @@
             </intent-filter>
 
             <!-- 🔥 NUESTRO NUEVO DEEP LINK PARA MERCADO PAGO -->
+            <!-- Sin el host="success" para atrapar también el failure -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="altoquefood" android:host="success" />
+                <data android:scheme="altoquefood" />
             </intent-filter>
 
         </activity>
