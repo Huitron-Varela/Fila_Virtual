@@ -23,7 +23,20 @@ import com.example.fila_virtual.perfil.ProfileComponent
 import com.example.fila_virtual.perfil.EnProcesoScreen
 import com.example.fila_virtual.core.LegalConstants
 import com.example.fila_virtual.core.navigation.LegalScreen
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+
+/*
+ * ==========================================================
+ * 🔥 1. OBJETO GLOBAL PARA COMUNICAR ANDROID CON COMMON MAIN
+ * ==========================================================
+ */
+object DeepLinkManager {
+    val intentFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    fun onNewIntent(uri: String) {
+        intentFlow.tryEmit(uri)
+    }
+}
 
 @Composable
 fun ClienteMainScreen(
@@ -41,6 +54,37 @@ fun ClienteMainScreen(
     var showHelp by remember { mutableStateOf(false) }
     var showTerms by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
+
+    /*
+     * ==========================================================
+     * 🔥 2. ESCUCHAMOS EL LINK QUE NOS MANDA ANDROID
+     * ==========================================================
+     */
+    LaunchedEffect(Unit) {
+        DeepLinkManager.intentFlow.collect { uri ->
+            if (uri.startsWith("altoquefood://")) {
+                if (uri.contains("success")) {
+                    // 🔥 ¡MAGIA AUTOMÁTICA RESTAURADA! 🔥
+                    viewModel.isWaitingForPayment = false
+
+                    // Procesamos la orden automáticamente
+                    viewModel.procesarCompraDelCarrito(
+                        establecimientoId = "local_prueba_123",
+                        establecimientoNombre = "AlToque Food",
+                        onSuccess = {
+                            // Cerramos carrito y vamos a Mis Órdenes
+                            showCart = false
+                            scope.launch { pagerState.animateScrollToPage(1) }
+                        }
+                    )
+                } else if (uri.contains("failure") || uri.contains("pending") || uri.contains("cancel")) {
+                    // Pago Rechazado o Cancelado
+                    viewModel.isWaitingForPayment = false
+                    viewModel.errorMessage = "El pago fue rechazado. Intenta con otro método de pago."
+                }
+            }
+        }
+    }
 
     if (isEditingProfile) {
         EditProfileScreen(usuario = usuario, viewModel = viewModel, onBack = { isEditingProfile = false })

@@ -39,16 +39,11 @@ fun CartScreen(
 
     val usuario = viewModel.usuario
     val tarjetasGuardadas = usuario?.metodosPago ?: emptyList()
-
     val mercadoPagoVinculado = usuario?.mercadoPagoVinculado ?: false
 
     var showPaymentModal by remember { mutableStateOf(false) }
     var tarjetaSeleccionada by remember { mutableStateOf<TarjetaGuardada?>(null) }
-
     var isGenerandoLink by remember { mutableStateOf(false) }
-
-    // 🔥 ESTADO CLAVE: Controla si estamos esperando que regrese del navegador
-    var isWaitingForPayment by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
@@ -59,10 +54,9 @@ fun CartScreen(
         }
     }
 
-    // Si el carrito se vacía (por cancelar la orden, etc), reiniciamos el estado
     LaunchedEffect(cartItems.isEmpty()) {
         if (cartItems.isEmpty()) {
-            isWaitingForPayment = false
+            viewModel.isWaitingForPayment = false
         }
     }
 
@@ -72,92 +66,109 @@ fun CartScreen(
         bottomBar = {
             Column {
 
-                // MOSTRAR ERROR DE MERCADO PAGO SI OCURRE ALGUNO
-                if (viewModel.errorMessage.isNotEmpty() && mercadoPagoVinculado) {
+                if (viewModel.errorMessage.isNotEmpty() && !viewModel.isWaitingForPayment) {
                     Text(
-                        text = "Error: ${viewModel.errorMessage}",
+                        text = viewModel.errorMessage,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                         textAlign = TextAlign.Center
                     )
                 }
 
-                if (mercadoPagoVinculado && cartItems.isNotEmpty()) {
-
-                    if (isWaitingForPayment) {
-                        // 🔥 BOTÓN VERDE CUANDO REGRESA DE MERCADO PAGO
+                if (viewModel.isWaitingForPayment) {
+                    // 🔥 UI KMP-Friendly con botón de Cancelar explícito
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Button(
                             onClick = {
                                 viewModel.procesarCompraDelCarrito(
                                     establecimientoId = "local_prueba_123",
                                     establecimientoNombre = "AlToque Food",
                                     onSuccess = {
-                                        isWaitingForPayment = false
+                                        viewModel.isWaitingForPayment = false
                                         onOrderSuccess()
                                     }
                                 )
                             },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 4.dp).height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) // Verde Éxito
+                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                         ) {
                             Text("✅ Confirmar Pago Realizado", fontWeight = FontWeight.Bold, color = Color.White)
                         }
-                    } else {
-                        // 🔥 BOTÓN AZUL ORIGINAL PARA IR A PAGAR
-                        Button(
+
+                        // Botón de escape sin usar el BackHandler de Android
+                        OutlinedButton(
                             onClick = {
-                                if (isGenerandoLink) return@Button
-
-                                isGenerandoLink = true
-                                viewModel.clearWalletMessage() // Limpia errores previos
-                                scope.launch {
-                                    val linkPago = viewModel.generarLinkMercadoPago()
-                                    isGenerandoLink = false
-
-                                    if (linkPago != null) {
-                                        // Abre el link y cambia la UI para esperar el regreso
-                                        uriHandler.openUri(linkPago)
-                                        isWaitingForPayment = true
-                                    }
-                                }
+                                viewModel.isWaitingForPayment = false
+                                viewModel.errorMessage = "Pago cancelado. Intenta nuevamente."
                             },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 4.dp).height(56.dp),
-                            enabled = !isGenerandoLink,
-                            colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                         ) {
-                            if (isGenerandoLink) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                            } else {
-                                Text("Pagar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
-                            }
+                            Text("Cancelar / Hubo un problema", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
+                else {
+                    if (cartItems.isNotEmpty()) {
 
-                if (tarjetasGuardadas.isNotEmpty() && !mercadoPagoVinculado) {
-                    CartBottomBar(
-                        isProcessing = viewModel.isLoading,
-                        errorMessage = viewModel.errorMessage,
-                        isEnabled = cartItems.isNotEmpty() && tarjetaSeleccionada != null,
-                        onPayClick = {
-                            if (viewModel.isLoading) return@CartBottomBar
-                            viewModel.procesarCompraDelCarrito(
-                                establecimientoId = "local_prueba_123",
-                                establecimientoNombre = "AlToque Food",
-                                onSuccess = { onOrderSuccess() }
+                        if (tarjetasGuardadas.isNotEmpty() && tarjetaSeleccionada != null) {
+                            CartBottomBar(
+                                isProcessing = viewModel.isLoading,
+                                errorMessage = "",
+                                isEnabled = cartItems.isNotEmpty() && !isGenerandoLink,
+                                onPayClick = {
+                                    if (viewModel.isLoading) return@CartBottomBar
+                                    viewModel.procesarCompraDelCarrito(
+                                        establecimientoId = "local_prueba_123",
+                                        establecimientoNombre = "AlToque Food",
+                                        onSuccess = { onOrderSuccess() }
+                                    )
+                                }
                             )
+                        } else if (!mercadoPagoVinculado) {
+                            Button(
+                                onClick = { onNavigateToWallet() },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).height(56.dp),
+                                enabled = cartItems.isNotEmpty(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text("Configurar Billetera para Pagar", fontWeight = FontWeight.Bold)
+                            }
                         }
-                    )
-                } else if (!mercadoPagoVinculado) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                        Button(
-                            onClick = { onNavigateToWallet() },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            enabled = cartItems.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text("Configurar Billetera para Pagar", fontWeight = FontWeight.Bold)
+
+                        if (mercadoPagoVinculado) {
+                            if (tarjetasGuardadas.isNotEmpty() && tarjetaSeleccionada != null) {
+                                Text("O paga online con:", modifier = Modifier.fillMaxWidth().padding(top = 8.dp), textAlign = TextAlign.Center, color = MediumGray, style = MaterialTheme.typography.bodySmall)
+                            }
+
+                            Button(
+                                onClick = {
+                                    if (isGenerandoLink) return@Button
+
+                                    isGenerandoLink = true
+                                    viewModel.clearWalletMessage()
+                                    scope.launch {
+                                        val linkPago = viewModel.generarLinkMercadoPago()
+                                        isGenerandoLink = false
+
+                                        if (linkPago != null) {
+                                            uriHandler.openUri(linkPago)
+                                            viewModel.isWaitingForPayment = true
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp).height(56.dp),
+                                enabled = !isGenerandoLink,
+                                colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
+                            ) {
+                                if (isGenerandoLink) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text("Pagar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
                         }
                     }
                 }
@@ -173,11 +184,11 @@ fun CartScreen(
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            if (isWaitingForPayment) {
+            if (viewModel.isWaitingForPayment) {
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))) {
                         Text(
-                            text = "Por favor, completa tu pago en la pestaña del navegador. Cuando termines, regresa aquí y presiona 'Confirmar Pago Realizado'.",
+                            text = "Completa tu pago en el navegador. Si regresaste sin pagar, presiona 'Cancelar' debajo.",
                             modifier = Modifier.padding(16.dp),
                             color = Color(0xFFE65100),
                             fontWeight = FontWeight.SemiBold
