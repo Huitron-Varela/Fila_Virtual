@@ -10,22 +10,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.outlined.ShoppingCart // 🔥 IMPORTACIÓN AGREGADA
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.BackHandler
 import com.example.fila_virtual.features.user.UserViewModel
-
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.components.RemoteImage
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,18 +31,21 @@ fun UserMenuScreen(
     establecimientoId: String,
     nombreEstablecimiento: String,
     onBack: () -> Unit,
-    userViewModel: UserViewModel // <--- Recibimos el UserViewModel para acceder al carrito
+    onNavigateToCart: () -> Unit,
+    userViewModel: UserViewModel
 ) {
     val menuViewModel = remember { UserMenuViewModel() }
     val productos by menuViewModel.productos.collectAsState()
 
-    // Estado para mostrar una confirmación rápida cuando agregas algo
+    // Leemos el carrito directamente del UserViewModel para saber cuántos items hay
+    val cartItems by userViewModel.carrito.collectAsState()
+    val cartItemsCount = cartItems.sumOf { it.cantidad }
+
     var showSnackbar by remember { mutableStateOf(false) }
     var lastAddedProduct by remember { mutableStateOf("") }
 
     BackHandler(onBack = onBack)
 
-    // En cuanto se abre la pantalla, le decimos al cerebro que cargue el menú de este local
     LaunchedEffect(establecimientoId) {
         menuViewModel.cargarMenu(establecimientoId)
     }
@@ -58,11 +59,42 @@ fun UserMenuScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
                     }
                 },
+                actions = {
+                    // 🔥 BOTÓN DEL CARRITO IDÉNTICO AL DE INICIO
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(42.dp)
+                            .background(Color(0xFFF5F5F5), CircleShape)
+                            .clip(CircleShape)
+                            .clickable { onNavigateToCart() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (cartItemsCount > 0) {
+                                    Badge(
+                                        containerColor = PrimaryOrange,
+                                        contentColor = Color.White,
+                                        modifier = Modifier.offset(x = 2.dp, y = (-2).dp)
+                                    ) {
+                                        Text("$cartItemsCount")
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ShoppingCart,
+                                contentDescription = "Ir al carrito",
+                                tint = Color(0xFF1E1E24)
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
-        // Agregamos un Snackbar para darle feedback al usuario
         snackbarHost = {
             if (showSnackbar) {
                 Snackbar(
@@ -97,13 +129,11 @@ fun UserMenuScreen(
                         ProductoClienteCard(
                             producto = producto,
                             onAddClick = {
-                                // AQUÍ ESTÁ LA MAGIA: Guardamos en el carrito de verdad
                                 userViewModel.agregarAlCarrito(
                                     idProducto = producto.id,
                                     nombre = producto.nombre,
                                     precio = producto.precio
                                 )
-                                // Mostramos el mensajito de éxito
                                 lastAddedProduct = producto.nombre
                                 showSnackbar = true
                             }
