@@ -113,6 +113,8 @@ fun ClienteMainScreen(
             establecimientoId = selectedEstablecimiento!!.id,
             nombreEstablecimiento = selectedEstablecimiento!!.nombre,
             onBack = { selectedEstablecimiento = null },
+            // 🔥 AQUÍ LE PASAMOS LA ORDEN DE ABRIR EL CARRITO
+            onNavigateToCart = { showCart = true },
             userViewModel = viewModel
         )
     } else {
