@@ -49,6 +49,8 @@ data class Usuario(
     val sesionEstacion: String = "",
     val sesionInicioAt: Long = 0L,
     val sesionActiva: Boolean = false,
+    val metricasFecha: String = "",
+    val metricasSesiones: List<SesionMetrica> = emptyList(),
     val metodosPago: List<TarjetaGuardada> = emptyList(),
     val verificado: Boolean = false,
     val activo: Boolean = true,

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,10 +34,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.LightBackground
@@ -55,7 +57,9 @@ import com.example.fila_virtual.core.theme.PrimaryOrange
 import com.example.fila_virtual.core.theme.SoftOrangeBg
 import com.example.fila_virtual.core.theme.TrafficRed
 import com.example.fila_virtual.data.EstacionOperativa
+import com.example.fila_virtual.data.ResumenTurno
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.repository.EmpleadoRepository
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.emp_back
 import fila_virtual.composeapp.generated.resources.emp_shift_branch
@@ -63,7 +67,6 @@ import fila_virtual.composeapp.generated.resources.emp_end_shift
 import fila_virtual.composeapp.generated.resources.emp_no_branch
 import fila_virtual.composeapp.generated.resources.emp_shift_active
 import fila_virtual.composeapp.generated.resources.emp_shift_unsaved
-import fila_virtual.composeapp.generated.resources.emp_empty_cajero
 import fila_virtual.composeapp.generated.resources.emp_home_badge
 import fila_virtual.composeapp.generated.resources.emp_home_hello
 import fila_virtual.composeapp.generated.resources.emp_home_subtitle
@@ -75,6 +78,15 @@ import fila_virtual.composeapp.generated.resources.emp_station_cocina
 import fila_virtual.composeapp.generated.resources.emp_station_cocina_desc
 import fila_virtual.composeapp.generated.resources.emp_station_entrega
 import fila_virtual.composeapp.generated.resources.emp_station_entrega_desc
+import fila_virtual.composeapp.generated.resources.emp_summary_delivered
+import fila_virtual.composeapp.generated.resources.emp_summary_minutes
+import fila_virtual.composeapp.generated.resources.emp_summary_note
+import fila_virtual.composeapp.generated.resources.emp_summary_ok
+import fila_virtual.composeapp.generated.resources.emp_summary_prepared
+import fila_virtual.composeapp.generated.resources.emp_summary_saved
+import fila_virtual.composeapp.generated.resources.emp_summary_title
+import fila_virtual.composeapp.generated.resources.emp_summary_under_minute
+import fila_virtual.composeapp.generated.resources.emp_summary_unsaved
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -90,6 +102,7 @@ fun EmpleadoMainScreen(
 
     var estacionName by rememberSaveable { mutableStateOf<String?>(null) }
     var turnoGuardado by rememberSaveable { mutableStateOf(false) }
+    var resumen by remember { mutableStateOf<ResumenTurno?>(null) }
     val estacion = estacionName?.let { name ->
         runCatching { EstacionOperativa.valueOf(name) }.getOrNull()
     }
@@ -98,6 +111,7 @@ fun EmpleadoMainScreen(
         EmpleadoHome(
             nombre = viewModel.usuario?.nombre?.ifBlank { viewModel.usuario?.email }.orEmpty(),
             establecimiento = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
+            correo = viewModel.usuario?.email.orEmpty(),
             sinAsignacion = !turnoViewModel.cargando && turnoViewModel.asignacion == null,
             cargando = turnoViewModel.cargando,
             guardando = turnoViewModel.guardando,
@@ -125,9 +139,51 @@ fun EmpleadoMainScreen(
             sesionId = turnoViewModel.sesion?.id.orEmpty(),
             onBack = { estacionName = null },
             onTerminar = {
-                turnoViewModel.terminar {
+                turnoViewModel.terminar { cerrado ->
                     turnoGuardado = false
                     estacionName = null
+                    resumen = cerrado
+                }
+            }
+        )
+    }
+
+    val resumenActual = resumen
+    if (resumenActual != null) {
+        val segundos = ((resumenActual.finAt - resumenActual.inicioAt) / 1000L).coerceAtLeast(0L).toInt()
+        val duracion = if (segundos < 60) {
+            stringResource(Res.string.emp_summary_under_minute)
+        } else {
+            stringResource(Res.string.emp_summary_minutes, segundos / 60)
+        }
+        val estacionTexto = when (resumenActual.estacion) {
+            EstacionOperativa.COCINA.clave() -> stringResource(Res.string.emp_station_cocina)
+            EstacionOperativa.ENTREGA.clave() -> stringResource(Res.string.emp_station_entrega)
+            EstacionOperativa.CAJERO.clave() -> stringResource(Res.string.emp_station_cajero)
+            else -> resumenActual.estacion
+        }
+        AlertDialog(
+            onDismissRequest = { resumen = null },
+            title = { Text(stringResource(Res.string.emp_summary_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(estacionTexto, color = DarkGray, fontWeight = FontWeight.SemiBold)
+                    Text(duracion)
+                    Text(stringResource(Res.string.emp_summary_prepared, resumenActual.preparados))
+                    Text(stringResource(Res.string.emp_summary_delivered, resumenActual.entregados))
+                    Text(stringResource(Res.string.emp_summary_note), color = MediumGray)
+                    Text(
+                        stringResource(
+                            if (resumenActual.registroGuardado) Res.string.emp_summary_saved
+                            else Res.string.emp_summary_unsaved
+                        ),
+                        color = if (resumenActual.registroGuardado) DarkGray else TrafficRed
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { resumen = null }) {
+                    Text(stringResource(Res.string.emp_summary_ok), color = PrimaryOrange)
                 }
             }
         )
@@ -137,6 +193,7 @@ fun EmpleadoMainScreen(
 @Composable
 private fun EmpleadoHome(
     nombre: String,
+    correo: String,
     establecimiento: String,
     sinAsignacion: Boolean,
     cargando: Boolean,
@@ -192,14 +249,26 @@ private fun EmpleadoHome(
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyMedium
                 )
-                sinAsignacion -> Column {
-                    Text(
-                        text = stringResource(Res.string.emp_no_branch),
-                        color = MediumGray,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    CodigoInvitacionCard(onAceptada = onInvitacionAceptada)
+                sinAsignacion -> {
+                    var puedeUnirse by remember { mutableStateOf(false) }
+                    LaunchedEffect(correo) {
+                        puedeUnirse = correo.isNotBlank() &&
+                            EmpleadoRepository().tieneInvitacionPendiente(correo)
+                    }
+                    Column {
+                        Text(
+                            text = stringResource(Res.string.emp_no_branch),
+                            color = MediumGray,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        if (puedeUnirse) {
+                            Spacer(Modifier.height(12.dp))
+                            CodigoInvitacionCard(onAceptada = {
+                                puedeUnirse = false
+                                onInvitacionAceptada()
+                            })
+                        }
+                    }
                 }
             }
             if (error.isNotBlank()) {
@@ -372,20 +441,10 @@ private fun EstacionOperativaScreen(
                     modifier = Modifier.weight(1f)
                 )
             } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = LightSurface),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text(
-                        text = stringResource(Res.string.emp_empty_cajero),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        textAlign = TextAlign.Center,
-                        color = MediumGray
-                    )
-                }
+                CajeroEstacion(
+                    establecimientoId = establecimientoId,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 

@@ -89,3 +89,30 @@ data class SesionTurno(
     val finAt: Long = 0L,
     val activa: Boolean = true
 )
+
+@Serializable
+data class SesionMetrica(
+    val id: String = "",
+    val estacion: String = "",
+    val inicioAt: Long = 0L,
+    val finAt: Long = 0L,
+    val preparados: Int = 0,
+    val entregados: Int = 0
+)
+
+@Serializable
+data class MetricaDiaria(
+    val empleadoUid: String = "",
+    val establecimientoId: String = "",
+    val fecha: String = "",
+    val sesiones: List<SesionMetrica> = emptyList()
+)
+
+data class ResumenTurno(
+    val estacion: String = "",
+    val inicioAt: Long = 0L,
+    val finAt: Long = 0L,
+    val preparados: Int = 0,
+    val entregados: Int = 0,
+    val registroGuardado: Boolean = false
+)
