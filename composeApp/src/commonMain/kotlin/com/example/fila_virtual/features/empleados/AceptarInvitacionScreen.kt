@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.InvitacionEmpleado
 import com.example.fila_virtual.repository.EmpleadoRepository
@@ -159,7 +158,7 @@ fun AceptarInvitacionScreen(
                 Button(
                     onClick = {
                         isAccepting = true
-                        acceptInvitation(token, currentInvitation, onAccepted) {
+                        acceptInvitation(token, onAccepted) {
                             isAccepting = false
                             state = it
                         }
@@ -275,7 +274,6 @@ private fun ErrorInvitationState(message: String) {
 
 private fun acceptInvitation(
     token: String,
-    invitation: InvitacionEmpleado,
     onAccepted: () -> Unit,
     onError: (String) -> Unit
 ) {
@@ -285,32 +283,8 @@ private fun acceptInvitation(
     }
 
     MainScope().launch {
-        try {
-            val now = Clock.System.now().toEpochMilliseconds()
-            val employee = Empleado(
-                uid = user.uid,
-                rol = invitation.roles.ifEmpty { invitation.rol.split(",").map { it.trim() } }.joinToString(","),
-                roles = invitation.roles.ifEmpty { invitation.rol.split(",").map { it.trim() } },
-                activo = true,
-                invitacionToken = token,
-                joinedAt = now,
-                updatedAt = now
-            )
-            EmpleadoRepository().registrarEmpleado(invitation.establecimientoId, employee)
-                .getOrThrow()
-            Firebase.firestore.collection("invitaciones_empleado")
-                .document(token)
-                .update(
-                    "status" to "accepted",
-                    "acceptedBy" to user.uid,
-                    "acceptedAt" to now
-                )
-            Firebase.firestore.collection("usuarios")
-                .document(user.uid)
-                .update("rolGlobal" to "empleado", "updatedAt" to now)
-            onAccepted()
-        } catch (exception: Exception) {
-            onError(exception.message ?: "No se pudo aceptar la invitación.")
-        }
+        val resultado = EmpleadoRepository().aceptarInvitacion(token)
+        if (resultado.isSuccess) onAccepted()
+        else onError(resultado.exceptionOrNull()?.message ?: "No se pudo aceptar la invitación.")
     }
 }

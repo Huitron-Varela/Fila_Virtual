@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,8 +26,10 @@ fun MainScreen(
 ) {
     val usuario = viewModel.usuario
 
-    // CAMBIO AQUÍ: Solo mostramos la carga inicial si no tenemos los datos del usuario aún.
-    // Esto evita que la app se destruya cuando un botón use isLoading = true.
+    LaunchedEffect(Unit) {
+        if (viewModel.usuario == null) viewModel.loadUserData()
+    }
+
     if (usuario == null) {
         Box(
             modifier = Modifier
@@ -32,19 +37,28 @@ fun MainScreen(
                 .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            if (viewModel.errorMessage.isNotBlank()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(viewModel.errorMessage, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { viewModel.loadUserData() }) {
+                        Text("Reintentar")
+                    }
+                }
+            } else {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
         }
     } else {
         // --- DEPURACIÓN ---
-        val rolDetectado = usuario.rolGlobal.lowercase().trim()
+        val rolDetectado = Roles.normalizar(usuario.rolGlobal)
         println("DEBUG_ROLE: El usuario ${usuario.email} tiene el rol: '$rolDetectado'")
 
         // Enrutador basado en el rol del usuario
         when (rolDetectado) {
-            "admin" -> {
+            Roles.ADMIN -> {
                 AdminMainScreen(viewModel = viewModel, onLogout = onLogout)
             }
-            "empleado" -> {
+            Roles.EMPLEADO -> {
                 EmpleadoMainScreen(viewModel = viewModel, onLogout = onLogout)
             }
             else -> {

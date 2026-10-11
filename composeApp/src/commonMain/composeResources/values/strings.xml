@@ -316,4 +316,54 @@
     <string name="in_process_desc">Estamos trabajando en esta sección. Estará disponible muy pronto.</string>
     <string name="in_process_btn">Volver al perfil</string>
 
+    <!-- ========================================== -->
+    <!-- EMPLEADO OPERATIVO                         -->
+    <!-- ========================================== -->
+    <string name="emp_home_hello">Hola, %1$s</string>
+    <string name="emp_home_badge">Empleado operativo</string>
+    <string name="emp_home_title">Inicia tu turno</string>
+    <string name="emp_home_subtitle">Elige la estación de este turno. Esta selección no te da permisos de gerente ni de administrador.</string>
+    <string name="emp_station_cocina">Cocina</string>
+    <string name="emp_station_cocina_desc">Consulta pedidos recibidos, pásalos a preparación y márcalos como listos.</string>
+    <string name="emp_station_entrega">Entrega</string>
+    <string name="emp_station_entrega_desc">Revisa pedidos listos, valida el código QR y confirma la entrega.</string>
+    <string name="emp_station_cajero">Cajero</string>
+    <string name="emp_station_cajero_desc">Consulta transacciones e incidencias. No modifica pagos ni importes.</string>
+    <string name="emp_logout">Cerrar sesión</string>
+    <string name="emp_back">Volver a estaciones</string>
+    <string name="emp_count_recibido">Recibido</string>
+    <string name="emp_count_preparacion">En preparación</string>
+    <string name="emp_count_listo">Listo</string>
+    <string name="emp_empty_cocina">No hay pedidos activos en cocina.</string>
+    <string name="emp_empty_entrega">No hay pedidos listos para entregar.</string>
+    <string name="emp_empty_cajero">No hay transacciones para consultar.</string>
+    <string name="emp_scan_qr">Escanear QR</string>
+    <string name="emp_scan_hint">Apunta la cámara al código del cliente. Si coincide con un pedido listo, pasa a entregado.</string>
+    <string name="emp_scan_close">Cerrar cámara</string>
+    <string name="emp_scan_denied">Activa el permiso de cámara para leer el código.</string>
+    <string name="emp_shift_branch">Establecimiento: %1$s</string>
+    <string name="emp_no_branch">Aún no estás asignado a un establecimiento. Puedes revisar las estaciones; el turno se guardará cuando un administrador vincule tu cuenta.</string>
+    <string name="emp_shift_active">Turno en curso</string>
+    <string name="emp_shift_unsaved">Este recorrido no quedó guardado porque tu cuenta no está vinculada a un establecimiento.</string>
+    <string name="emp_end_shift">Terminar turno</string>
+    <string name="emp_action_preparar">Pasar a preparación</string>
+    <string name="emp_action_listo">Marcar listo</string>
+    <string name="emp_turn_label">Turno %1$d</string>
+    <string name="emp_current_order">Pedido en turno</string>
+    <string name="emp_after_turn">Después va el turno %1$d</string>
+    <string name="emp_pending_title">Por elaborar</string>
+    <string name="emp_kitchen_blocked">El turno debe quedar guardado para cambiar el estado de un pedido.</string>
+    <string name="emp_code_title">¿Tienes un código?</string>
+    <string name="emp_code_help">Pega el código que generó el administrador. Debes entrar con el mismo correo de la invitación.</string>
+    <string name="emp_code_hint">Código de 6 dígitos</string>
+    <string name="emp_code_button">Unirme al establecimiento</string>
+    <string name="emp_delivery_code">Código del QR</string>
+    <string name="emp_delivery_confirm">Confirmar entrega</string>
+    <string name="emp_delivery_unclaimed">No reclamado</string>
+    <string name="emp_delivery_unclaimed_title">Marcar como no reclamado</string>
+    <string name="emp_delivery_unclaimed_body">El pedido saldrá de pendientes. No se contará como entregado y no cambia el pago.</string>
+    <string name="emp_delivery_blocked">El turno debe quedar guardado para registrar la entrega.</string>
+    <string name="emp_delivery_hint">Escribe los 4 caracteres del código o escanéalos. Al leerlo, el pedido pasa a entregado.</string>
+    <string name="profile_join_place">Unirme a un establecimiento</string>
+
 </resources>

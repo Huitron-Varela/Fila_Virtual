@@ -68,9 +68,7 @@ fun ClienteMainScreen(
                     viewModel.isWaitingForPayment = false
 
                     // Procesamos la orden automáticamente
-                    viewModel.procesarCompraDelCarrito(
-                        establecimientoId = "local_prueba_123",
-                        establecimientoNombre = "AlToque Food",
+                    viewModel.confirmarPedidoDelCarrito(
                         onSuccess = {
                             // Cerramos carrito y vamos a Mis Órdenes
                             showCart = false
@@ -143,7 +141,14 @@ fun ClienteMainScreen(
                                     cartCount = carritoActual.sumOf { it.cantidad },
                                     onCartClick = { showCart = true },
                                     onEstablecimientoClick = { local -> selectedEstablecimiento = local },
-                                    onAddToCart = { producto -> viewModel.agregarAlCarrito(producto.id, producto.nombre, producto.precio) }
+                                    onAddToCart = { producto ->
+                                        viewModel.agregarAlCarrito(
+                                            producto.id,
+                                            producto.nombre,
+                                            producto.precio,
+                                            establecimientoId = producto.establecimientoId
+                                        )
+                                    }
                                 )
                             }
                             1 -> OrdenesScreen()

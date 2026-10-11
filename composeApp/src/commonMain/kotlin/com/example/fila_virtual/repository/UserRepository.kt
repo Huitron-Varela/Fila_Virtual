@@ -1,5 +1,6 @@
 package com.example.fila_virtual.repository
 
+import com.example.fila_virtual.data.Roles
 import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
 import dev.gitlive.firebase.Firebase
@@ -19,16 +20,21 @@ class UserRepository {
         return try {
             val document = db.collection("usuarios").document(uid).get()
             if (document.exists) {
+                val rolGuardado = if (document.contains("rolGlobal")) {
+                    runCatching { document.get<String>("rolGlobal") }.getOrNull()
+                } else {
+                    null
+                }
+                val rolGlobal = Roles.normalizar(rolGuardado)
                 try {
                     val user = document.data<Usuario>()
-                    user.copy(uid = uid)
+                    user.copy(uid = uid, rolGlobal = rolGlobal)
                 } catch (serializationException: Exception) {
                     println("🔥 Serialization Error, attempting safe fallback: ${serializationException.message}")
                     val nombre = if (document.contains("nombre")) document.get<String>("nombre") else ""
                     val email = if (document.contains("email")) document.get<String>("email") else ""
                     val telefono = if (document.contains("telefono")) document.get<String>("telefono") else ""
                     val fotoUrl = if (document.contains("fotoUrl")) document.get<String>("fotoUrl") else ""
-                    val rolGlobal = if (document.contains("rolGlobal")) document.get<String>("rolGlobal") else "cliente"
                     val verificado = if (document.contains("verificado")) document.get<Boolean>("verificado") else false
                     val activo = if (document.contains("activo")) document.get<Boolean>("activo") else true
                     val createdAt = if (document.contains("createdAt")) document.get<Long>("createdAt") else 0L

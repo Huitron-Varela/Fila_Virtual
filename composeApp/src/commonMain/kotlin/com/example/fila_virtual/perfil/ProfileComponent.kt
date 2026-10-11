@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.data.Usuario
+import com.example.fila_virtual.features.empleados.CodigoInvitacionCard
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
@@ -125,6 +126,10 @@ fun ProfileComponent(
             }
 
             Spacer(modifier = Modifier.height(windowSize.adaptiveDp(24)))
+
+            ProfileSectionCard(icon = Icons.Default.Store, title = stringResource(Res.string.profile_join_place), iconTint = MaterialTheme.colorScheme.primary) {
+                CodigoInvitacionCard(onAceptada = { viewModel.loadUserData() })
+            }
 
             ProfileSectionCard(icon = Icons.Default.PersonOutline, title = stringResource(Res.string.profile_personal_info), iconTint = MaterialTheme.colorScheme.primary) {
                 ProfileOptionItem(

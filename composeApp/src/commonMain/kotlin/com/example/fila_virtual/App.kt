@@ -47,9 +47,8 @@ fun App(
                 // FIX PARA GOOGLE: Escuchamos el cambio de sesión
                 LaunchedEffect(Unit) {
                     Firebase.auth.authStateChanged.collectLatest { user ->
-                        if (user != null && currentScreen == Screens.Login) {
-                            currentScreen = Screens.Home
-                        }
+                        mainUserViewModel.loadUserData()
+                        currentScreen = if (user == null) Screens.Login else Screens.Home
                     }
                 }
 

@@ -50,3 +50,42 @@ data class InvitacionEmpleado(
 object RolesEmpleado {
     val disponibles = listOf("cajero", "cocina", "entrega", "supervisor", "admin")
 }
+
+enum class EstacionOperativa {
+    COCINA,
+    ENTREGA,
+    CAJERO;
+
+    fun clave(): String = name.lowercase()
+
+    companion object {
+        fun desdeRoles(roles: List<String>): List<EstacionOperativa> {
+            val autorizadas = roles.mapNotNull { rol ->
+                when (rol.lowercase().trim()) {
+                    "cocina" -> COCINA
+                    "entrega" -> ENTREGA
+                    "cajero" -> CAJERO
+                    else -> null
+                }
+            }.distinct()
+            return autorizadas.ifEmpty { entries }
+        }
+    }
+}
+
+data class AsignacionEmpleado(
+    val establecimientoId: String = "",
+    val establecimientoNombre: String = "",
+    val roles: List<String> = emptyList()
+)
+
+@Serializable
+data class SesionTurno(
+    val id: String = "",
+    val empleadoUid: String = "",
+    val establecimientoId: String = "",
+    val estacion: String = "",
+    val inicioAt: Long = 0L,
+    val finAt: Long = 0L,
+    val activa: Boolean = true
+)

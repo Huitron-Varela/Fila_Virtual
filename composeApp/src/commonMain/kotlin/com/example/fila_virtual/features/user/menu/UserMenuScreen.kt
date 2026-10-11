@@ -132,7 +132,9 @@ fun UserMenuScreen(
                                 userViewModel.agregarAlCarrito(
                                     idProducto = producto.id,
                                     nombre = producto.nombre,
-                                    precio = producto.precio
+                                    precio = producto.precio,
+                                    establecimientoId = establecimientoId,
+                                    establecimientoNombre = nombreEstablecimiento
                                 )
                                 lastAddedProduct = producto.nombre
                                 showSnackbar = true

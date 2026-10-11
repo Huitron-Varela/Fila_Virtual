@@ -27,12 +27,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.EstadoPedido
 import com.example.fila_virtual.data.Pedido
+import com.example.fila_virtual.data.codigoVisible
 import com.example.fila_virtual.repository.ProductoRepository
 
 import io.kamel.image.KamelImage
@@ -50,6 +52,7 @@ fun EstadoPedido.toUIText(): String {
         EstadoPedido.EN_PREPARACION -> "Preparando"
         EstadoPedido.LISTO -> "¡Listo para recoger!"
         EstadoPedido.ENTREGADO -> "Entregado"
+        EstadoPedido.NO_RECLAMADO -> "No reclamado"
         EstadoPedido.CANCELADO -> "Cancelado"
     }
 }
@@ -59,7 +62,7 @@ fun EstadoPedido.toUIColor(): Color {
         EstadoPedido.PENDIENTE, EstadoPedido.RECIBIDO -> Color(0xFFFFA726)
         EstadoPedido.EN_PREPARACION -> Color(0xFF29B6F6)
         EstadoPedido.LISTO -> Color(0xFF66BB6A)
-        EstadoPedido.ENTREGADO -> MediumGray
+        EstadoPedido.ENTREGADO, EstadoPedido.NO_RECLAMADO -> MediumGray
         EstadoPedido.CANCELADO -> TrafficRed
     }
 }
@@ -196,8 +199,29 @@ fun OrdenesScreen(
         }
     }
 
-    if (showQRModal && selectedPedidoForQR != null) {
-        val pedidoActual = pedidosActivos.find { it.id == selectedPedidoForQR!!.id } ?: selectedPedidoForQR!!
+    val pedidoSeleccionadoId = selectedPedidoForQR?.id
+    val pedidoEnVivo = pedidosActivos.find { it.id == pedidoSeleccionadoId }
+        ?: pedidosHistorial.find { it.id == pedidoSeleccionadoId }
+    var idsActivosPrevios by remember { mutableStateOf<Set<String>?>(null) }
+    LaunchedEffect(pedidosActivos, pedidosHistorial) {
+        val idsAhora = pedidosActivos.map { it.id }.toSet()
+        val previos = idsActivosPrevios
+        if (previos != null) {
+            val salieron = previos - idsAhora
+            val yaEnHistorial = salieron.any { id -> pedidosHistorial.any { it.id == id } }
+            if (yaEnHistorial) {
+                showQRModal = false
+                selectedPedidoForQR = null
+                selectedTabIndex = 1
+            } else if (salieron.isNotEmpty()) {
+                return@LaunchedEffect
+            }
+        }
+        idsActivosPrevios = idsAhora
+    }
+
+    if (showQRModal && pedidoEnVivo != null) {
+        val pedidoActual = pedidoEnVivo
 
         ModalBottomSheet(
             onDismissRequest = { showQRModal = false },
@@ -217,6 +241,7 @@ fun OrdenesScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 if (pedidoActual.estado == EstadoPedido.LISTO) {
+                    val codigo = codigoVisible(pedidoActual)
                     Text(
                         text = "TURNO #${pedidoActual.turno}",
                         style = MaterialTheme.typography.displaySmall,
@@ -227,8 +252,16 @@ fun OrdenesScreen(
                         text = "Muestra este código en mostrador",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MediumGray,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+                        modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                     )
+                    Text(
+                        text = codigo,
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = DarkGray,
+                        letterSpacing = 8.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Card(
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -236,7 +269,7 @@ fun OrdenesScreen(
                         modifier = Modifier.size(220.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                            val qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=ALTOQUE-${pedidoActual.id}"
+                            val qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$codigo"
                             KamelImage(resource = asyncPainterResource(data = qrUrl), contentDescription = "QR", modifier = Modifier.fillMaxSize())
                         }
                     }
@@ -301,7 +334,7 @@ fun OrderProgressTimeline(estadoActual: EstadoPedido) {
         EstadoPedido.PENDIENTE, EstadoPedido.RECIBIDO -> 1
         EstadoPedido.EN_PREPARACION -> 2
         EstadoPedido.LISTO, EstadoPedido.ENTREGADO -> 3
-        EstadoPedido.CANCELADO -> 0
+        EstadoPedido.NO_RECLAMADO, EstadoPedido.CANCELADO -> 0
     }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp),

@@ -18,11 +18,20 @@ data class TarjetaGuardada(
 /**
  * Roles globales de la plataforma.
  * CLIENTE: Usuario que realiza pedidos.
+ * EMPLEADO: Personal operativo de un establecimiento (cocina, entrega o cajero).
  * ADMIN: Administrador general con acceso a todo el sistema.
  */
 object Roles {
     const val CLIENTE = "cliente"
+    const val EMPLEADO = "empleado"
     const val ADMIN = "admin"
+
+    fun normalizar(valor: String?): String {
+        return when (valor?.lowercase()?.trim()) {
+            CLIENTE, EMPLEADO, ADMIN -> valor.lowercase().trim()
+            else -> CLIENTE
+        }
+    }
 }
 
 @Serializable
@@ -33,6 +42,13 @@ data class Usuario(
     val telefono: String = "",
     val fotoUrl: String = "",
     val rolGlobal: String = Roles.CLIENTE,
+    val establecimientoId: String = "",
+    val establecimientoNombre: String = "",
+    val rolesEmpleado: List<String> = emptyList(),
+    val sesionId: String = "",
+    val sesionEstacion: String = "",
+    val sesionInicioAt: Long = 0L,
+    val sesionActiva: Boolean = false,
     val metodosPago: List<TarjetaGuardada> = emptyList(),
     val verificado: Boolean = false,
     val activo: Boolean = true,

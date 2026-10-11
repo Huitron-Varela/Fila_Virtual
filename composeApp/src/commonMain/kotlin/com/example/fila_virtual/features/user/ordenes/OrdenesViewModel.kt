@@ -10,6 +10,7 @@ import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.where
 
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -63,35 +64,35 @@ class OrdenesViewModel : ViewModel() {
         _pedidosCalificados.value = _pedidosCalificados.value + pedidoId
     }
 
-    /*
-     * ==========================================================
-     * INICIO
-     * ==========================================================
-     */
+    private var escucha: Job? = null
+
     init {
-        escucharPedidosDelUsuario()
+        viewModelScope.launch {
+            Firebase.auth.authStateChanged.collect { user ->
+                escucha?.cancel()
+                if (user == null) {
+                    _pedidosActivos.value = emptyList()
+                    _pedidosHistorial.value = emptyList()
+                    _isLoading.value = false
+                } else {
+                    escucha = escucharPedidosDelUsuario(user.uid)
+                }
+            }
+        }
     }
 
-    /*
-     * ==========================================================
-     * ESCUCHAR PEDIDOS DEL USUARIO
-     * ==========================================================
-     */
-    private fun escucharPedidosDelUsuario() {
-        val userId = Firebase.auth.currentUser?.uid
-
-        if (userId == null) {
-            _isLoading.value = false
-            return
-        }
-
-        viewModelScope.launch {
+    private fun escucharPedidosDelUsuario(userId: String): Job {
+        _isLoading.value = true
+        return viewModelScope.launch {
             pedidosRef
                 .where { "userId" equalTo userId }
                 .snapshots
                 .map { snapshot ->
-                    snapshot.documents.map { document ->
-                        document.data<Pedido>()
+                    snapshot.documents.mapNotNull { document ->
+                        runCatching {
+                            val pedido = document.data<Pedido>()
+                            pedido.copy(id = pedido.id.ifBlank { document.id })
+                        }.getOrNull()
                     }
                 }
                 .catch { exception ->
@@ -99,22 +100,19 @@ class OrdenesViewModel : ViewModel() {
                     _isLoading.value = false
                 }
                 .collect { todosLosPedidos ->
-
-                    val activos = todosLosPedidos.filter { pedido ->
+                    _pedidosActivos.value = todosLosPedidos.filter { pedido ->
                         pedido.estado == EstadoPedido.PENDIENTE ||
-                                pedido.estado == EstadoPedido.RECIBIDO ||
-                                pedido.estado == EstadoPedido.EN_PREPARACION ||
-                                pedido.estado == EstadoPedido.LISTO ||
-                                pedido.estado == EstadoPedido.ENTREGADO
+                            pedido.estado == EstadoPedido.RECIBIDO ||
+                            pedido.estado == EstadoPedido.EN_PREPARACION ||
+                            pedido.estado == EstadoPedido.LISTO
                     }.sortedByDescending { it.createdAt }
 
-                    val historial = todosLosPedidos.filter { pedido ->
+                    _pedidosHistorial.value = todosLosPedidos.filter { pedido ->
                         pedido.estado == EstadoPedido.ENTREGADO ||
-                                pedido.estado == EstadoPedido.CANCELADO
+                            pedido.estado == EstadoPedido.NO_RECLAMADO ||
+                            pedido.estado == EstadoPedido.CANCELADO
                     }.sortedByDescending { it.createdAt }
 
-                    _pedidosActivos.value = activos
-                    _pedidosHistorial.value = historial
                     _isLoading.value = false
                 }
         }

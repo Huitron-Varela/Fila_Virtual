@@ -37,22 +37,10 @@ fun CartScreen(
     val tarifaServicio = if (cartItems.isEmpty()) 0.0 else 5.0
     val total = subtotal + tarifaServicio
 
-    val usuario = viewModel.usuario
-    val tarjetasGuardadas = usuario?.metodosPago ?: emptyList()
-    val mercadoPagoVinculado = usuario?.mercadoPagoVinculado ?: false
-
-    var showPaymentModal by remember { mutableStateOf(false) }
-    var tarjetaSeleccionada by remember { mutableStateOf<TarjetaGuardada?>(null) }
     var isGenerandoLink by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
-
-    LaunchedEffect(tarjetasGuardadas) {
-        if (tarjetaSeleccionada == null && tarjetasGuardadas.isNotEmpty()) {
-            tarjetaSeleccionada = tarjetasGuardadas.first()
-        }
-    }
 
     LaunchedEffect(cartItems.isEmpty()) {
         if (cartItems.isEmpty()) {
@@ -81,9 +69,7 @@ fun CartScreen(
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Button(
                             onClick = {
-                                viewModel.procesarCompraDelCarrito(
-                                    establecimientoId = "local_prueba_123",
-                                    establecimientoNombre = "AlToque Food",
+                                viewModel.confirmarPedidoDelCarrito(
                                     onSuccess = {
                                         viewModel.isWaitingForPayment = false
                                         onOrderSuccess()
@@ -112,62 +98,30 @@ fun CartScreen(
                 }
                 else {
                     if (cartItems.isNotEmpty()) {
+                        Button(
+                            onClick = {
+                                if (isGenerandoLink) return@Button
 
-                        if (tarjetasGuardadas.isNotEmpty() && tarjetaSeleccionada != null) {
-                            CartBottomBar(
-                                isProcessing = viewModel.isLoading,
-                                errorMessage = "",
-                                isEnabled = cartItems.isNotEmpty() && !isGenerandoLink,
-                                onPayClick = {
-                                    if (viewModel.isLoading) return@CartBottomBar
-                                    viewModel.procesarCompraDelCarrito(
-                                        establecimientoId = "local_prueba_123",
-                                        establecimientoNombre = "AlToque Food",
-                                        onSuccess = { onOrderSuccess() }
-                                    )
-                                }
-                            )
-                        } else if (!mercadoPagoVinculado) {
-                            Button(
-                                onClick = { onNavigateToWallet() },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).height(56.dp),
-                                enabled = cartItems.isNotEmpty(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Text("Configurar Billetera para Pagar", fontWeight = FontWeight.Bold)
-                            }
-                        }
+                                isGenerandoLink = true
+                                viewModel.clearWalletMessage()
+                                scope.launch {
+                                    val linkPago = viewModel.generarLinkMercadoPago()
+                                    isGenerandoLink = false
 
-                        if (mercadoPagoVinculado) {
-                            if (tarjetasGuardadas.isNotEmpty() && tarjetaSeleccionada != null) {
-                                Text("O paga online con:", modifier = Modifier.fillMaxWidth().padding(top = 8.dp), textAlign = TextAlign.Center, color = MediumGray, style = MaterialTheme.typography.bodySmall)
-                            }
-
-                            Button(
-                                onClick = {
-                                    if (isGenerandoLink) return@Button
-
-                                    isGenerandoLink = true
-                                    viewModel.clearWalletMessage()
-                                    scope.launch {
-                                        val linkPago = viewModel.generarLinkMercadoPago()
-                                        isGenerandoLink = false
-
-                                        if (linkPago != null) {
-                                            uriHandler.openUri(linkPago)
-                                            viewModel.isWaitingForPayment = true
-                                        }
+                                    if (linkPago != null) {
+                                        uriHandler.openUri(linkPago)
+                                        viewModel.isWaitingForPayment = true
                                     }
-                                },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp).height(56.dp),
-                                enabled = !isGenerandoLink,
-                                colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
-                            ) {
-                                if (isGenerandoLink) {
-                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                                } else {
-                                    Text("Pagar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
                                 }
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp).height(56.dp),
+                            enabled = !isGenerandoLink,
+                            colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
+                        ) {
+                            if (isGenerandoLink) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            } else {
+                                Text("Pagar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
                     }
@@ -223,33 +177,9 @@ fun CartScreen(
                 }
             }
 
-            item {
-                if (tarjetasGuardadas.isNotEmpty() || !mercadoPagoVinculado) {
-                    PaymentMethodSection(
-                        tarjeta = tarjetaSeleccionada,
-                        onEditClick = { showPaymentModal = true }
-                    )
-                }
-            }
-
             item { SummarySection(subtotal = subtotal, tarifa = tarifaServicio, total = total) }
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 
-    if (showPaymentModal) {
-        SelectorTarjetasModal(
-            tarjetas = tarjetasGuardadas,
-            tarjetaActual = tarjetaSeleccionada,
-            onTarjetaSelected = { tarjetaElegida ->
-                tarjetaSeleccionada = tarjetaElegida
-                showPaymentModal = false
-            },
-            onAddNewCardClick = {
-                showPaymentModal = false
-                onNavigateToWallet()
-            },
-            onDismiss = { showPaymentModal = false }
-        )
-    }
 }

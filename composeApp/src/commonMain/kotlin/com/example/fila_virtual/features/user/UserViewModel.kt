@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.core.ErrorMessages
 import com.example.fila_virtual.data.EstadoPedido
 import com.example.fila_virtual.data.Pedido
+import com.example.fila_virtual.data.generarCodigoRecogida
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
@@ -23,7 +24,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -66,6 +67,11 @@ class UserViewModel(
 
     private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
     val carrito: StateFlow<List<ProductoCarrito>> = _carrito
+    var carritoEstablecimientoId by mutableStateOf("")
+        private set
+    var carritoEstablecimientoNombre by mutableStateOf("")
+        private set
+    private var cargaUsuario: Job? = null
 
     init {
         loadUserData()
@@ -94,13 +100,22 @@ class UserViewModel(
 
     fun loadUserData() {
         val uid = repository.getCurrentUserUid()
-        if (uid == null) return
+        cargaUsuario?.cancel()
+        if (uid == null) {
+            usuario = null
+            isLoading = false
+            return
+        }
+        if (usuario?.uid != uid) {
+            usuario = null
+        }
 
-        viewModelScope.launch {
+        cargaUsuario = viewModelScope.launch {
             isLoading = true
             errorMessage = ""
             try {
                 val data = repository.getUserData(uid)
+                if (repository.getCurrentUserUid() != uid) return@launch
                 if (data != null) {
                     usuario = data
                 } else {
@@ -137,6 +152,8 @@ class UserViewModel(
     }
 
     fun signOut(onSuccess: () -> Unit) {
+        cargaUsuario?.cancel()
+        usuario = null
         viewModelScope.launch {
             repository.signOut()
             onSuccess()
@@ -327,7 +344,27 @@ class UserViewModel(
         }
     }
 
-    fun agregarAlCarrito(idProducto: String, nombre: String, precio: Double) {
+    fun agregarAlCarrito(
+        idProducto: String,
+        nombre: String,
+        precio: Double,
+        establecimientoId: String = "",
+        establecimientoNombre: String = ""
+    ) {
+        if (
+            establecimientoId.isNotBlank() &&
+            carritoEstablecimientoId.isNotBlank() &&
+            carritoEstablecimientoId != establecimientoId &&
+            _carrito.value.isNotEmpty()
+        ) {
+            _carrito.value = emptyList()
+        }
+        if (establecimientoId.isNotBlank()) {
+            carritoEstablecimientoId = establecimientoId
+            if (establecimientoNombre.isNotBlank()) {
+                carritoEstablecimientoNombre = establecimientoNombre
+            }
+        }
         val listaActual = _carrito.value.toMutableList()
         val itemExistente = listaActual.find { it.idProducto == idProducto }
 
@@ -364,9 +401,17 @@ class UserViewModel(
             }
             _carrito.value = listaActual
         }
+        if (_carrito.value.isEmpty()) {
+            carritoEstablecimientoId = ""
+            carritoEstablecimientoNombre = ""
+        }
     }
 
-    fun vaciarCarrito() { _carrito.value = emptyList() }
+    fun vaciarCarrito() {
+        _carrito.value = emptyList()
+        carritoEstablecimientoId = ""
+        carritoEstablecimientoNombre = ""
+    }
     fun calcularTotalCarrito(): Double { return _carrito.value.sumOf { it.precio * it.cantidad } }
     fun calcularCantidadTotalItems(): Int { return _carrito.value.sumOf { it.cantidad } }
 
@@ -434,6 +479,18 @@ class UserViewModel(
         }
     }
 
+    fun confirmarPedidoDelCarrito(onSuccess: () -> Unit) {
+        if (carritoEstablecimientoId.isBlank()) {
+            errorMessage = "Agrega los productos desde el menú de La gusgreria."
+            return
+        }
+        procesarCompraDelCarrito(
+            establecimientoId = carritoEstablecimientoId,
+            establecimientoNombre = carritoEstablecimientoNombre.ifBlank { "Establecimiento" },
+            onSuccess = onSuccess
+        )
+    }
+
     fun procesarCompraDelCarrito(
         establecimientoId: String,
         establecimientoNombre: String,
@@ -465,20 +522,14 @@ class UserViewModel(
                 val nuevoPedido = Pedido(
                     id = nuevoPedidoRef.id, userId = userId, establecimientoId = establecimientoId,
                     establecimientoNombre = establecimientoNombre, descripcion = descripcion, total = total,
-                    estado = EstadoPedido.RECIBIDO, turno = turno, createdAt = now, productos = _carrito.value
+                    estado = EstadoPedido.RECIBIDO, turno = turno, createdAt = now,
+                    codigoRecogida = generarCodigoRecogida(), productos = _carrito.value
                 )
 
                 nuevoPedidoRef.set(nuevoPedido)
                 vaciarCarrito()
                 isLoading = false
                 onSuccess()
-
-                delay(4000)
-                nuevoPedidoRef.update("estado" to EstadoPedido.EN_PREPARACION.name)
-                delay(6000)
-                nuevoPedidoRef.update("estado" to EstadoPedido.LISTO.name)
-                delay(8000)
-                nuevoPedidoRef.update("estado" to EstadoPedido.ENTREGADO.name)
             } catch (e: Exception) {
                 isLoading = false
                 errorMessage = "No se pudo generar el pedido."
