@@ -147,7 +147,8 @@ fun AdminMainScreen(
                             selectedEstablecimientoId = establecimientoId
                             isAddingEmployee = true
                         },
-                        onEditEmpleado = { emp ->
+                        onEditEmpleado = { emp, estId ->
+                            if (estId.isNotBlank()) selectedEstablecimientoId = estId
                             empleadoToEdit = emp
                             isAddingEmployee = true
                         }

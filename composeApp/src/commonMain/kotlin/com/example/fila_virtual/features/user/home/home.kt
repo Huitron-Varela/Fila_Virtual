@@ -31,11 +31,15 @@ import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.client_welcome
+import org.jetbrains.compose.resources.stringResource
 
 // 👇 Importaciones exclusivas de Compose Multiplatform para la vibración
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun HomeView(
     usuario: Usuario?,
@@ -61,9 +65,13 @@ fun HomeView(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        HomeHeader(padding = horizontalPadding, cartCount = cartCount, onCartClick = onCartClick)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        HomeHeader(
+            padding = horizontalPadding,
+            cartCount = cartCount,
+            onCartClick = onCartClick
+        )
+        Spacer(modifier = Modifier.height(20.dp))
 
         Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
             SearchBar(
@@ -133,13 +141,14 @@ fun HomeHeader(padding: Dp, cartCount: Int, onCartClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "AlToque te da la Bienvenida",
+            text = stringResource(Res.string.client_welcome),
             modifier = Modifier
                 .weight(1f)
                 .padding(end = 16.dp),
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold
             ),
+            color = DarkGray,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )

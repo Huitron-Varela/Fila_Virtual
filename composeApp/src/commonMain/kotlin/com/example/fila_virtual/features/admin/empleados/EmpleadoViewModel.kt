@@ -153,10 +153,13 @@ class EmpleadoViewModel : ViewModel() {
         }
     }
 
+    suspend fun leerAsignacion(uid: String) = repository.buscarAsignacion(uid).getOrNull()
+
     fun guardarEmpleadoPorCorreo(
         correoBusqueda: String,
         roles: List<String>,
         establecimientoId: String,
+        establecimientoNombre: String,
         onSuccess: () -> Unit
     ) {
         if (correoBusqueda.isBlank()) {
@@ -189,16 +192,26 @@ class EmpleadoViewModel : ViewModel() {
                     activo = true
                 )
 
-                val result = repository.registrarEmpleado(establecimientoId, nuevoEmpleado)
+                runCatching { repository.registrarEmpleado(establecimientoId, nuevoEmpleado).getOrThrow() }
+                val rolesEnUsuario = repository.actualizarRolesUsuario(
+                    uid = uidFinal,
+                    roles = roles,
+                    establecimientoId = establecimientoId,
+                    establecimientoNombre = establecimientoNombre
+                )
 
-                if (result.isSuccess) {
+                if (rolesEnUsuario.isSuccess) {
+                    _empleados.value = _empleados.value.map { detalle ->
+                        if (detalle.uid == uidFinal) {
+                            detalle.copy(rol = roles.joinToString(","), roles = roles)
+                        } else {
+                            detalle
+                        }
+                    }
                     _uiState.value = FormState.Success
-                    cargarEmpleados(establecimientoId)
                     onSuccess()
                 } else {
-                    _uiState.value = FormState.Error(
-                        result.exceptionOrNull()?.message ?: "Error al vincular empleado"
-                    )
+                    _uiState.value = FormState.Error(mensajeRoles(rolesEnUsuario.exceptionOrNull()))
                 }
             } catch (e: Exception) {
                 _uiState.value = FormState.Error(e.message ?: "Error desconocido")
@@ -271,5 +284,14 @@ class EmpleadoViewModel : ViewModel() {
 
     private fun List<String>.normalizarRoles(rol: String): List<String> {
         return if (isNotEmpty()) this else rol.split(",").map(String::trim).filter(String::isNotEmpty)
+    }
+
+    private fun mensajeRoles(error: Throwable?): String {
+        val texto = error?.message.orEmpty()
+        return if (texto.contains("PERMISSION_DENIED", ignoreCase = true)) {
+            "No pude guardar el puesto en la cuenta del empleado. En Firebase, abre ese usuario y agrega gerente en rolesEmpleado."
+        } else {
+            texto.ifBlank { "No se pudo actualizar el puesto" }
+        }
     }
 }

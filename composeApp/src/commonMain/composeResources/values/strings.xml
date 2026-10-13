@@ -252,6 +252,7 @@
     <string name="emp_role_cashier">Cajero</string>
     <string name="emp_role_kitchen">Cocina</string>
     <string name="emp_role_delivery">Entrega</string>
+    <string name="emp_role_gerente">Gerente</string>
     <string name="emp_role_supervisor">Supervisor</string>
     <string name="emp_role_admin_local">Admin Local</string>
     <string name="emp_role_all">Todos</string>
@@ -319,10 +320,12 @@
     <!-- ========================================== -->
     <!-- EMPLEADO OPERATIVO                         -->
     <!-- ========================================== -->
+    <string name="client_welcome">AlToque te da la Bienvenida</string>
     <string name="emp_home_hello">Hola, %1$s</string>
     <string name="emp_home_badge">Empleado operativo</string>
     <string name="emp_home_title">Inicia tu turno</string>
-    <string name="emp_home_subtitle">Elige la estación de este turno. Esta selección no te da permisos de gerente ni de administrador.</string>
+    <string name="emp_home_subtitle">Elige la estación en la que vas a trabajar.</string>
+    <string name="emp_home_active_hint">Entra a una estación para continuar, o termina el turno cuando acabes.</string>
     <string name="emp_station_cocina">Cocina</string>
     <string name="emp_station_cocina_desc">Consulta pedidos recibidos, pásalos a preparación y márcalos como listos.</string>
     <string name="emp_station_entrega">Entrega</string>
@@ -335,6 +338,7 @@
     <string name="emp_count_preparacion">En preparación</string>
     <string name="emp_count_listo">Listo</string>
     <string name="emp_empty_cocina">No hay pedidos activos en cocina.</string>
+    <string name="emp_kitchen_filter_empty">No hay pedidos en %1$s.</string>
     <string name="emp_empty_entrega">No hay pedidos listos para entregar.</string>
     <string name="emp_empty_cajero">No hay transacciones para consultar.</string>
     <string name="emp_cashier_readonly">Solo consulta. Esta estación no cambia pagos ni importes.</string>
@@ -346,7 +350,10 @@
     <string name="emp_status_unclaimed">No reclamado</string>
     <string name="emp_status_cancelled">Cancelado</string>
     <string name="emp_scan_qr">Escanear QR</string>
-    <string name="emp_scan_hint">Apunta la cámara al código del cliente. Si coincide con un pedido listo, pasa a entregado.</string>
+    <string name="emp_scan_hint">Centra el código QR del cliente dentro del marco.</string>
+    <string name="emp_scan_reading">Código leído. Registrando la entrega…</string>
+    <string name="emp_scan_retry">Escanear de nuevo</string>
+    <string name="emp_scan_next">Siguiente pedido</string>
     <string name="emp_scan_close">Cerrar cámara</string>
     <string name="emp_scan_denied">Activa el permiso de cámara para leer el código.</string>
     <string name="emp_shift_branch">Establecimiento: %1$s</string>
@@ -355,14 +362,29 @@
     <string name="emp_shift_unsaved">Este recorrido no quedó guardado porque tu cuenta no está vinculada a un establecimiento.</string>
     <string name="emp_end_shift">Terminar turno</string>
     <string name="emp_summary_title">Resumen del turno</string>
+    <string name="emp_summary_roles">Puestos: %1$s</string>
     <string name="emp_summary_prepared">Pedidos preparados: %1$d</string>
     <string name="emp_summary_delivered">Pedidos entregados: %1$d</string>
     <string name="emp_summary_minutes">Duración: %1$d min</string>
     <string name="emp_summary_under_minute">Duración: menos de 1 min</string>
+    <string name="emp_summary_clock">Duración: %1$d min %2$d s</string>
+    <string name="emp_summary_day">En el día: %1$d preparados, %2$d entregados y %3$d abandonados.</string>
+    <string name="emp_summary_abandoned">Pedidos abandonados: %1$d</string>
+    <string name="emp_summary_cashier">Cajero no prepara ni entrega. Este turno solo queda registrado.</string>
     <string name="emp_summary_note">Los no reclamados no cuentan como entregados.</string>
+    <string name="emp_summary_history">Turnos de hoy</string>
+    <string name="emp_summary_shift_kitchen">Cocina: %1$d preparados</string>
+    <string name="emp_summary_shift_delivery">Entrega: %1$d entregados y %2$d abandonados</string>
+    <string name="emp_summary_shift_cashier">Cajero</string>
     <string name="emp_summary_saved">El registro del día quedó guardado.</string>
     <string name="emp_summary_unsaved">El turno se cerró, pero no se pudo guardar el registro del día.</string>
     <string name="emp_summary_ok">Entendido</string>
+    <string name="emp_stock_title">Agotado temporal</string>
+    <string name="emp_stock_help">El platillo deja de verse en el menú del cliente. No cambia el precio ni borra el producto.</string>
+    <string name="emp_stock_mark">Marcar agotado</string>
+    <string name="emp_stock_restore">Volver a vender</string>
+    <string name="emp_stock_empty">Este establecimiento no tiene productos en el menú.</string>
+    <string name="emp_stock_open">Agotado temporal</string>
     <string name="emp_action_preparar">Pasar a preparación</string>
     <string name="emp_action_listo">Marcar listo</string>
     <string name="emp_turn_label">Turno %1$d</string>
@@ -380,7 +402,35 @@
     <string name="emp_delivery_unclaimed_title">Marcar como no reclamado</string>
     <string name="emp_delivery_unclaimed_body">El pedido saldrá de pendientes. No se contará como entregado y no cambia el pago.</string>
     <string name="emp_delivery_blocked">El turno debe quedar guardado para registrar la entrega.</string>
-    <string name="emp_delivery_hint">Escribe los 4 caracteres del código o escanéalos. Al leerlo, el pedido pasa a entregado.</string>
+    <string name="emp_delivery_hint">El código o el QR confirman la entrega. Si el cliente no llega, usa No reclamado sin código.</string>
     <string name="profile_join_place">Unirme a un establecimiento</string>
+    <string name="emp_gerente_open">Menú del local</string>
+    <string name="emp_gerente_desc">Crea, consulta y edita el menú, incluida la foto. Puedes agotar un platillo, reponerlo o darlo de baja sin borrar pedidos, y ver la cola de turnos.</string>
+    <string name="emp_gerente_title">Menú del local</string>
+    <string name="emp_gerente_help">Toca un platillo para editarlo.</string>
+    <string name="emp_gerente_search">Buscar por nombre o categoría</string>
+    <string name="emp_gerente_baja">Quitar del menú</string>
+    <string name="emp_gerente_baja_title">¿Quitar este platillo del menú?</string>
+    <string name="emp_gerente_baja_body">Deja de verse aquí y en el menú del cliente. Los pedidos ya hechos se quedan. Si solo se acabó por hoy, márcalo agotado.</string>
+    <string name="emp_gerente_stock_note">Agotado lo oculta hasta que lo vuelvas a vender. El platillo sigue en esta lista.</string>
+    <string name="emp_gerente_baja_note">Esto no es un agotado. Saca el platillo del menú de este local y no borra pedidos.</string>
+    <string name="emp_gerente_baja_cancel">Cancelar</string>
+    <string name="emp_gerente_tab_menu">Menú</string>
+    <string name="emp_gerente_tab_queue">Pedidos</string>
+    <string name="emp_gerente_queue">Pedidos en curso</string>
+    <string name="emp_gerente_queue_help">Pedidos de clientes que todavía no se entregan. Solo los ves: no los cambias ni cancelas el pago.</string>
+    <string name="emp_gerente_queue_empty">Ahora no hay pedidos de clientes en curso.</string>
+    <string name="emp_gerente_order_turn">Pedido, turno %1$d</string>
+    <string name="emp_gerente_no_results">No hay platillos con ese nombre o categoría.</string>
+    <string name="emp_gerente_add">Añadir platillo</string>
+    <string name="emp_gerente_edit">Editar platillo</string>
+    <string name="emp_gerente_new">Nuevo platillo</string>
+    <string name="emp_gerente_save">Guardar platillo</string>
+    <string name="emp_gerente_category">Categoría</string>
+    <string name="emp_gerente_available">A la venta</string>
+    <string name="emp_gerente_unavailable">Agotado</string>
+    <string name="emp_gerente_empty">Este local todavía no tiene platillos.</string>
+    <string name="emp_gerente_home_title">Tu establecimiento</string>
+    <string name="emp_gerente_home_hint">Administra el menú de tu local.</string>
 
 </resources>

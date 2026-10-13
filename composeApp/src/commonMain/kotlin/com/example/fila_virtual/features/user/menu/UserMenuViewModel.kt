@@ -19,7 +19,7 @@ class UserMenuViewModel : ViewModel() {
         viewModelScope.launch {
             productoRepo.getProductos(establecimientoId).collect { lista ->
                 // Solo le mostramos al cliente los productos que estén marcados como "disponibles"
-                _productos.value = lista.filter { it.disponible }
+                _productos.value = lista.filter { it.enCatalogo && it.disponible }
             }
         }
     }

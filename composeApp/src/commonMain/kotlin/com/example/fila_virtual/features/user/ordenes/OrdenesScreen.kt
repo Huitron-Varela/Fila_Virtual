@@ -37,8 +37,9 @@ import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.codigoVisible
 import com.example.fila_virtual.repository.ProductoRepository
 
-import io.kamel.image.KamelImage
-import io.kamel.image.asyncPainterResource
+import androidx.compose.foundation.Image
+import io.github.alexzhirkevich.qrose.options.QrErrorCorrectionLevel
+import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 
 import kotlinx.coroutines.launch
 
@@ -249,30 +250,51 @@ fun OrdenesScreen(
                         color = PrimaryOrange
                     )
                     Text(
-                        text = "Muestra este código en mostrador",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MediumGray,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                        text = "Listo para recoger",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                     Text(
+                        text = "Acerca este QR al lector del mostrador. Si no lo lee, dicta el código.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MediumGray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+                    )
+                    Card(
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier = Modifier.size(260.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize().padding(18.dp), contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = rememberQrCodePainter(codigo) {
+                                    errorCorrectionLevel = QrErrorCorrectionLevel.High
+                                },
+                                contentDescription = "Código QR",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "CÓDIGO DE RECOGIDA",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MediumGray,
+                        letterSpacing = 1.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
                         text = codigo,
-                        style = MaterialTheme.typography.displayMedium,
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = DarkGray,
                         letterSpacing = 8.sp
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Card(
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                        modifier = Modifier.size(220.dp)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                            val qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$codigo"
-                            KamelImage(resource = asyncPainterResource(data = qrUrl), contentDescription = "QR", modifier = Modifier.fillMaxSize())
-                        }
-                    }
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { showQRModal = false },
@@ -479,7 +501,7 @@ fun RatingModal(
     val productoRepo = remember { ProductoRepository() }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val productosDeLaOrden = pedido.productos ?: emptyList()
+    val productosDeLaOrden = pedido.productos
 
     ModalBottomSheet(
         onDismissRequest = { if (!isSubmitting) onDismiss() },

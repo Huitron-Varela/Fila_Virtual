@@ -74,8 +74,28 @@ fun AddEmployeeScreen(
         establecimientoViewModel.setOwnerUid(ownerUid)
     }
 
-    var selectedEstablecimientoId by remember { mutableStateOf(establecimientoId) }
+    var selectedEstablecimientoId by remember {
+        mutableStateOf(establecimientoId.takeUnless { it.isBlank() || it == "TODOS" }.orEmpty())
+    }
     var expandedEstablecimiento by remember { mutableStateOf(false) }
+
+    LaunchedEffect(empleado?.uid) {
+        val uid = empleado?.uid.orEmpty()
+        if (uid.isBlank()) return@LaunchedEffect
+        val asignacion = viewModel.leerAsignacion(uid) ?: return@LaunchedEffect
+        if (selectedEstablecimientoId.isBlank() && asignacion.establecimientoId.isNotBlank()) {
+            selectedEstablecimientoId = asignacion.establecimientoId
+        }
+        if (asignacion.roles.isNotEmpty()) {
+            rolesSeleccionados = asignacion.roles
+        }
+    }
+
+    LaunchedEffect(establecimientos) {
+        if (selectedEstablecimientoId.isBlank() && establecimientos.size == 1) {
+            selectedEstablecimientoId = establecimientos.first().id
+        }
+    }
 
     val sucursalActual = if (selectedEstablecimientoId.isEmpty()) {
         stringResource(Res.string.emp_select_branch)
@@ -152,6 +172,10 @@ fun AddEmployeeScreen(
                             correoBusqueda = correo,
                             roles = rolesSeleccionados,
                             establecimientoId = selectedEstablecimientoId,
+                            establecimientoNombre = establecimientos
+                                .find { it.id == selectedEstablecimientoId }
+                                ?.nombre
+                                .orEmpty(),
                             onSuccess = onNavigateBack
                         )
                     } else {
@@ -211,13 +235,13 @@ fun AddEmployeeScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
         
-        Box {
+        Column {
             Surface(
                 color = LightSurface,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { if (!isEditing) expandedEstablecimiento = true },
+                    .clickable { expandedEstablecimiento = !expandedEstablecimiento },
                 border = BorderStroke(1.dp, ExtraLightGray)
             ) {
                 Row(
@@ -239,17 +263,14 @@ fun AddEmployeeScreen(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    if (!isEditing) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = MediumGray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (expandedEstablecimiento) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MediumGray,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
-
             DropdownMenu(
                 expanded = expandedEstablecimiento,
                 onDismissRequest = { expandedEstablecimiento = false },
@@ -287,6 +308,14 @@ fun AddEmployeeScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
         RoleRow(
+            roles = listOf("entrega", "gerente"),
+            selectedRoles = rolesSeleccionados,
+            onRoleClick = { role ->
+                rolesSeleccionados = toggleRole(rolesSeleccionados, role)
+            }
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        RoleRow(
             roles = listOf("supervisor", "admin"),
             selectedRoles = rolesSeleccionados,
             onRoleClick = { role ->
@@ -296,7 +325,7 @@ fun AddEmployeeScreen(
         Spacer(modifier = Modifier.height(12.dp))
         val allRolesText = stringResource(Res.string.est_all)
         RoleRow(
-            roles = listOf("entrega", allRolesText),
+            roles = listOf(allRolesText),
             selectedRoles = rolesSeleccionados,
             onRoleClick = { role ->
                 rolesSeleccionados = if (role == allRolesText) {
@@ -331,11 +360,16 @@ private fun RoleRow(
                     "cajero" -> stringResource(Res.string.emp_role_cashier)
                     "cocina" -> stringResource(Res.string.emp_role_kitchen)
                     "entrega" -> stringResource(Res.string.emp_role_delivery)
+                    "gerente" -> stringResource(Res.string.emp_role_gerente)
                     "supervisor" -> stringResource(Res.string.emp_role_supervisor)
                     stringResource(Res.string.est_all) -> stringResource(Res.string.emp_role_all)
                     else -> stringResource(Res.string.emp_role_admin_local)
                 },
-                isSelected = if (role == stringResource(Res.string.est_all)) selectedRoles.containsAll(listOf("cajero", "cocina", "entrega", "supervisor", "admin")) else role in selectedRoles,
+                isSelected = if (role == stringResource(Res.string.est_all)) {
+                    selectedRoles.containsAll(RolesEmpleado.disponibles)
+                } else {
+                    role in selectedRoles
+                },
                 onClick = { onRoleClick(role) },
                 modifier = Modifier.weight(1f)
             )

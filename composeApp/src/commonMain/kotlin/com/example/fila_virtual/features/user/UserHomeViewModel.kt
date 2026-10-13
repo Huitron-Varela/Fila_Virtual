@@ -62,7 +62,7 @@ class UserHomeViewModel : ViewModel() {
         _todosLosEstablecimientos,
         productoRepo.getProductosGlobales()
     ) { locales, productos ->
-        productos.filter { it.disponible }.map { producto ->
+        productos.filter { it.enCatalogo && it.disponible }.map { producto ->
             val nombreLocal = locales.find { it.id == producto.establecimientoId }?.nombre ?: "Local"
             Pair(producto, nombreLocal)
         }.take(5) // Solo mostramos el Top 5
@@ -98,7 +98,7 @@ class UserHomeViewModel : ViewModel() {
         } else {
             // Filtramos los productos que contengan las letras escritas (ignorando mayúsculas)
             productos.filter {
-                it.disponible && it.nombre.contains(query, ignoreCase = true)
+                it.enCatalogo && it.disponible && it.nombre.contains(query, ignoreCase = true)
             }.map { producto ->
                 val nombreLocal = locales.find { it.id == producto.establecimientoId }?.nombre ?: "Local"
                 Pair(producto, nombreLocal)

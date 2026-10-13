@@ -40,6 +40,7 @@ kotlin {
             implementation("androidx.camera:camera-lifecycle:1.4.2")
             implementation("androidx.camera:camera-view:1.4.2")
             implementation("com.google.zxing:core:3.5.3")
+            implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
             // Firebase Nativo Android
             implementation("com.google.android.gms:play-services-auth:21.0.0")
@@ -86,6 +87,7 @@ kotlin {
 
             // 5. Imagenes
             implementation(libs.kamel.image)
+            implementation("io.github.alexzhirkevich:qrose:1.0.1")
         }
 
         commonTest.dependencies {

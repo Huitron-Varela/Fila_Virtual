@@ -54,6 +54,7 @@ fun ClienteMainScreen(
     var showHelp by remember { mutableStateOf(false) }
     var showTerms by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
+    var irAOrdenes by remember { mutableStateOf(false) }
 
     /*
      * ==========================================================
@@ -64,17 +65,15 @@ fun ClienteMainScreen(
         DeepLinkManager.intentFlow.collect { uri ->
             if (uri.startsWith("altoquefood://")) {
                 if (uri.contains("success")) {
-                    // 🔥 ¡MAGIA AUTOMÁTICA RESTAURADA! 🔥
                     viewModel.isWaitingForPayment = false
-
-                    // Procesamos la orden automáticamente
-                    viewModel.confirmarPedidoDelCarrito(
-                        onSuccess = {
-                            // Cerramos carrito y vamos a Mis Órdenes
-                            showCart = false
-                            scope.launch { pagerState.animateScrollToPage(1) }
-                        }
-                    )
+                    showCart = false
+                    selectedEstablecimiento = null
+                    isEditingProfile = false
+                    showSecurity = false
+                    showHelp = false
+                    showTerms = false
+                    irAOrdenes = true
+                    viewModel.confirmarPedidoDelCarrito { }
                 } else if (uri.contains("failure") || uri.contains("pending") || uri.contains("cancel")) {
                     // Pago Rechazado o Cancelado
                     viewModel.isWaitingForPayment = false
@@ -98,7 +97,8 @@ fun ClienteMainScreen(
             onBackClick = { showCart = false },
             onOrderSuccess = {
                 showCart = false
-                scope.launch { pagerState.animateScrollToPage(1) }
+                selectedEstablecimiento = null
+                irAOrdenes = true
             },
             onNavigateToWallet = {
                 viewModel.updatePendingWalletAction("abrir_formulario")
@@ -116,6 +116,12 @@ fun ClienteMainScreen(
             userViewModel = viewModel
         )
     } else {
+        LaunchedEffect(irAOrdenes) {
+            if (irAOrdenes) {
+                pagerState.scrollToPage(1)
+                irAOrdenes = false
+            }
+        }
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val windowSize = WindowSize(maxWidth, maxHeight)
             val horizontalMargin = if (windowSize.isTablet) (maxWidth - 550.dp) / 2 else 0.dp

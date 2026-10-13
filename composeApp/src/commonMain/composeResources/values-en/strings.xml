@@ -265,6 +265,7 @@
     <string name="emp_role_cashier">Cashier</string>
     <string name="emp_role_kitchen">Kitchen</string>
     <string name="emp_role_delivery">Delivery</string>
+    <string name="emp_role_gerente">Manager</string>
     <string name="emp_role_supervisor">Supervisor</string>
     <string name="emp_role_admin_local">Local Admin</string>
     <string name="emp_role_all">All</string>
@@ -323,10 +324,12 @@
     <!-- ========================================== -->
     <!-- OPERATIVE EMPLOYEE                         -->
     <!-- ========================================== -->
+    <string name="client_welcome">AlToque welcomes you</string>
     <string name="emp_home_hello">Hello, %1$s</string>
     <string name="emp_home_badge">Operative employee</string>
     <string name="emp_home_title">Start your shift</string>
-    <string name="emp_home_subtitle">Choose this shift\'s station. This choice does not grant manager or administrator permissions.</string>
+    <string name="emp_home_subtitle">Choose the station where you will work.</string>
+    <string name="emp_home_active_hint">Open a station to continue, or end the shift when you are done.</string>
     <string name="emp_station_cocina">Kitchen</string>
     <string name="emp_station_cocina_desc">Review received orders, move them to preparation, and mark them ready.</string>
     <string name="emp_station_entrega">Pickup</string>
@@ -339,6 +342,7 @@
     <string name="emp_count_preparacion">In preparation</string>
     <string name="emp_count_listo">Ready</string>
     <string name="emp_empty_cocina">There are no active kitchen orders.</string>
+    <string name="emp_kitchen_filter_empty">There are no orders in %1$s.</string>
     <string name="emp_empty_entrega">There are no orders ready for pickup.</string>
     <string name="emp_empty_cajero">There are no transactions to review.</string>
     <string name="emp_cashier_readonly">Read only. This station does not change payments or amounts.</string>
@@ -350,7 +354,10 @@
     <string name="emp_status_unclaimed">Unclaimed</string>
     <string name="emp_status_cancelled">Cancelled</string>
     <string name="emp_scan_qr">Scan QR</string>
-    <string name="emp_scan_hint">Point the camera at the customer code. A matching ready order is marked delivered.</string>
+    <string name="emp_scan_hint">Center the customer's QR code inside the frame.</string>
+    <string name="emp_scan_reading">Code read. Recording the handoff…</string>
+    <string name="emp_scan_retry">Scan again</string>
+    <string name="emp_scan_next">Next order</string>
     <string name="emp_scan_close">Close camera</string>
     <string name="emp_scan_denied">Allow camera access to read the code.</string>
     <string name="emp_shift_branch">Establishment: %1$s</string>
@@ -359,14 +366,29 @@
     <string name="emp_shift_unsaved">This visit was not saved because your account is not linked to an establishment.</string>
     <string name="emp_end_shift">End shift</string>
     <string name="emp_summary_title">Shift summary</string>
+    <string name="emp_summary_roles">Stations: %1$s</string>
     <string name="emp_summary_prepared">Orders prepared: %1$d</string>
     <string name="emp_summary_delivered">Orders handed off: %1$d</string>
     <string name="emp_summary_minutes">Duration: %1$d min</string>
     <string name="emp_summary_under_minute">Duration: less than 1 min</string>
+    <string name="emp_summary_clock">Duration: %1$d min %2$d s</string>
+    <string name="emp_summary_day">Today: %1$d prepared, %2$d handed off and %3$d abandoned.</string>
+    <string name="emp_summary_abandoned">Abandoned orders: %1$d</string>
+    <string name="emp_summary_cashier">Cashier does not prepare or hand off orders. This shift is only recorded.</string>
     <string name="emp_summary_note">Unclaimed orders are not counted as handed off.</string>
+    <string name="emp_summary_history">Shifts today</string>
+    <string name="emp_summary_shift_kitchen">Kitchen: %1$d prepared</string>
+    <string name="emp_summary_shift_delivery">Delivery: %1$d handed off and %2$d abandoned</string>
+    <string name="emp_summary_shift_cashier">Cashier</string>
     <string name="emp_summary_saved">Today's record was saved.</string>
     <string name="emp_summary_unsaved">The shift ended, but today's record could not be saved.</string>
     <string name="emp_summary_ok">Got it</string>
+    <string name="emp_stock_title">Temporarily unavailable</string>
+    <string name="emp_stock_help">The item disappears from the customer menu. It does not change the price or delete the product.</string>
+    <string name="emp_stock_mark">Mark unavailable</string>
+    <string name="emp_stock_restore">Sell again</string>
+    <string name="emp_stock_empty">This establishment has no menu items.</string>
+    <string name="emp_stock_open">Temporarily unavailable</string>
     <string name="emp_action_preparar">Start preparation</string>
     <string name="emp_action_listo">Mark ready</string>
     <string name="emp_turn_label">Turn %1$d</string>
@@ -384,7 +406,35 @@
     <string name="emp_delivery_unclaimed_title">Mark as unclaimed</string>
     <string name="emp_delivery_unclaimed_body">The order leaves the pending list. It is not counted as delivered and the payment stays unchanged.</string>
     <string name="emp_delivery_blocked">The shift must be saved before a pickup can be recorded.</string>
-    <string name="emp_delivery_hint">Type the 4-character code or scan it. A match marks the order delivered.</string>
+    <string name="emp_delivery_hint">The code or QR confirms the handoff. If the customer does not arrive, use Unclaimed without a code.</string>
     <string name="profile_join_place">Join an establishment</string>
+    <string name="emp_gerente_open">Branch menu</string>
+    <string name="emp_gerente_desc">Create, review and edit the menu, including the photo. You can mark an item unavailable, sell it again or remove it without deleting orders, and see the queue.</string>
+    <string name="emp_gerente_title">Branch menu</string>
+    <string name="emp_gerente_help">Tap a dish to edit it.</string>
+    <string name="emp_gerente_search">Search by name or category</string>
+    <string name="emp_gerente_baja">Remove from menu</string>
+    <string name="emp_gerente_baja_title">Remove this dish from the menu?</string>
+    <string name="emp_gerente_baja_body">It disappears here and from the customer menu. Past orders stay. If it only ran out today, mark it unavailable.</string>
+    <string name="emp_gerente_stock_note">Unavailable hides it until you sell it again. The dish stays on this list.</string>
+    <string name="emp_gerente_baja_note">This is not an unavailable mark. It takes the dish off this branch menu and does not delete orders.</string>
+    <string name="emp_gerente_baja_cancel">Cancel</string>
+    <string name="emp_gerente_tab_menu">Menu</string>
+    <string name="emp_gerente_tab_queue">Orders</string>
+    <string name="emp_gerente_queue">Orders in progress</string>
+    <string name="emp_gerente_queue_help">Customer orders that have not been handed off yet. You can only view them: you do not change them or cancel the payment.</string>
+    <string name="emp_gerente_queue_empty">There are no customer orders in progress right now.</string>
+    <string name="emp_gerente_order_turn">Order, turn %1$d</string>
+    <string name="emp_gerente_no_results">No dishes match that name or category.</string>
+    <string name="emp_gerente_add">Add dish</string>
+    <string name="emp_gerente_edit">Edit dish</string>
+    <string name="emp_gerente_new">New dish</string>
+    <string name="emp_gerente_save">Save dish</string>
+    <string name="emp_gerente_category">Category</string>
+    <string name="emp_gerente_available">For sale</string>
+    <string name="emp_gerente_unavailable">Unavailable</string>
+    <string name="emp_gerente_empty">This branch has no dishes yet.</string>
+    <string name="emp_gerente_home_title">Your establishment</string>
+    <string name="emp_gerente_home_hint">Manage your branch menu.</string>
 
 </resources>

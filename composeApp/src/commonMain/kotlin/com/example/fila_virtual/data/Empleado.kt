@@ -48,7 +48,12 @@ data class InvitacionEmpleado(
 )
 
 object RolesEmpleado {
-    val disponibles = listOf("cajero", "cocina", "entrega", "supervisor", "admin")
+    const val GERENTE = "gerente"
+    val disponibles = listOf("cajero", "cocina", "entrega", "gerente", "supervisor", "admin")
+
+    fun esGerente(roles: List<String>): Boolean {
+        return roles.any { it.trim().equals(GERENTE, ignoreCase = true) }
+    }
 }
 
 enum class EstacionOperativa {
@@ -68,7 +73,11 @@ enum class EstacionOperativa {
                     else -> null
                 }
             }.distinct()
-            return autorizadas.ifEmpty { entries }
+            if (autorizadas.isNotEmpty()) return autorizadas
+            val normalizados = roles.map { it.lowercase().trim() }.filter { it.isNotEmpty() }
+            val soloGerente = normalizados.isNotEmpty() &&
+                normalizados.all { it == RolesEmpleado.GERENTE }
+            return if (soloGerente) emptyList() else entries
         }
     }
 }
@@ -108,11 +117,23 @@ data class MetricaDiaria(
     val sesiones: List<SesionMetrica> = emptyList()
 )
 
+data class LineaTurnoDia(
+    val estacion: String = "",
+    val preparados: Int = 0,
+    val entregados: Int = 0,
+    val abandonados: Int = 0
+)
+
 data class ResumenTurno(
     val estacion: String = "",
     val inicioAt: Long = 0L,
     val finAt: Long = 0L,
     val preparados: Int = 0,
     val entregados: Int = 0,
-    val registroGuardado: Boolean = false
+    val abandonados: Int = 0,
+    val diaPreparados: Int = 0,
+    val diaEntregados: Int = 0,
+    val diaAbandonados: Int = 0,
+    val registroGuardado: Boolean = false,
+    val turnosDia: List<LineaTurnoDia> = emptyList()
 )

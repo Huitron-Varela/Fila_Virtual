@@ -2,10 +2,8 @@ package com.example.fila_virtual.repository
 
 import com.example.fila_virtual.data.AsignacionEmpleado
 import com.example.fila_virtual.data.EstadoPedido
-import com.example.fila_virtual.data.MetricaDiaria
 import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.ResumenTurno
-import com.example.fila_virtual.data.SesionMetrica
 import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.data.EstacionOperativa
 import com.example.fila_virtual.data.InvitacionEmpleado
@@ -89,6 +87,34 @@ class EmpleadoRepository {
             }
     }
 
+    suspend fun actualizarRolesUsuario(
+        uid: String,
+        roles: List<String>,
+        establecimientoId: String = "",
+        establecimientoNombre: String = ""
+    ): Result<Unit> {
+        if (uid.isBlank()) return Result.failure(Exception("Empleado no válido"))
+        return try {
+            val ahora = Clock.System.now().toEpochMilliseconds()
+            if (establecimientoId.isBlank()) {
+                db.collection("usuarios").document(uid).update(
+                    "rolesEmpleado" to roles,
+                    "updatedAt" to ahora
+                )
+            } else {
+                db.collection("usuarios").document(uid).update(
+                    "rolesEmpleado" to roles,
+                    "establecimientoId" to establecimientoId,
+                    "establecimientoNombre" to establecimientoNombre,
+                    "updatedAt" to ahora
+                )
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun buscarAsignacion(uid: String): Result<AsignacionEmpleado?> {
         if (uid.isBlank()) return Result.success(null)
         return try {
@@ -130,6 +156,7 @@ class EmpleadoRepository {
                 "sesionActiva" to true,
                 "sesionPreparados" to 0,
                 "sesionEntregados" to 0,
+                "sesionAbandonados" to 0,
                 "updatedAt" to ahora
             )
             Result.success(sesion)
@@ -227,6 +254,10 @@ class EmpleadoRepository {
         sumarContador(uid, "sesionEntregados")
     }
 
+    suspend fun sumarAbandonado(uid: String) {
+        sumarContador(uid, "sesionAbandonados")
+    }
+
     suspend fun cerrarSesion(sesion: SesionTurno): Result<ResumenTurno> {
         if (sesion.id.isBlank() || sesion.establecimientoId.isBlank()) {
             return Result.failure(Exception("La sesión no tiene identificador"))
@@ -238,7 +269,8 @@ class EmpleadoRepository {
             val contados = contarPorSesion(sesion)
             val preparados = maxOf(leerEntero(usuario, "sesionPreparados"), contados.first)
             val entregados = maxOf(leerEntero(usuario, "sesionEntregados"), contados.second)
-            val guardado = guardarMetrica(usuarioRef, usuario, sesion, ahora, preparados, entregados)
+            val abandonados = maxOf(leerEntero(usuario, "sesionAbandonados"), contados.third)
+            val guardado = guardarMetrica(usuarioRef, usuario, sesion, ahora, preparados, entregados, abandonados)
             Result.success(
                 ResumenTurno(
                     estacion = sesion.estacion,
@@ -246,7 +278,12 @@ class EmpleadoRepository {
                     finAt = ahora,
                     preparados = preparados,
                     entregados = entregados,
-                    registroGuardado = guardado
+                    abandonados = abandonados,
+                    diaPreparados = guardado.diaPreparados,
+                    diaEntregados = guardado.diaEntregados,
+                    diaAbandonados = guardado.diaAbandonados,
+                    registroGuardado = guardado.ok,
+                    turnosDia = guardado.turnosDia
                 )
             )
         } catch (e: Exception) {
@@ -261,8 +298,8 @@ class EmpleadoRepository {
         referencia.update(campo to actual + 1)
     }
 
-    private suspend fun contarPorSesion(sesion: SesionTurno): Pair<Int, Int> {
-        if (sesion.establecimientoId.isBlank()) return 0 to 0
+    private suspend fun contarPorSesion(sesion: SesionTurno): Triple<Int, Int, Int> {
+        if (sesion.establecimientoId.isBlank()) return Triple(0, 0, 0)
         return try {
             val snapshot = db.collection("pedidos")
                 .where { "establecimientoId" equalTo sesion.establecimientoId }
@@ -280,9 +317,14 @@ class EmpleadoRepository {
             } else {
                 0
             }
-            preparados to entregados
+            val abandonados = if (sesion.estacion == EstacionOperativa.ENTREGA.clave()) {
+                mios.count { it.estado == EstadoPedido.NO_RECLAMADO }
+            } else {
+                0
+            }
+            Triple(preparados, entregados, abandonados)
         } catch (_: Exception) {
-            0 to 0
+            Triple(0, 0, 0)
         }
     }
 
@@ -292,50 +334,82 @@ class EmpleadoRepository {
         sesion: SesionTurno,
         finAt: Long,
         preparados: Int,
-        entregados: Int
-    ): Boolean {
+        entregados: Int,
+        abandonados: Int
+    ): CierreGuardado {
         val fecha = Instant.fromEpochMilliseconds(finAt)
             .toLocalDateTime(TimeZone.currentSystemDefault())
             .date
             .toString()
-        val cuenta = runCatching { usuario.data<Usuario>() }.getOrNull()
-        val previas = if (cuenta?.metricasFecha == fecha) cuenta.metricasSesiones else emptyList()
-        val yaCerrada = previas.any { it.id == sesion.id && it.finAt > 0L }
-        val cerrada = SesionMetrica(
-            id = sesion.id,
-            estacion = sesion.estacion,
-            inicioAt = sesion.inicioAt,
-            finAt = finAt,
-            preparados = preparados,
-            entregados = entregados
-        )
-        val actualizadas = if (yaCerrada) previas else previas.filter { it.id != sesion.id } + cerrada
-        val guardadoEnCuenta = try {
+        val yaCerrada = runCatching { usuario.get<String>("ultimaMetricaSesionId") }.getOrNull() == sesion.id
+        val fechaGuardada = runCatching { usuario.get<String>("metricaFecha") }.getOrNull().orEmpty()
+        val mismoDia = fechaGuardada == fecha
+        val diaPreparadosPrevio = if (mismoDia) leerEntero(usuario, "metricaDiaPreparados") else 0
+        val diaEntregadosPrevio = if (mismoDia) leerEntero(usuario, "metricaDiaEntregados") else 0
+        val diaPreparados = if (yaCerrada) diaPreparadosPrevio else diaPreparadosPrevio + preparados
+        val diaEntregados = if (yaCerrada) diaEntregadosPrevio else diaEntregadosPrevio + entregados
+        val diaAbandonadosPrevio = if (mismoDia) leerEntero(usuario, "metricaDiaAbandonados") else 0
+        val diaAbandonados = if (yaCerrada) diaAbandonadosPrevio else diaAbandonadosPrevio + abandonados
+        val historialPrevio = if (mismoDia) {
+            runCatching { usuario.get<String>("metricaHistorialDia") }.getOrNull().orEmpty()
+        } else {
+            ""
+        }
+        val linea = "${sesion.estacion}|${sesion.inicioAt}|$finAt|$preparados|$entregados|$abandonados"
+        val historial = when {
+            yaCerrada -> historialPrevio
+            historialPrevio.isBlank() -> linea
+            else -> "$historialPrevio\n$linea"
+        }
+        val turnosDia = parsearHistorialDia(historial)
+        return try {
             usuarioRef.update(
                 "sesionActiva" to false,
                 "updatedAt" to finAt,
-                "metricasFecha" to fecha,
-                "metricasSesiones" to actualizadas
+                "metricaFecha" to fecha,
+                "metricaEstacion" to sesion.estacion,
+                "metricaInicioAt" to sesion.inicioAt,
+                "metricaFinAt" to finAt,
+                "metricaPreparados" to preparados,
+                "metricaEntregados" to entregados,
+                "metricaAbandonados" to abandonados,
+                "metricaDiaPreparados" to diaPreparados,
+                "metricaDiaEntregados" to diaEntregados,
+                "metricaDiaAbandonados" to diaAbandonados,
+                "ultimaMetricaSesionId" to sesion.id,
+                "metricaHistorialDia" to historial
             )
-            true
+            CierreGuardado(true, diaPreparados, diaEntregados, diaAbandonados, turnosDia)
         } catch (_: Exception) {
-            false
+            runCatching {
+                usuarioRef.update("sesionActiva" to false, "updatedAt" to finAt)
+            }
+            CierreGuardado(false, diaPreparados, diaEntregados, diaAbandonados, turnosDia)
         }
-        runCatching {
-            db.collection("empleadoMetricasDiarias")
-                .document("${sesion.empleadoUid}_$fecha")
-                .set(
-                    MetricaDiaria(
-                        empleadoUid = sesion.empleadoUid,
-                        establecimientoId = sesion.establecimientoId,
-                        fecha = fecha,
-                        sesiones = actualizadas
-                    )
-                )
-        }
-        return guardadoEnCuenta
     }
 }
+
+private fun parsearHistorialDia(texto: String): List<com.example.fila_virtual.data.LineaTurnoDia> {
+    if (texto.isBlank()) return emptyList()
+    return texto.lineSequence().mapNotNull { linea ->
+        val partes = linea.split("|")
+        if (partes.size < 6) return@mapNotNull null
+        com.example.fila_virtual.data.LineaTurnoDia(
+            estacion = partes[0],
+            preparados = partes[3].toIntOrNull() ?: 0,
+            entregados = partes[4].toIntOrNull() ?: 0,
+            abandonados = partes[5].toIntOrNull() ?: 0
+        )
+    }.toList()
+}
+
+private data class CierreGuardado(
+    val ok: Boolean,
+    val diaPreparados: Int,
+    val diaEntregados: Int,
+    val diaAbandonados: Int,
+    val turnosDia: List<com.example.fila_virtual.data.LineaTurnoDia> = emptyList()
+)
 
 private fun leerEntero(documento: dev.gitlive.firebase.firestore.DocumentSnapshot, campo: String): Int {
     if (!documento.contains(campo)) return 0

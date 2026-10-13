@@ -46,7 +46,7 @@ fun EmployeesScreen(
     establecimientoId: String,
     ownerUid: String,
     onNavigateToAdd: (String) -> Unit,
-    onEditEmpleado: (EmpleadoDetalle) -> Unit,
+    onEditEmpleado: (EmpleadoDetalle, String) -> Unit,
     viewModel: EmpleadoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
@@ -368,6 +368,7 @@ fun EmployeesScreen(
                             "cajero" -> stringResource(Res.string.emp_role_cashier)
                             "cocina" -> stringResource(Res.string.emp_role_kitchen)
                             "entrega" -> stringResource(Res.string.emp_role_delivery)
+                            "gerente" -> stringResource(Res.string.emp_role_gerente)
                             "supervisor" -> stringResource(Res.string.emp_role_supervisor)
                             "admin" -> stringResource(Res.string.emp_role_admin_local)
                             else -> role
@@ -443,7 +444,10 @@ fun EmployeesScreen(
                     Button(
                         onClick = { 
                             selectedEmpleado = null
-                            onEditEmpleado(emp) 
+                            onEditEmpleado(
+                                emp,
+                                if (currentEstablecimientoId == "TODOS") "" else currentEstablecimientoId
+                            ) 
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -562,6 +566,7 @@ fun CardEmpleado(
                         "cajero" -> stringResource(Res.string.emp_role_cashier)
                         "cocina" -> stringResource(Res.string.emp_role_kitchen)
                         "entrega" -> stringResource(Res.string.emp_role_delivery)
+                        "gerente" -> stringResource(Res.string.emp_role_gerente)
                         "supervisor" -> stringResource(Res.string.emp_role_supervisor)
                         "admin" -> stringResource(Res.string.emp_role_admin_local)
                         else -> role
