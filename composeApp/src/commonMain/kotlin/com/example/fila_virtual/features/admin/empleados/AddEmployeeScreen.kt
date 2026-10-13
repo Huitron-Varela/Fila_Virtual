@@ -1,11 +1,11 @@
 package com.example.fila_virtual.features.admin.empleados
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,11 +19,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -40,9 +38,6 @@ import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.core.*
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.FormState
-import com.example.fila_virtual.core.BackHandler
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -54,9 +49,9 @@ fun AddEmployeeScreen(
     viewModel: EmpleadoViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val establecimientoViewModel: EstablecimientoViewModel = viewModel()
     val windowSize = LocalWindowSize.current
-    val formPadding = windowSize.compactDp(16)
     val uiState by viewModel.uiState.collectAsState()
     val isEditing = empleado != null
     val focusManager = LocalFocusManager.current
@@ -70,9 +65,8 @@ fun AddEmployeeScreen(
             }?.ifEmpty { listOf("cajero") } ?: listOf("cajero")
         )
     }
-    var localError by remember { mutableStateOf("") }
-    var invitationToken by remember { mutableStateOf("") }
-    val clipboardManager = LocalClipboardManager.current
+    
+    var showInvitationDialog by remember { mutableStateOf(false) }
     
     val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
     
@@ -89,45 +83,89 @@ fun AddEmployeeScreen(
         establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: stringResource(Res.string.emp_unknown_branch)
     }
 
+    // Mensajes para Toasts
+    val msgErrorNoBranch = stringResource(Res.string.emp_error_no_branch)
+    val msgErrorNoRole = stringResource(Res.string.emp_error_no_role)
+    val msgErrorInvalidEmail = "Por favor ingresa un correo válido"
+
     LaunchedEffect(uiState) {
-        if (uiState is FormState.Success && isEditing) {
-            viewModel.resetState()
-            onNavigateBack()
+        when (uiState) {
+            is FormState.Success -> {
+                if (isEditing) {
+                    viewModel.resetState()
+                    onNavigateBack()
+                } else {
+                    showInvitationDialog = true
+                }
+            }
+            is FormState.Error -> {
+                val message = (uiState as FormState.Error).message
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+            else -> {}
         }
+    }
+
+    if (showInvitationDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showInvitationDialog = false
+                viewModel.resetState()
+                onNavigateBack()
+            },
+            title = { Text(stringResource(Res.string.emp_invitation_sent)) },
+            text = { Text("Se ha enviado un correo electrónico al usuario con los detalles para unirse al establecimiento.") },
+            confirmButton = {
+                TextButton(onClick = { 
+                    showInvitationDialog = false
+                    viewModel.resetState()
+                    onNavigateBack()
+                }) {
+                    Text("Entendido")
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     BaseFormScreen(
         title = if (isEditing) stringResource(Res.string.emp_title_edit) else stringResource(Res.string.emp_add_employee),
         onBack = onNavigateBack,
-        //isLoading = uiState is FormState.Loading,
+        isSaveEnabled = uiState !is FormState.Loading,
         saveButtonText = if (isEditing) stringResource(Res.string.est_save_changes) else stringResource(Res.string.emp_bind_employee),
         onSave = {
-            if (selectedEstablecimientoId.isEmpty()) {
-                localError = "emp_error_no_branch" // we resolve via stringResource or keep key logic
-            } else {
-                localError = ""
-                focusManager.clearFocus()
-                if (isEditing) {
-                    viewModel.guardarEmpleadoPorCorreo(
-                        correoBusqueda = correo,
-                        roles = rolesSeleccionados,
-                        establecimientoId = selectedEstablecimientoId,
-                        onSuccess = onNavigateBack
-                    )
-                } else {
-                    viewModel.enviarInvitacionPorCorreo(
-                        correo = correo,
-                        roles = rolesSeleccionados,
-                        establecimientoId = selectedEstablecimientoId,
-                        onSent = { invitationToken = it }
-                    )
+            when {
+                correo.isBlank() || !isValidEmail(correo) -> {
+                    Toast.makeText(context, msgErrorInvalidEmail, Toast.LENGTH_SHORT).show()
+                }
+                selectedEstablecimientoId.isEmpty() -> {
+                    Toast.makeText(context, msgErrorNoBranch, Toast.LENGTH_SHORT).show()
+                }
+                rolesSeleccionados.isEmpty() -> {
+                    Toast.makeText(context, msgErrorNoRole, Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                    focusManager.clearFocus()
+                    if (isEditing) {
+                        viewModel.guardarEmpleadoPorCorreo(
+                            correoBusqueda = correo,
+                            roles = rolesSeleccionados,
+                            establecimientoId = selectedEstablecimientoId,
+                            onSuccess = onNavigateBack
+                        )
+                    } else {
+                        viewModel.enviarInvitacionPorCorreo(
+                            correo = correo,
+                            roles = rolesSeleccionados,
+                            establecimientoId = selectedEstablecimientoId,
+                            onSent = { /* El diálogo se activa por uiState Success */ }
+                        )
+                    }
                 }
             }
         }
     ) {
-        // Resolve error message properly
-        val errorTextToShow = if (localError == "emp_error_no_branch") stringResource(Res.string.emp_error_no_branch) else localError
-
         if (!isEditing) {
             Text(
                 text = stringResource(Res.string.emp_warning_registered_account),
@@ -140,41 +178,6 @@ fun AddEmployeeScreen(
                     .background(SoftOrangeBg, RoundedCornerShape(8.dp))
                     .padding(12.dp)
             )
-            if (invitationToken.isNotEmpty()) {
-                Surface(
-                    color = SoftOrangeBg,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(formPadding),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(stringResource(Res.string.emp_invitation_sent), fontWeight = FontWeight.Bold, color = DarkGray)
-                        Text(
-                            text = invitationToken,
-                            color = PrimaryOrange,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                        OutlinedButton(
-                            onClick = { clipboardManager.setText(AnnotatedString(invitationToken)) }
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(Res.string.emp_copy_code))
-                        }
-                        Text(
-                            stringResource(Res.string.emp_invitation_expiry),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MediumGray,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                }
-            }
         } else {
             Text(
                 text = stringResource(Res.string.emp_editing_role, empleado?.nombre ?: ""),
@@ -196,7 +199,6 @@ fun AddEmployeeScreen(
                 imeAction = ImeAction.Done
             ),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            //enabled = !isEditing
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -219,7 +221,7 @@ fun AddEmployeeScreen(
                 border = BorderStroke(1.dp, ExtraLightGray)
             ) {
                 Row(
-                    modifier = Modifier.padding(formPadding),
+                    modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -261,7 +263,6 @@ fun AddEmployeeScreen(
                         onClick = {
                             selectedEstablecimientoId = sucursal.id
                             expandedEstablecimiento = false
-                            if (localError == "emp_error_no_branch") localError = ""
                         }
                     )
                 }
@@ -306,24 +307,11 @@ fun AddEmployeeScreen(
             }
         )
         Text(
-            text = if (rolesSeleccionados.isEmpty()) stringResource(Res.string.emp_error_no_role) else stringResource(Res.string.emp_info_multiple_roles),
-            color = if (rolesSeleccionados.isEmpty()) TrafficRed else MediumGray,
+            text = stringResource(Res.string.emp_info_multiple_roles),
+            color = MediumGray,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 8.dp)
         )
-
-        if (errorTextToShow.isNotEmpty() || uiState is FormState.Error) {
-            Spacer(modifier = Modifier.height(16.dp))
-            val errorMessage = if (errorTextToShow.isNotEmpty()) errorTextToShow else (uiState as FormState.Error).message
-            Text(
-                text = errorMessage,
-                color = TrafficRed,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
     }
 }
 
