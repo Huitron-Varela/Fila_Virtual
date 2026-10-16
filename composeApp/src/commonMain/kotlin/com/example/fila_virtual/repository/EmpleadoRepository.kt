@@ -134,6 +134,43 @@ class EmpleadoRepository {
         }
     }
 
+    suspend fun buscarSesionActiva(uid: String, establecimientoId: String): SesionTurno? {
+        if (uid.isBlank() || establecimientoId.isBlank()) return null
+        return runCatching {
+            val usuario = db.collection("usuarios").document(uid).get()
+            if (!usuario.exists || usuario.get<Boolean>("sesionActiva") != true) return@runCatching null
+            val sesionId = runCatching { usuario.get<String>("sesionId") }.getOrNull().orEmpty()
+            val estacion = runCatching { usuario.get<String>("sesionEstacion") }.getOrNull().orEmpty()
+            if (sesionId.isBlank() || estacion.isBlank()) return@runCatching null
+            SesionTurno(
+                id = sesionId,
+                empleadoUid = uid,
+                establecimientoId = establecimientoId,
+                estacion = estacion,
+                inicioAt = leerLong(usuario, "sesionInicioAt"),
+                activa = true
+            )
+        }.getOrNull()
+    }
+
+    fun observarEstadisticasSesion(uid: String): Flow<ResumenTurno?> {
+        if (uid.isBlank()) return kotlinx.coroutines.flow.flowOf(null)
+        return db.collection("usuarios").document(uid).snapshots.map { usuario ->
+            val activa = runCatching { usuario.get<Boolean>("sesionActiva") }.getOrNull() ?: false
+            if (!usuario.exists || !activa) {
+                null
+            } else {
+                ResumenTurno(
+                    estacion = runCatching { usuario.get<String>("sesionEstacion") }.getOrNull().orEmpty(),
+                    inicioAt = leerLong(usuario, "sesionInicioAt"),
+                    preparados = leerEntero(usuario, "sesionPreparados"),
+                    entregados = leerEntero(usuario, "sesionEntregados"),
+                    abandonados = leerEntero(usuario, "sesionAbandonados")
+                )
+            }
+        }
+    }
+
     suspend fun iniciarSesion(
         uid: String,
         asignacion: AsignacionEmpleado,
@@ -416,4 +453,9 @@ private fun leerEntero(documento: dev.gitlive.firebase.firestore.DocumentSnapsho
     return runCatching { documento.get<Long>(campo).toInt() }.getOrNull()
         ?: runCatching { documento.get<Int>(campo) }.getOrNull()
         ?: 0
+}
+
+private fun leerLong(documento: dev.gitlive.firebase.firestore.DocumentSnapshot, campo: String): Long {
+    if (!documento.contains(campo)) return 0L
+    return runCatching { documento.get<Long>(campo) }.getOrNull() ?: 0L
 }

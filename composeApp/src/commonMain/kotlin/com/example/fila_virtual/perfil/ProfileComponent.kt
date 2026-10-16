@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.data.Usuario
-import com.example.fila_virtual.features.empleados.CodigoInvitacionCard
+import com.example.fila_virtual.features.empleados.comun.CodigoInvitacionCard
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.repository.EmpleadoRepository
 import com.example.fila_virtual.core.theme.*

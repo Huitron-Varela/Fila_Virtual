@@ -34,9 +34,37 @@ fun FilaVirtualTheme(
             fontWeight = FontWeight.Bold,
             fontSize = windowSize.adaptiveSp(32)
         ),
-        titleLarge = TextStyle(
+        displayMedium = TextStyle(
+            fontWeight = FontWeight.Bold,
+            fontSize = windowSize.adaptiveSp(28)
+        ),
+        displaySmall = TextStyle(
             fontWeight = FontWeight.Bold,
             fontSize = windowSize.adaptiveSp(24)
+        ),
+        headlineLarge = TextStyle(
+            fontWeight = FontWeight.Bold,
+            fontSize = windowSize.adaptiveSp(24)
+        ),
+        headlineMedium = TextStyle(
+            fontWeight = FontWeight.Bold,
+            fontSize = windowSize.adaptiveSp(22)
+        ),
+        headlineSmall = TextStyle(
+            fontWeight = FontWeight.Bold,
+            fontSize = windowSize.adaptiveSp(20)
+        ),
+        titleLarge = TextStyle(
+            fontWeight = FontWeight.Bold,
+            fontSize = windowSize.adaptiveSp(20)
+        ),
+        titleMedium = TextStyle(
+            fontWeight = FontWeight.SemiBold,
+            fontSize = windowSize.adaptiveSp(16)
+        ),
+        titleSmall = TextStyle(
+            fontWeight = FontWeight.SemiBold,
+            fontSize = windowSize.adaptiveSp(14)
         ),
         bodyLarge = TextStyle(
             fontWeight = FontWeight.Normal,
@@ -45,8 +73,19 @@ fun FilaVirtualTheme(
         bodyMedium = TextStyle(
             fontSize = windowSize.adaptiveSp(14)
         ),
+        bodySmall = TextStyle(
+            fontSize = windowSize.adaptiveSp(12)
+        ),
+        labelLarge = TextStyle(
+            fontWeight = FontWeight.Medium,
+            fontSize = windowSize.adaptiveSp(14)
+        ),
+        labelMedium = TextStyle(
+            fontWeight = FontWeight.Medium,
+            fontSize = windowSize.adaptiveSp(12)
+        ),
         labelSmall = TextStyle(
-            fontSize = windowSize.adaptiveSp(12),
+            fontSize = windowSize.adaptiveSp(11),
             color = MediumGray
         )
     )

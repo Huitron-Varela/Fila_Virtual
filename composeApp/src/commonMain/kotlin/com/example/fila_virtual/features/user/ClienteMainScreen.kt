@@ -143,7 +143,6 @@ fun ClienteMainScreen(
                         when (page) {
                             0 -> {
                                 HomeView(
-                                    usuario = usuario,
                                     cartCount = carritoActual.sumOf { it.cantidad },
                                     onCartClick = { showCart = true },
                                     onEstablecimientoClick = { local -> selectedEstablecimiento = local },

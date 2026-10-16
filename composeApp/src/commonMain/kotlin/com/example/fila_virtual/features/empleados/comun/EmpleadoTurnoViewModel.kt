@@ -1,4 +1,4 @@
-package com.example.fila_virtual.features.empleados
+package com.example.fila_virtual.features.empleados.comun
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,6 +11,7 @@ import com.example.fila_virtual.data.ResumenTurno
 import com.example.fila_virtual.data.SesionTurno
 import com.example.fila_virtual.repository.EmpleadoRepository
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.catch
 
 class EmpleadoTurnoViewModel(
     private val repository: EmpleadoRepository = EmpleadoRepository()
@@ -24,22 +25,35 @@ class EmpleadoTurnoViewModel(
         private set
     var sesion by mutableStateOf<SesionTurno?>(null)
         private set
+    var estadisticasSesion by mutableStateOf<ResumenTurno?>(null)
+        private set
     var error by mutableStateOf("")
         private set
+    private var estadisticasJob: kotlinx.coroutines.Job? = null
 
     val estaciones: List<EstacionOperativa>
         get() = EstacionOperativa.desdeRoles(asignacion?.roles.orEmpty())
 
     fun cargar(uid: String) {
         if (uid.isBlank()) return
+        estadisticasJob?.cancel()
+        estadisticasJob = viewModelScope.launch {
+            repository.observarEstadisticasSesion(uid)
+                .catch { estadisticasSesion = null }
+                .collect { estadisticasSesion = it }
+        }
         viewModelScope.launch {
             cargando = true
             error = ""
             val resultado = repository.buscarAsignacion(uid)
             if (resultado.isSuccess) {
                 asignacion = resultado.getOrNull()
+                sesion = asignacion?.let { actual ->
+                    repository.buscarSesionActiva(uid, actual.establecimientoId)
+                }
             } else {
                 asignacion = null
+                sesion = null
                 error = mensajeError(resultado.exceptionOrNull(), "No se pudo consultar tu establecimiento")
             }
             cargando = false

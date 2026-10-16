@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.user.UserHomeViewModel
@@ -32,17 +31,15 @@ import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import fila_virtual.composeapp.generated.resources.Res
-import fila_virtual.composeapp.generated.resources.client_welcome
+import fila_virtual.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 // 👇 Importaciones exclusivas de Compose Multiplatform para la vibración
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
-@Suppress("UNUSED_PARAMETER")
 @Composable
 fun HomeView(
-    usuario: Usuario?,
     cartCount: Int,
     onCartClick: () -> Unit,
     onEstablecimientoClick: (Establecimiento) -> Unit,
@@ -88,7 +85,7 @@ fun HomeView(
         ) {
             if (searchQuery.isNotBlank()) {
                 Spacer(modifier = Modifier.height(16.dp))
-                SectionHeader(title = "Resultados de búsqueda", actionText = null, padding = horizontalPadding)
+                SectionHeader(title = stringResource(Res.string.home_search_results), padding = horizontalPadding)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 RecommendationsList(
@@ -97,7 +94,7 @@ fun HomeView(
                     onAddToCart = onAddToCart
                 )
             } else {
-                SectionHeader(title = "Categorías", actionText = null, padding = horizontalPadding)
+                SectionHeader(title = stringResource(Res.string.home_categories), padding = horizontalPadding)
                 Spacer(modifier = Modifier.height(16.dp))
                 CategoryRow(
                     categorias = categoriasDisponibles,
@@ -107,7 +104,7 @@ fun HomeView(
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
-                SectionHeader(title = "Cafeterías Populares", actionText = "Ver todas", padding = horizontalPadding)
+                SectionHeader(title = stringResource(Res.string.home_featured), padding = horizontalPadding)
                 Spacer(modifier = Modifier.height(16.dp))
                 CafeteriasList(
                     establecimientos = establecimientos,
@@ -116,7 +113,7 @@ fun HomeView(
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
-                SectionHeader(title = "Recomendaciones para ti", actionText = null, padding = horizontalPadding)
+                SectionHeader(title = stringResource(Res.string.home_recommendations), padding = horizontalPadding)
                 Spacer(modifier = Modifier.height(16.dp))
                 RecommendationsList(
                     productosConLocal = listaRecomendaciones,
@@ -163,16 +160,15 @@ fun HomeHeader(padding: Dp, cartCount: Int, onCartClick: () -> Unit) {
                 }
             }
         ) {
-            Surface(
+            IconButton(
+                onClick = onCartClick,
                 modifier = Modifier
-                    .size(45.dp)
-                    .clip(CircleShape)
-                    .clickable { onCartClick() },
-                color = BorderGray.copy(alpha = 0.4f)
+                    .size(48.dp)
+                    .background(BorderGray.copy(alpha = 0.4f), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.ShoppingCart,
-                    contentDescription = "Carrito",
+                    contentDescription = stringResource(Res.string.user_cart_open),
                     modifier = Modifier.padding(10.dp),
                     tint = DarkGray
                 )
@@ -182,7 +178,7 @@ fun HomeHeader(padding: Dp, cartCount: Int, onCartClick: () -> Unit) {
 }
 
 @Composable
-fun SectionHeader(title: String, actionText: String?, padding: Dp) {
+fun SectionHeader(title: String, padding: Dp) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -192,19 +188,8 @@ fun SectionHeader(title: String, actionText: String?, padding: Dp) {
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontSize = LocalWindowSize.current.adaptiveSp(18),
-                fontWeight = FontWeight.Bold
-            )
+            style = MaterialTheme.typography.titleLarge
         )
-        if (actionText != null) {
-            Text(
-                text = actionText,
-                color = PrimaryOrange,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.clickable { /* Acción */ }
-            )
-        }
     }
 }
 

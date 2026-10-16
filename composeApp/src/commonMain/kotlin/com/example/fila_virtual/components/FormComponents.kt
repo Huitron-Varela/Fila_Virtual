@@ -12,8 +12,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,12 +79,14 @@ fun BaseFormScreen(
     onBack: () -> Unit,
     onSave: () -> Unit,
     saveButtonText: String = "Guardar",
-    saveIcon: ImageVector? = null,
+    saveIcon: ImageVector? = Icons.Default.Save,
     isSaveEnabled: Boolean = true,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     content: @Composable ColumnScope.() -> Unit
 ) {
     Scaffold(
         containerColor = LightBackground,
+        snackbarHost = { AppSnackbarHost(snackbarHostState) },
         topBar = {
             FormHeader(title = title, onBack = onBack)
         },

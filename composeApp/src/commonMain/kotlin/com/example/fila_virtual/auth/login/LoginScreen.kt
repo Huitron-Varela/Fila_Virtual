@@ -9,10 +9,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,7 +62,6 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val windowSize = LocalWindowSize.current
-    val context = LocalContext.current
     val authRepository = remember { AuthRepository() }
 
     var email by remember { mutableStateOf("") }
@@ -159,7 +157,8 @@ fun LoginScreen(
         ActionButton(
             text = stringResource(Res.string.btn_login),
             isLoading = isLoading,
-            enabled = isLoginEnabled
+            enabled = isLoginEnabled,
+            icon = Icons.Default.Login
         ) {
             scope.launch {
                 isLoading = true
@@ -167,8 +166,7 @@ fun LoginScreen(
                     Firebase.auth.signInWithEmailAndPassword(email.trim(), password.trim())
                     onNavigate(Screens.Home)
                 } catch (e: Exception) {
-                    val errorMsg = mapFirebaseError(e.message)
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    errorMessage = mapFirebaseError(e.message)
                 } finally {
                     isLoading = false
                 }

@@ -222,20 +222,6 @@ fun AdminHeader(padding: Dp) {
             )
         }
 
-        Surface(
-            modifier = Modifier
-                .size(45.dp)
-                .clip(CircleShape)
-                .clickable { /* Notificaciones */ },
-            color = BorderGray.copy(alpha = 0.4f)
-        ) {
-            Icon(
-                imageVector = Icons.Default.NotificationsNone,
-                contentDescription = stringResource(Res.string.admin_dashboard_notifications),
-                modifier = Modifier.padding(10.dp),
-                tint = DarkGray
-            )
-        }
     }
 }
 

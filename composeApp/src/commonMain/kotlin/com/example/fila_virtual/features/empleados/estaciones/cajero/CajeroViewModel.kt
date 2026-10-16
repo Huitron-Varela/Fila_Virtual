@@ -1,4 +1,4 @@
-package com.example.fila_virtual.features.empleados
+package com.example.fila_virtual.features.empleados.estaciones.cajero
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

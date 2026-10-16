@@ -1,6 +1,5 @@
 package com.example.fila_virtual.features.admin.empleados
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,8 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,6 +39,7 @@ import com.example.fila_virtual.core.*
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.FormState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -47,14 +48,18 @@ fun AddEmployeeScreen(
     establecimientoId: String,
     ownerUid: String,
     viewModel: EmpleadoViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    permitirCambiarEstablecimiento: Boolean = true,
+    establecimientoNombreFijo: String = ""
 ) {
-    val context = LocalContext.current
     val establecimientoViewModel: EstablecimientoViewModel = viewModel()
     val windowSize = LocalWindowSize.current
     val uiState by viewModel.uiState.collectAsState()
     val isEditing = empleado != null
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     var correo by remember { mutableStateOf(empleado?.correo ?: "") }
     val rolesDisponibles = RolesEmpleado.disponibles
@@ -75,7 +80,13 @@ fun AddEmployeeScreen(
     }
 
     var selectedEstablecimientoId by remember {
-        mutableStateOf(establecimientoId.takeUnless { it.isBlank() || it == "TODOS" }.orEmpty())
+        mutableStateOf(
+            if (permitirCambiarEstablecimiento) {
+                establecimientoId.takeUnless { it.isBlank() || it == "TODOS" }.orEmpty()
+            } else {
+                establecimientoId
+            }
+        )
     }
     var expandedEstablecimiento by remember { mutableStateOf(false) }
 
@@ -97,11 +108,11 @@ fun AddEmployeeScreen(
         }
     }
 
-    val sucursalActual = if (selectedEstablecimientoId.isEmpty()) {
+    val sucursalActual = establecimientoNombreFijo.ifBlank { if (selectedEstablecimientoId.isEmpty()) {
         stringResource(Res.string.emp_select_branch)
     } else {
         establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: stringResource(Res.string.emp_unknown_branch)
-    }
+    } }
 
     // Mensajes para Toasts
     val msgErrorNoBranch = stringResource(Res.string.emp_error_no_branch)
@@ -120,7 +131,7 @@ fun AddEmployeeScreen(
             }
             is FormState.Error -> {
                 val message = (uiState as FormState.Error).message
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                snackbarHostState.showSnackbar(message)
             }
             else -> {}
         }
@@ -153,19 +164,21 @@ fun AddEmployeeScreen(
         title = if (isEditing) stringResource(Res.string.emp_title_edit) else stringResource(Res.string.emp_add_employee),
         onBack = onNavigateBack,
         isSaveEnabled = uiState !is FormState.Loading,
+        snackbarHostState = snackbarHostState,
         saveButtonText = if (isEditing) stringResource(Res.string.est_save_changes) else stringResource(Res.string.emp_bind_employee),
         onSave = {
             when {
                 correo.isBlank() || !isValidEmail(correo) -> {
-                    Toast.makeText(context, msgErrorInvalidEmail, Toast.LENGTH_SHORT).show()
+                    scope.launch { snackbarHostState.showSnackbar(msgErrorInvalidEmail) }
                 }
                 selectedEstablecimientoId.isEmpty() -> {
-                    Toast.makeText(context, msgErrorNoBranch, Toast.LENGTH_SHORT).show()
+                    scope.launch { snackbarHostState.showSnackbar(msgErrorNoBranch) }
                 }
                 rolesSeleccionados.isEmpty() -> {
-                    Toast.makeText(context, msgErrorNoRole, Toast.LENGTH_SHORT).show()
+                    scope.launch { snackbarHostState.showSnackbar(msgErrorNoRole) }
                 }
                 else -> {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     focusManager.clearFocus()
                     if (isEditing) {
                         viewModel.guardarEmpleadoPorCorreo(
@@ -241,7 +254,9 @@ fun AddEmployeeScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expandedEstablecimiento = !expandedEstablecimiento },
+                    .clickable(enabled = permitirCambiarEstablecimiento) {
+                        expandedEstablecimiento = !expandedEstablecimiento
+                    },
                 border = BorderStroke(1.dp, ExtraLightGray)
             ) {
                 Row(
@@ -263,29 +278,33 @@ fun AddEmployeeScreen(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    Icon(
-                        imageVector = if (expandedEstablecimiento) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MediumGray,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (permitirCambiarEstablecimiento) {
+                        Icon(
+                            imageVector = if (expandedEstablecimiento) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MediumGray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
-            DropdownMenu(
-                expanded = expandedEstablecimiento,
-                onDismissRequest = { expandedEstablecimiento = false },
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .background(LightSurface)
-            ) {
-                establecimientos.forEach { sucursal ->
-                    DropdownMenuItem(
-                        text = { Text(sucursal.nombre) },
-                        onClick = {
-                            selectedEstablecimientoId = sucursal.id
-                            expandedEstablecimiento = false
-                        }
-                    )
+            if (permitirCambiarEstablecimiento) {
+                DropdownMenu(
+                    expanded = expandedEstablecimiento,
+                    onDismissRequest = { expandedEstablecimiento = false },
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(LightSurface)
+                ) {
+                    establecimientos.forEach { sucursal ->
+                        DropdownMenuItem(
+                            text = { Text(sucursal.nombre) },
+                            onClick = {
+                                selectedEstablecimientoId = sucursal.id
+                                expandedEstablecimiento = false
+                            }
+                        )
+                    }
                 }
             }
         }

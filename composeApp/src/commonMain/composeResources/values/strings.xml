@@ -15,6 +15,7 @@
     <string name="general_total">Total</string>
     <string name="general_attention">Atención</string>
     <string name="general_understood">Entendido</string>
+    <string name="general_back">Regresar</string>
 
     <!-- ========================================== -->
     <!-- NAVEGACIÓN PRINCIPAL                       -->
@@ -65,6 +66,8 @@
     <string name="home_categories">Categorías</string>
     <string name="home_see_all">VER TODAS</string>
     <string name="home_featured">Establecimientos destacados</string>
+    <string name="home_search_results">Resultados de búsqueda</string>
+    <string name="home_recommendations">Recomendaciones para ti</string>
     <string name="home_see_all_establishments">VER TODOS</string>
 
     <!-- ========================================== -->
@@ -288,6 +291,16 @@
     <string name="menu_title_edit">Editar Platillo</string>
     <string name="menu_search">Buscar en el menú...</string>
     <string name="menu_empty">El menú está vacío</string>
+    <string name="user_menu_loading">Cargando menú…</string>
+    <string name="user_menu_load_error">No se pudo cargar el menú. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="user_menu_retry">Intentar de nuevo</string>
+    <string name="user_menu_empty">No hay platillos disponibles</string>
+    <string name="user_menu_empty_desc">Este establecimiento aún no tiene platillos disponibles.</string>
+    <string name="user_cart_item_added">%1$s agregado al carrito</string>
+    <string name="user_cart_open">Abrir carrito</string>
+    <string name="user_product_add">Agregar al carrito</string>
+    <string name="cart_quantity_decrease">Reducir cantidad</string>
+    <string name="cart_quantity_increase">Aumentar cantidad</string>
     <string name="menu_dish_name">Nombre del platillo</string>
     <string name="menu_dish_desc">Descripción</string>
     <string name="menu_dish_desc_placeholder">Ej. Deliciosa hamburguesa con queso, lechuga y tomate...</string>
@@ -325,6 +338,11 @@
     <string name="emp_home_badge">Empleado operativo</string>
     <string name="emp_home_title">Inicia tu turno</string>
     <string name="emp_home_subtitle">Elige la estación en la que vas a trabajar.</string>
+    <string name="emp_shift_start_slide">Desliza para iniciar turno</string>
+    <string name="emp_shift_end_slide">Desliza para terminar turno</string>
+    <string name="emp_shift_select_station">Elige una estación</string>
+    <string name="emp_shift_statistics_empty">Las estadísticas aparecerán cuando inicies tu turno.</string>
+    <string name="emp_home_last_shift">Último turno registrado</string>
     <string name="emp_home_active_hint">Entra a una estación para continuar, o termina el turno cuando acabes.</string>
     <string name="emp_station_cocina">Cocina</string>
     <string name="emp_station_cocina_desc">Consulta pedidos recibidos, pásalos a preparación y márcalos como listos.</string>
@@ -345,6 +363,8 @@
     <string name="emp_cashier_orders">Pedidos</string>
     <string name="emp_cashier_collected">Cobrado</string>
     <string name="emp_cashier_incidents">Incidencias</string>
+    <string name="emp_cashier_ticket">Transacción #TK-%1$s</string>
+    <string name="emp_cashier_total">Total</string>
     <string name="emp_status_pending">Pendiente</string>
     <string name="emp_status_delivered">Entregado</string>
     <string name="emp_status_unclaimed">No reclamado</string>
@@ -391,12 +411,23 @@
     <string name="emp_current_order">Pedido en turno</string>
     <string name="emp_after_turn">Después va el turno %1$d</string>
     <string name="emp_pending_title">Por elaborar</string>
+    <string name="emp_kitchen_no_pending">Sin productos por elaborar</string>
+    <string name="emp_kitchen_active_orders">%1$d pedidos activos</string>
     <string name="emp_kitchen_blocked">El turno debe quedar guardado para cambiar el estado de un pedido.</string>
     <string name="emp_code_title">¿Tienes un código?</string>
     <string name="emp_code_help">Pega el código que generó el administrador. Debes entrar con el mismo correo de la invitación.</string>
     <string name="emp_code_hint">Código de 6 dígitos</string>
     <string name="emp_code_button">Unirme al establecimiento</string>
-    <string name="emp_delivery_code">Código del QR</string>
+    <string name="emp_delivery_code">Código del QR o N° de turno</string>
+    <string name="emp_delivery_manual">Alternativa manual</string>
+    <string name="emp_delivery_manual_placeholder">Ej. 65 ó Q-928</string>
+    <string name="emp_delivery_validate">Validar</string>
+    <string name="emp_delivery_manual_hint">Si la cámara no detecta el QR, ingresa el código numérico o turno del ticket.</string>
+    <string name="emp_delivery_queue_title">Listos para entrega</string>
+    <string name="emp_delivery_queue_sorted">Auto-ordenado por espera</string>
+    <string name="emp_delivery_ready">Listo</string>
+    <string name="emp_delivery_waiting_pickup">En espera para recogida</string>
+    <string name="emp_delivery_ticket">#TK-%1$s</string>
     <string name="emp_delivery_confirm">Confirmar entrega</string>
     <string name="emp_delivery_unclaimed">No reclamado</string>
     <string name="emp_delivery_unclaimed_title">Marcar como no reclamado</string>

@@ -1,4 +1,4 @@
-package com.example.fila_virtual.features.empleados
+package com.example.fila_virtual.features.empleados.gerencia
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

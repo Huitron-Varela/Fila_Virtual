@@ -3,9 +3,9 @@ package com.example.fila_virtual.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
@@ -18,7 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 
@@ -29,6 +31,7 @@ import fila_virtual.composeapp.generated.resources.*
 // Importaciones del Tema Estandarizado
 import com.example.fila_virtual.core.theme.LightSurface
 import com.example.fila_virtual.core.theme.MediumGray
+import com.example.fila_virtual.data.EstacionOperativa
 
 data class NavigationItem(
     val label: String,
@@ -65,16 +68,18 @@ fun BottomNavigationBar(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(
+                    .selectable(
+                        selected = isSelected,
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null // Evita el efecto "ripple" gris por defecto al tocar
+                        indication = null,
+                        role = Role.Tab
                     ) { onItemSelected(item.index) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = item.icon,
-                    contentDescription = item.label,
+                    contentDescription = null,
                     tint = color,
                     modifier = Modifier.size(26.dp)
                 )
@@ -83,7 +88,9 @@ fun BottomNavigationBar(
                     text = item.label,
                     style = MaterialTheme.typography.labelSmall, // Usa la tipografía de tu Theme.kt
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = color
+                    color = color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -106,4 +113,27 @@ object NavigationDefaults {
         NavigationItem(stringResource(Res.string.admin_nav_menu), Icons.Default.RestaurantMenu, 2),
         NavigationItem(stringResource(Res.string.admin_nav_profile), Icons.Default.Person, 3)
     )
+
+    @Composable
+    fun employeeItems(estaciones: List<EstacionOperativa>, esGerente: Boolean, puedeGestionarAgotados: Boolean): List<NavigationItem> {
+        val items = mutableListOf(
+            NavigationItem(stringResource(Res.string.nav_home), Icons.Default.Home, 0)
+        )
+        estaciones.sortedBy { it.ordinal }.forEachIndexed { index, estacion ->
+            val (label, icon) = when (estacion) {
+                EstacionOperativa.COCINA -> stringResource(Res.string.emp_station_cocina) to Icons.Default.Restaurant
+                EstacionOperativa.ENTREGA -> stringResource(Res.string.emp_station_entrega) to Icons.Default.QrCodeScanner
+                EstacionOperativa.CAJERO -> stringResource(Res.string.emp_station_cajero) to Icons.Default.PointOfSale
+            }
+            items += NavigationItem(label, icon, index + 1)
+        }
+        if (esGerente) {
+            items += NavigationItem(stringResource(Res.string.emp_role_gerente), Icons.Default.Storefront, items.size)
+        }
+        if (puedeGestionarAgotados) {
+            items += NavigationItem(stringResource(Res.string.emp_stock_open), Icons.Default.RemoveShoppingCart, items.size)
+        }
+        items += NavigationItem(stringResource(Res.string.nav_profile), Icons.Default.Person, items.size)
+        return items
+    }
 }

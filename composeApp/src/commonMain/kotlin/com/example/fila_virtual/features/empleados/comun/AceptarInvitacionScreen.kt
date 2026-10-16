@@ -1,4 +1,4 @@
-package com.example.fila_virtual.features.empleados
+package com.example.fila_virtual.features.empleados.comun
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

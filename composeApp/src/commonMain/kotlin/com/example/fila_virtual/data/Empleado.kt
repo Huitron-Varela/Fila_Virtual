@@ -49,10 +49,19 @@ data class InvitacionEmpleado(
 
 object RolesEmpleado {
     const val GERENTE = "gerente"
+    const val SUPERVISOR = "supervisor"
+    const val ADMIN = "admin"
+    const val CAJERO = "cajero"
     val disponibles = listOf("cajero", "cocina", "entrega", "gerente", "supervisor", "admin")
 
     fun esGerente(roles: List<String>): Boolean {
         return roles.any { it.trim().equals(GERENTE, ignoreCase = true) }
+    }
+
+    fun puedeGestionarAgotados(roles: List<String>): Boolean {
+        return roles.any {
+            it.trim().lowercase() in setOf(GERENTE, SUPERVISOR, ADMIN, CAJERO)
+        }
     }
 }
 

@@ -43,7 +43,9 @@ fun MenuScreen(
     onNavigateToAdd: () -> Unit,
     onNavigateToEdit: (Producto) -> Unit = {},
     viewModel: ProductoViewModel = viewModel(),
-    establecimientoViewModel: EstablecimientoViewModel = viewModel()
+    establecimientoViewModel: EstablecimientoViewModel = viewModel(),
+    permitirCambiarEstablecimiento: Boolean = true,
+    establecimientoNombreFijo: String = ""
 ) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.compactDp(24)
@@ -70,11 +72,11 @@ fun MenuScreen(
     val productos by viewModel.productos.collectAsState()
     val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
     
-    val sucursalActual = if (currentEstablecimientoId.isEmpty()) {
+    val sucursalActual = establecimientoNombreFijo.ifBlank { if (currentEstablecimientoId.isEmpty()) {
         "Todas las Sucursales"
     } else {
         establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: "Sucursal desconocida"
-    }
+    } }
 
     // Filtrado dinámico por categoría y búsqueda
     val productosFiltrados = productos.filter { producto ->
@@ -120,7 +122,9 @@ fun MenuScreen(
                     Surface(
                         color = LightSurface,
                         shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.clickable { showSucursalSelector = true },
+                                modifier = Modifier.clickable(enabled = permitirCambiarEstablecimiento) {
+                                    showSucursalSelector = true
+                                },
                         border = BorderStroke(1.dp, ExtraLightGray)
                     ) {
                         Row(
@@ -144,16 +148,18 @@ fun MenuScreen(
                                 modifier = Modifier.widthIn(max = if (isCompact) 170.dp else 260.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = PrimaryOrange,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            if (permitirCambiarEstablecimiento) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = PrimaryOrange,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
 
-                    DropdownMenu(
+                    if (permitirCambiarEstablecimiento) DropdownMenu(
                         expanded = showSucursalSelector,
                         onDismissRequest = { showSucursalSelector = false },
                         modifier = Modifier.background(LightSurface)

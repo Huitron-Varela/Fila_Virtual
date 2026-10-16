@@ -38,7 +38,9 @@ fun CartTopBar(onBackClick: () -> Unit) {
     TopAppBar(
         title = { Text(text = "Carrito", fontWeight = FontWeight.Bold) },
         navigationIcon = {
-            IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Regresar") }
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(Res.string.general_back))
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
     )
@@ -97,22 +99,22 @@ fun CartItemsList(
 
                     // CONTROLES DE CANTIDAD FUNCIONALES
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape).background(PrimaryOrange).clickable { onDecrement(producto.idProducto) },
-                            contentAlignment = Alignment.Center
+                        IconButton(
+                            onClick = { onDecrement(producto.idProducto) },
+                            modifier = Modifier.size(48.dp).background(PrimaryOrange, CircleShape)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "Menos", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Remove, contentDescription = stringResource(Res.string.cart_quantity_decrease), tint = Color.White, modifier = Modifier.size(16.dp))
                         }
                         Text(
                             text = "${producto.cantidad}",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
-                        Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape).background(PrimaryOrange).clickable { onIncrement(producto.idProducto) },
-                            contentAlignment = Alignment.Center
+                        IconButton(
+                            onClick = { onIncrement(producto.idProducto) },
+                            modifier = Modifier.size(48.dp).background(PrimaryOrange, CircleShape)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Más", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cart_quantity_increase), tint = Color.White, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -126,7 +128,11 @@ fun PaymentMethodSection(tarjeta: TarjetaGuardada?, onEditClick: () -> Unit) {
     Column {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Método de Pago", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
-            Text("Editar", color = Color(0xFFE53935), fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onEditClick() })
+            TextButton(onClick = onEditClick) {
+                Icon(Icons.Default.Edit, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(Res.string.general_edit), color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         Card(

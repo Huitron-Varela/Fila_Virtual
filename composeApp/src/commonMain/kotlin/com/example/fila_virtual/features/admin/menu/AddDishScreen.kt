@@ -50,14 +50,24 @@ fun AddDishScreen(
     productoToEdit: Producto? = null,
     onBack: () -> Unit,
     viewModel: ProductoViewModel = viewModel(),
-    establecimientoViewModel: EstablecimientoViewModel = viewModel()
+    establecimientoViewModel: EstablecimientoViewModel = viewModel(),
+    permitirCambiarEstablecimiento: Boolean = true,
+    establecimientoNombreFijo: String = ""
 ) {
     val windowSize = LocalWindowSize.current
     val formPadding = windowSize.compactDp(16)
     val isCompact = windowSize.isSmallScreen
     val uiState by viewModel.uiState.collectAsState()
 
-    var selectedEstablecimientoId by remember { mutableStateOf(productoToEdit?.establecimientoId?.takeIf { it.isNotBlank() } ?: establecimientoId) }
+    var selectedEstablecimientoId by remember {
+        mutableStateOf(
+            if (permitirCambiarEstablecimiento) {
+                productoToEdit?.establecimientoId?.takeIf { it.isNotBlank() } ?: establecimientoId
+            } else {
+                establecimientoId
+            }
+        )
+    }
     var showSucursalSelector by remember { mutableStateOf(false) }
 
     LaunchedEffect(ownerUid) {
@@ -65,11 +75,11 @@ fun AddDishScreen(
     }
 
     val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
-    val sucursalActual = if (selectedEstablecimientoId.isEmpty()) {
+    val sucursalActual = establecimientoNombreFijo.ifBlank { if (selectedEstablecimientoId.isEmpty()) {
         "Seleccionar Sucursal"
     } else {
         establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: "Seleccionar Sucursal"
-    }
+    } }
 
     var nombre by remember { mutableStateOf(productoToEdit?.nombre ?: "") }
     var descripcion by remember { mutableStateOf(productoToEdit?.descripcion ?: "") }
@@ -311,7 +321,7 @@ fun AddDishScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { 
+                    .clickable(enabled = permitirCambiarEstablecimiento) {
                         if (establecimientos.isEmpty()) {
                             showNoEstablecimientosAlert = true
                         } else {
@@ -337,28 +347,32 @@ fun AddDishScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = DarkGray,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (permitirCambiarEstablecimiento) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = DarkGray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
 
-            DropdownMenu(
-                expanded = showSucursalSelector,
-                onDismissRequest = { showSucursalSelector = false },
-                modifier = Modifier.background(LightSurface)
-            ) {
-                establecimientos.forEach { sucursal ->
-                    DropdownMenuItem(
-                        text = { Text(sucursal.nombre) },
-                        onClick = {
-                            selectedEstablecimientoId = sucursal.id
-                            showSucursalSelector = false
-                        }
-                    )
+            if (permitirCambiarEstablecimiento) {
+                DropdownMenu(
+                    expanded = showSucursalSelector,
+                    onDismissRequest = { showSucursalSelector = false },
+                    modifier = Modifier.background(LightSurface)
+                ) {
+                    establecimientos.forEach { sucursal ->
+                        DropdownMenuItem(
+                            text = { Text(sucursal.nombre) },
+                            onClick = {
+                                selectedEstablecimientoId = sucursal.id
+                                showSucursalSelector = false
+                            }
+                        )
+                    }
                 }
             }
         }

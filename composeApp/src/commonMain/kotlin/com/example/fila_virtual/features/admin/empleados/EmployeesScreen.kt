@@ -48,7 +48,9 @@ fun EmployeesScreen(
     onNavigateToAdd: (String) -> Unit,
     onEditEmpleado: (EmpleadoDetalle, String) -> Unit,
     viewModel: EmpleadoViewModel = viewModel(),
-    establecimientoViewModel: EstablecimientoViewModel = viewModel()
+    establecimientoViewModel: EstablecimientoViewModel = viewModel(),
+    permitirCambiarEstablecimiento: Boolean = true,
+    establecimientoNombreFijo: String = ""
 ) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.compactDp(24)
@@ -85,11 +87,11 @@ fun EmployeesScreen(
                 it.correo.contains(searchQuery, ignoreCase = true)
     }
 
-    val sucursalActual = when (currentEstablecimientoId) {
+    val sucursalActual = establecimientoNombreFijo.ifBlank { when (currentEstablecimientoId) {
         "TODOS" -> stringResource(Res.string.emp_all_employees)
         "" -> stringResource(Res.string.emp_select_branch)
         else -> establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: stringResource(Res.string.emp_unknown_branch)
-    }
+    } }
 
     Scaffold(
         containerColor = LightBackground,
@@ -140,7 +142,9 @@ fun EmployeesScreen(
                     Surface(
                         color = LightSurface,
                         shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.clickable { showSucursalSelector = true },
+                        modifier = Modifier.clickable(enabled = permitirCambiarEstablecimiento) {
+                            showSucursalSelector = true
+                        },
                         border = BorderStroke(1.dp, ExtraLightGray)
                     ) {
                         Row(
@@ -163,16 +167,18 @@ fun EmployeesScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = PrimaryOrange,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            if (permitirCambiarEstablecimiento) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = PrimaryOrange,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
 
-                    DropdownMenu(
+                    if (permitirCambiarEstablecimiento) DropdownMenu(
                         expanded = showSucursalSelector,
                         onDismissRequest = { showSucursalSelector = false },
                         modifier = Modifier.background(Color.White)

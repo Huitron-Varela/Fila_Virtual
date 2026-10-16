@@ -247,6 +247,7 @@ fun ActionButton(
     text: String,
     isLoading: Boolean = false,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
     onClick: () -> Unit
 ) {
     Button(
@@ -262,6 +263,10 @@ fun ActionButton(
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
         } else {
+            if (icon != null) {
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+            }
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
@@ -269,6 +274,22 @@ fun ActionButton(
                 fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+@Composable
+fun AppSnackbarHost(
+    hostState: SnackbarHostState,
+    modifier: Modifier = Modifier
+) {
+    SnackbarHost(hostState = hostState, modifier = modifier) { snackbarData ->
+        Snackbar(
+            snackbarData = snackbarData,
+            shape = RoundedCornerShape(12.dp),
+            containerColor = DarkGray,
+            contentColor = Color.White,
+            actionColor = SoftOrangeBg
+        )
     }
 }
 
