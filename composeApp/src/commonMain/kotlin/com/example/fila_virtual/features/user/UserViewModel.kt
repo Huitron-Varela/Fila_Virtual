@@ -12,6 +12,7 @@ import com.example.fila_virtual.data.generarCodigoRecogida
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
+import com.example.fila_virtual.repository.uploadImage
 import com.example.fila_virtual.repository.UserRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
@@ -129,7 +130,14 @@ class UserViewModel(
         }
     }
 
-    fun updateProfile(nombre: String, telefono: String, fotoUrl: String?, onResult: (Boolean) -> Unit) {
+    fun updateProfile(
+        nombre: String,
+        telefono: String,
+        fotoUrl: String?,
+        fotoBytes: ByteArray? = null,
+        fotoMimeType: String = "image/jpeg",
+        onResult: (Boolean) -> Unit
+    ) {
         val uid = repository.getCurrentUserUid()
         if (uid == null) {
             onResult(false)
@@ -138,9 +146,23 @@ class UserViewModel(
 
         viewModelScope.launch {
             try {
+                val fotoActualizada = if (fotoBytes != null) {
+                    val uploadResult = uploadImage(
+                        path = "usuarios/$uid/perfil",
+                        bytes = fotoBytes,
+                        mimeType = fotoMimeType
+                    )
+                    uploadResult.getOrNull() ?: run {
+                        onResult(false)
+                        return@launch
+                    }
+                } else {
+                    fotoUrl
+                }
+
                 val now = Timestamp.now().seconds * 1000
                 val updates = mutableMapOf<String, Any?>("nombre" to nombre, "telefono" to telefono, "updatedAt" to now)
-                if (fotoUrl != null) updates["fotoUrl"] = fotoUrl
+                if (fotoActualizada != null) updates["fotoUrl"] = fotoActualizada
 
                 val success = repository.updateUserData(uid, updates)
                 if (success) loadUserData()

@@ -44,6 +44,9 @@
     <string name="label_phone">Teléfono</string>
     <string name="label_email">Correo electrónico</string>
     <string name="label_password">Contraseña</string>
+    <string name="password_show">Mostrar contraseña</string>
+    <string name="password_hide">Ocultar contraseña</string>
+    <string name="snackbar_dismiss">Cerrar aviso</string>
     <string name="label_confirm_password">Confirmar contraseña</string>
     <string name="placeholder_name">Tu nombre completo</string>
     <string name="placeholder_phone">+52 000 000 0000</string>
@@ -219,6 +222,8 @@
     <string name="emp_staff_title">Personal</string>
     <string name="emp_total_label">TOTAL</string>
     <string name="emp_all_employees">Todos los Empleados</string>
+    <string name="emp_retry">Reintentar</string>
+    <string name="emp_selected_roles_count">%1$d seleccionados</string>
     <string name="emp_no_results_query">No se encontraron resultados para \"%1$s\"</string>
     <string name="emp_select_branch_instruction">Selecciona una sucursal para ver los empleados</string>
     <string name="emp_status_active">ACTIVO</string>
@@ -309,6 +314,8 @@
     <string name="menu_dish_save">Guardar Platillo</string>
     <string name="menu_dish_active">Activo en Menú</string>
     <string name="menu_dish_active_desc">Visible para los clientes en la app</string>
+    <string name="menu_dish_available">Disponible</string>
+    <string name="menu_dish_unavailable">No disponible</string>
     <string name="menu_saved_success">¡Platillo guardado!</string>
     <string name="menu_saved_success_desc">El platillo se ha guardado correctamente en tu menú.</string>
     <string name="menu_updated_success">¡Platillo actualizado!</string>

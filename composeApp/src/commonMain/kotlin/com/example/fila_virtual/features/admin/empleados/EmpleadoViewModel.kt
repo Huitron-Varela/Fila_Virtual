@@ -6,6 +6,7 @@ import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.data.EmpleadoDetalle
 import com.example.fila_virtual.data.InvitacionEmpleado
+import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.repository.EmpleadoRepository
@@ -15,6 +16,7 @@ import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.where
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -32,6 +34,16 @@ class EmpleadoViewModel : ViewModel() {
 
     private val _empleados = MutableStateFlow<List<EmpleadoDetalle>>(emptyList())
     val empleados: StateFlow<List<EmpleadoDetalle>> = _empleados
+
+    private val _pedidosEmpleado = MutableStateFlow<List<Pedido>>(emptyList())
+    val pedidosEmpleado: StateFlow<List<Pedido>> = _pedidosEmpleado
+
+    private val _cargandoPedidosEmpleado = MutableStateFlow(false)
+    val cargandoPedidosEmpleado: StateFlow<Boolean> = _cargandoPedidosEmpleado
+
+    private val _errorPedidosEmpleado = MutableStateFlow<String?>(null)
+    val errorPedidosEmpleado: StateFlow<String?> = _errorPedidosEmpleado
+    private var pedidosEmpleadoJob: Job? = null
 
     fun enviarInvitacionPorCorreo(
         correo: String,
@@ -237,6 +249,24 @@ class EmpleadoViewModel : ViewModel() {
             // Remove duplicates by uid (employee in multiple establishments)
             _empleados.value = todosList.distinctBy { it.uid }
             _uiState.value = FormState.Idle
+        }
+    }
+
+    fun cargarPedidosEntregadosEmpleado(empleadoUid: String, establecimientoIds: List<String>) {
+        pedidosEmpleadoJob?.cancel()
+        pedidosEmpleadoJob = viewModelScope.launch {
+            _pedidosEmpleado.value = emptyList()
+            _errorPedidosEmpleado.value = null
+            _cargandoPedidosEmpleado.value = true
+
+            val resultado = repository.obtenerPedidosEntregadosEmpleado(empleadoUid, establecimientoIds)
+            if (resultado.isSuccess) {
+                _pedidosEmpleado.value = resultado.getOrDefault(emptyList())
+            } else {
+                _errorPedidosEmpleado.value = resultado.exceptionOrNull()?.message
+                    ?: "No se pudieron cargar los pedidos entregados."
+            }
+            _cargandoPedidosEmpleado.value = false
         }
     }
 

@@ -20,7 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,7 @@ fun ProfileComponent(
     onNavigateToTerms: () -> Unit = {}
 ) {
     val windowSize = LocalWindowSize.current
+    val haptic = LocalHapticFeedback.current
 
     var showLogoutSheet by remember { mutableStateOf(false) }
     var showLanguageSheet by remember { mutableStateOf(false) }
@@ -78,21 +81,44 @@ fun ProfileComponent(
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
+                .widthIn(max = 640.dp)
+                .align(Alignment.CenterHorizontally)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = windowSize.adaptiveDp(20))
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(windowSize.adaptiveDp(24)),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, BorderGray),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical = windowSize.adaptiveDp(32)).fillMaxWidth(),
+                    modifier = Modifier.padding(vertical = windowSize.adaptiveDp(28)).fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    ProfileHeader(usuario)
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        ProfileHeader(usuario)
+                        Surface(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onNavigateToEdit()
+                            },
+                            modifier = Modifier.size(windowSize.adaptiveDp(36)),
+                            shape = CircleShape,
+                            color = PrimaryOrange,
+                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = stringResource(Res.string.profile_edit_profile),
+                                tint = Color.White,
+                                modifier = Modifier.padding(9.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
 
                     Text(
@@ -111,7 +137,7 @@ fun ProfileComponent(
 
                     Surface(
                         color = MaterialTheme.colorScheme.background,
-                        shape = RoundedCornerShape(windowSize.adaptiveDp(16)),
+                        shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, BorderGray)
                     ) {
                         Row(
@@ -257,12 +283,17 @@ fun ProfileComponent(
 @Composable
 fun ProfileSectionCard(icon: ImageVector, title: String, iconTint: Color, content: @Composable ColumnScope.() -> Unit) {
     val windowSize = LocalWindowSize.current
-    Card(modifier = Modifier.fillMaxWidth().padding(bottom = windowSize.adaptiveDp(16)), shape = RoundedCornerShape(windowSize.adaptiveDp(24)), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = windowSize.adaptiveDp(16)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, BorderGray)
+    ) {
         Column(modifier = Modifier.padding(windowSize.adaptiveDp(16))) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = windowSize.adaptiveDp(16))) {
                 Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(windowSize.adaptiveDp(24)))
                 Spacer(modifier = Modifier.width(windowSize.adaptiveDp(12)))
-                Text(text = title, style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(18)), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = title, style = MaterialTheme.typography.titleMedium.copy(fontSize = windowSize.adaptiveSp(18)), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             content()
         }
@@ -272,7 +303,11 @@ fun ProfileSectionCard(icon: ImageVector, title: String, iconTint: Color, conten
 @Composable
 fun ProfileOptionItem(icon: ImageVector, title: String, extraText: String? = null, onClick: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
-    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(windowSize.adaptiveDp(12))).clickable { onClick() }.padding(vertical = windowSize.adaptiveDp(12)), verticalAlignment = Alignment.CenterVertically) {
+    val haptic = LocalHapticFeedback.current
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        onClick()
+    }.padding(vertical = windowSize.adaptiveDp(12)), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.size(windowSize.adaptiveDp(40)).background(MaterialTheme.colorScheme.background, CircleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = DarkGray, modifier = Modifier.size(windowSize.adaptiveDp(20)))
         }

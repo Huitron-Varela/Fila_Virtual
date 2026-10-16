@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -17,13 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
@@ -31,6 +36,8 @@ import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
+import com.example.fila_virtual.features.admin.FormState
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +52,9 @@ fun EstablishmentsScreen(
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.compactDp(24)
     val isCompact = windowSize.isSmallScreen
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery by remember { mutableStateOf("") }
     
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
@@ -56,10 +66,19 @@ fun EstablishmentsScreen(
     }
     // Obtenemos la lista real desde el ViewModel
     val establecimientos by viewModel.establecimientos.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) {
+        if (uiState is FormState.Error) {
+            snackbarHostState.showSnackbar((uiState as FormState.Error).message)
+        }
+    }
 
     // Filtramos por búsqueda
-    val listaFiltrada = establecimientos.filter { 
-        it.nombre.contains(searchQuery, ignoreCase = true) 
+    val listaFiltrada = establecimientos.filter {
+        it.nombre.contains(searchQuery, ignoreCase = true) ||
+            it.ubicacion.direccion.contains(searchQuery, ignoreCase = true) ||
+            it.categorias.any { categoria -> categoria.contains(searchQuery, ignoreCase = true) }
     }
 
     Scaffold(
@@ -72,14 +91,18 @@ fun EstablishmentsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onRegisterNew,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onRegisterNew()
+                },
                 containerColor = PrimaryOrange,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.est_title_add))
             }
-        }
+        },
+        snackbarHost = { AppSnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -115,16 +138,13 @@ fun EstablishmentsScreen(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Surface(
-                    color = BorderGray,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
+                Surface(color = SoftOrangeBg, shape = RoundedCornerShape(10.dp)) {
                     Text(
                         text = "${listaFiltrada.size} ${stringResource(Res.string.emp_total_label)}",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        color = PrimaryOrange
                     )
                 }
             }
@@ -132,15 +152,13 @@ fun EstablishmentsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (listaFiltrada.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (searchQuery.isEmpty()) stringResource(Res.string.est_empty) else stringResource(Res.string.est_no_results),
-                        color = MediumGray
-                    )
-                }
+                EstablishmentsEmptyState(
+                    isSearching = searchQuery.isNotBlank(),
+                    onCreateClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onRegisterNew()
+                    }
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -155,7 +173,10 @@ fun EstablishmentsScreen(
                     items(listaFiltrada) { local ->
                         EstablecimientoCard(
                             establecimiento = local,
-                            onClick = { selectedEstablecimiento = local }
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                selectedEstablecimiento = local
+                            }
                         )
                     }
                 }
@@ -173,8 +194,10 @@ fun EstablishmentsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = (windowSize.height * 0.88f).coerceAtMost(760.dp))
                     .padding(horizontal = horizontalPadding)
-                    .padding(bottom = 32.dp),
+                    .padding(bottom = 32.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Top part: Image and Title
@@ -267,6 +290,7 @@ fun EstablishmentsScreen(
                         Switch(
                             checked = est.activo,
                             onCheckedChange = { disp -> 
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 viewModel.actualizarEstado(est.id, disp)
                                 selectedEstablecimiento = est.copy(activo = disp)
                             },
@@ -283,61 +307,34 @@ fun EstablishmentsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Two small cards
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Surface(
-                        color = ExtraLightGray,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Surface(
-                                shape = CircleShape,
-                                color = PrimaryOrange.copy(alpha = 0.15f),
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.Default.Storefront, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(6.dp))
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(stringResource(Res.string.est_category_label), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text(
-                                est.categorias.firstOrNull() ?: stringResource(Res.string.est_no_category),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = DarkGray,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                val horario = est.horario[stringResource(Res.string.est_all)]
+                if (isCompact) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        EstablishmentInfoCard(
+                            icon = Icons.Default.Storefront,
+                            label = stringResource(Res.string.est_category_label),
+                            value = est.categorias.firstOrNull() ?: stringResource(Res.string.est_no_category)
+                        )
+                        EstablishmentInfoCard(
+                            icon = Icons.Outlined.Timer,
+                            label = stringResource(Res.string.est_schedule_label),
+                            value = if (horario == null) stringResource(Res.string.est_no_schedule) else "${horario.apertura} - ${horario.cierre}"
+                        )
                     }
-                    Surface(
-                        color = ExtraLightGray,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Surface(
-                                shape = CircleShape,
-                                color = PrimaryOrange.copy(alpha = 0.15f),
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.Outlined.Timer, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(6.dp))
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(stringResource(Res.string.est_schedule_label), style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            val horario = est.horario[stringResource(Res.string.est_all)]
-                            Text(
-                                if (horario == null) stringResource(Res.string.est_no_schedule) else "${horario.apertura} - ${horario.cierre}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = DarkGray,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        EstablishmentInfoCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Storefront,
+                            label = stringResource(Res.string.est_category_label),
+                            value = est.categorias.firstOrNull() ?: stringResource(Res.string.est_no_category)
+                        )
+                        EstablishmentInfoCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Outlined.Timer,
+                            label = stringResource(Res.string.est_schedule_label),
+                            value = if (horario == null) stringResource(Res.string.est_no_schedule) else "${horario.apertura} - ${horario.cierre}"
+                        )
                     }
                 }
 
@@ -346,6 +343,7 @@ fun EstablishmentsScreen(
                 // Botones
                 OutlinedButton(
                     onClick = { 
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         selectedEstablecimiento = null
                         onSelectEstablecimiento(est.id) 
                     },
@@ -364,6 +362,7 @@ fun EstablishmentsScreen(
                 
                 Button(
                     onClick = { 
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         selectedEstablecimiento = null
                         onEditEstablecimiento(est) 
                     },
@@ -408,9 +407,12 @@ fun EstablishmentsScreen(
                 confirmButton = {
                     TextButton(
                         onClick = { 
-                            viewModel.eliminarEstablecimiento(est.id)
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.eliminarEstablecimiento(est.id) {
+                                selectedEstablecimiento = null
+                                scope.launch { snackbarHostState.showSnackbar("Establecimiento eliminado") }
+                            }
                             showDeleteDialog = false
-                            selectedEstablecimiento = null
                         }
                     ) {
                         Text(stringResource(Res.string.menu_delete_btn), fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
@@ -418,12 +420,94 @@ fun EstablishmentsScreen(
                 },
                 dismissButton = {
                     TextButton(
-                        onClick = { showDeleteDialog = false }
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            showDeleteDialog = false
+                        }
                     ) {
                         Text(stringResource(Res.string.btn_cancel), color = DarkGray)
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun EstablishmentsEmptyState(isSearching: Boolean, onCreateClick: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 300.dp).padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(modifier = Modifier.size(72.dp), shape = CircleShape, color = SoftOrangeBg) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = if (isSearching) Icons.Default.SearchOff else Icons.Default.Storefront,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = if (isSearching) stringResource(Res.string.est_no_results) else stringResource(Res.string.est_empty),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = DarkGray,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        if (!isSearching) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onCreateClick,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(Res.string.est_title_add), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EstablishmentInfoCard(
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = ExtraLightGray,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = PrimaryOrange.copy(alpha = 0.15f),
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(icon, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(8.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                Text(
+                    value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = DarkGray,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

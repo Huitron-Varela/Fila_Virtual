@@ -70,6 +70,7 @@ fun AdminMainScreen(
             onNavigateBack = {
                 isAddingEmployee = false
                 empleadoToEdit = null
+                selectedEstablecimientoId = ""
             }
         )
     } else if (isEditingProfile) {
@@ -131,14 +132,16 @@ fun AdminMainScreen(
                     }
                 )
             }
-        ) { padding ->
+        ) { innerPadding ->
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.padding(innerPadding)
             ) { page ->
                 when (page) {
                     0 -> AdminDashboardScreen(
-                        onNavigateToManage = { isManagingEstablecimientos = true }
+                        ownerUid = usuario.uid,
+                        onNavigateToManage = { isManagingEstablecimientos = true },
+                        onNavigateToEmployees = { scope.launch { pagerState.animateScrollToPage(1) } }
                     )
                     1 -> EmployeesScreen(
                         establecimientoId = selectedEstablecimientoId,

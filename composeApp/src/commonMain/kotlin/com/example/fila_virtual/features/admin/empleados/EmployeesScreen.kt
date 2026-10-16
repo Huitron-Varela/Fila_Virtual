@@ -9,13 +9,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppSnackbar
+import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
@@ -39,6 +42,9 @@ import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,11 +59,17 @@ fun EmployeesScreen(
     establecimientoNombreFijo: String = ""
 ) {
     val windowSize = LocalWindowSize.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
     val horizontalPadding = windowSize.compactDp(24)
 
     val uiState by viewModel.uiState.collectAsState()
     val empleados by viewModel.empleados.collectAsState()
     val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
+    val pedidosEmpleado by viewModel.pedidosEmpleado.collectAsState()
+    val cargandoPedidosEmpleado by viewModel.cargandoPedidosEmpleado.collectAsState()
+    val errorPedidosEmpleado by viewModel.errorPedidosEmpleado.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var searchQuery by remember { mutableStateOf("") }
     
@@ -67,6 +79,14 @@ fun EmployeesScreen(
     var selectedEmpleado by remember { mutableStateOf<EmpleadoDetalle?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showEmployeeOrders by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState) {
+        if (uiState is FormState.Error) {
+            snackbarHostState.showSnackbar((uiState as FormState.Error).message)
+        }
+    }
+
 
     // Cargar establecimientos y empleados al montar la pantalla
     LaunchedEffect(currentEstablecimientoId, ownerUid, establecimientos.size) {
@@ -88,13 +108,14 @@ fun EmployeesScreen(
     }
 
     val sucursalActual = establecimientoNombreFijo.ifBlank { when (currentEstablecimientoId) {
-        "TODOS" -> stringResource(Res.string.emp_all_employees)
+        "TODOS" -> stringResource(Res.string.est_all_branches)
         "" -> stringResource(Res.string.emp_select_branch)
         else -> establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: stringResource(Res.string.emp_unknown_branch)
     } }
 
     Scaffold(
         containerColor = LightBackground,
+        snackbarHost = { AppSnackbarHost(snackbarHostState) },
         floatingActionButton = {
             val canAddEmployee = currentEstablecimientoId.isNotEmpty() &&
                 (currentEstablecimientoId != "TODOS" || establecimientos.isNotEmpty())
@@ -118,103 +139,37 @@ fun EmployeesScreen(
                 }
             }
         }
-    ) {
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.background)
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding()
                 .padding(horizontal = horizontalPadding)
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = windowSize.compactDp(24), bottom = 16.dp),
+                horizontalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = stringResource(Res.string.emp_title_manage),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = DarkGray,
-                    fontWeight = FontWeight.Bold,
+                    style = typography.titleLarge.copy(
+                        fontSize = windowSize.adaptiveSp(20),
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = windowSize.compactDp(24), bottom = 8.dp)
+                    textAlign = TextAlign.Center
                 )
-
-                Box {
-                    Surface(
-                        color = LightSurface,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.clickable(enabled = permitirCambiarEstablecimiento) {
-                            showSucursalSelector = true
-                        },
-                        border = BorderStroke(1.dp, ExtraLightGray)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.LocationOn,
-                                contentDescription = null,
-                                tint = PrimaryOrange,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = sucursalActual,
-                                color = PrimaryOrange,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            if (permitirCambiarEstablecimiento) {
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = PrimaryOrange,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    if (permitirCambiarEstablecimiento) DropdownMenu(
-                        expanded = showSucursalSelector,
-                        onDismissRequest = { showSucursalSelector = false },
-                        modifier = Modifier.background(Color.White)
-                    ) {
-                        // Opción "Todos"
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Filled.People,
-                                        contentDescription = null,
-                                        tint = PrimaryOrange,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(Res.string.emp_all_employees), fontWeight = FontWeight.Bold, color = PrimaryOrange)
-                                }
-                            },
-                            onClick = {
-                                currentEstablecimientoId = "TODOS"
-                                showSucursalSelector = false
-                            }
-                        )
-                        HorizontalDivider()
-                        establecimientos.forEach { sucursal ->
-                            DropdownMenuItem(
-                                text = { Text(sucursal.nombre) },
-                                onClick = {
-                                    currentEstablecimientoId = sucursal.id
-                                    showSucursalSelector = false
-                                }
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
             if (currentEstablecimientoId == "TODOS" || currentEstablecimientoId.isNotEmpty()) {
@@ -222,9 +177,92 @@ fun EmployeesScreen(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it },
                     placeholder = stringResource(Res.string.emp_search),
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
 
+                Text(
+                    text = stringResource(Res.string.emp_branch),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MediumGray
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box {
+                    Surface(
+                        color = LightSurface,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = permitirCambiarEstablecimiento) {
+                                showSucursalSelector = true
+                            },
+                        border = BorderStroke(1.dp, BorderGray)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Storefront,
+                                contentDescription = null,
+                                tint = DarkGray,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = sucursalActual,
+                                color = if (currentEstablecimientoId.isEmpty()) MediumGray else DarkGray,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (permitirCambiarEstablecimiento) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = DarkGray,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (permitirCambiarEstablecimiento) {
+                        DropdownMenu(
+                            expanded = showSucursalSelector,
+                            onDismissRequest = { showSucursalSelector = false },
+                            modifier = Modifier.fillMaxWidth(0.9f).background(LightSurface)
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Filled.People, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(Res.string.est_all_branches), fontWeight = FontWeight.Bold, color = PrimaryOrange)
+                                    }
+                                },
+                                onClick = {
+                                    currentEstablecimientoId = "TODOS"
+                                    showSucursalSelector = false
+                                }
+                            )
+                            HorizontalDivider()
+                            establecimientos.forEach { sucursal ->
+                                DropdownMenuItem(
+                                    text = { Text(sucursal.nombre) },
+                                    onClick = {
+                                        currentEstablecimientoId = sucursal.id
+                                        showSucursalSelector = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -263,17 +301,28 @@ fun EmployeesScreen(
                     }
 
                     uiState is FormState.Error -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = (uiState as FormState.Error).message,
-                                color = TrafficRed,
+                                text = "No se pudo actualizar la lista de empleados.",
+                                color = MediumGray,
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(horizontal = 32.dp)
                             )
+                            TextButton(
+                                onClick = {
+                                    if (currentEstablecimientoId == "TODOS") {
+                                        viewModel.cargarTodosLosEmpleados(establecimientos.map { it.id })
+                                    } else {
+                                        viewModel.cargarEmpleados(currentEstablecimientoId)
+                                    }
+                                }
+                            ) {
+                                Text(stringResource(Res.string.emp_retry), color = PrimaryOrange, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
 
@@ -304,7 +353,10 @@ fun EmployeesScreen(
                             items(listaFiltrada, key = { it.uid }) { empleado ->
                                 CardEmpleado(
                                     empleado = empleado,
-                                    onClick = { selectedEmpleado = empleado }
+                                    onClick = {
+                                        showEmployeeOrders = false
+                                        selectedEmpleado = empleado
+                                    }
                                 )
                             }
                         }
@@ -330,45 +382,42 @@ fun EmployeesScreen(
         if (selectedEmpleado != null) {
             val emp = selectedEmpleado!!
             ModalBottomSheet(
-                onDismissRequest = { selectedEmpleado = null },
+                onDismissRequest = {
+                    selectedEmpleado = null
+                    showEmployeeOrders = false
+                },
                 sheetState = sheetState,
                 containerColor = LightSurface
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .widthIn(max = 520.dp)
+                        .heightIn(max = windowSize.compactDp(640))
                         .padding(horizontal = horizontalPadding)
-                        .padding(bottom = 32.dp),
+                        .padding(bottom = 32.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Profile avatar
-                    Box(modifier = Modifier.size(100.dp)) {
+                    Box(modifier = Modifier.size(84.dp)) {
                         EmployeeAvatar(
                             fotoUrl = emp.fotoUrl,
                             modifier = Modifier.fillMaxSize(),
-                            iconSize = 50.dp
-                        )
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(4.dp)
-                                .size(20.dp)
-                                .background(if (emp.activo) TrafficGreen else MediumGray, CircleShape)
-                                .border(3.dp, Color.White, CircleShape)
+                            iconSize = 42.dp
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     
                     Text(
                         text = emp.nombre,
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = DarkGray,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
-                    
-                    // Traducción de roles
+
                     val rolesText = emp.roles.map { role ->
                         when (role.lowercase()) {
                             "cajero" -> stringResource(Res.string.emp_role_cashier)
@@ -381,19 +430,12 @@ fun EmployeesScreen(
                         }
                     }.joinToString(" • ")
 
-                    Text(
-                        text = rolesText,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MediumGray
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
                     Surface(
                         color = if (emp.activo) Color(0xFFE8F5E9) else ExtraLightGray,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -410,8 +452,32 @@ fun EmployeesScreen(
                             )
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
+
+                    if (rolesText.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(color = SoftOrangeBg, shape = RoundedCornerShape(8.dp)) {
+                            Text(
+                                rolesText,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PrimaryOrange,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    HorizontalDivider(color = BorderGray.copy(alpha = 0.7f))
+                    Text(
+                        "Información del empleado",
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray
+                    )
                     
                     val dateStr = if (emp.joinedAt > 0) stringResource(Res.string.emp_registered) else stringResource(Res.string.emp_not_available)
                     
@@ -446,6 +512,28 @@ fun EmployeesScreen(
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            showEmployeeOrders = true
+                            val establecimientoIds = if (currentEstablecimientoId == "TODOS") {
+                                establecimientos.map { it.id }
+                            } else {
+                                listOf(currentEstablecimientoId)
+                            }
+                            viewModel.cargarPedidosEntregadosEmpleado(emp.uid, establecimientoIds)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryOrange),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, PrimaryOrange.copy(alpha = 0.55f))
+                    ) {
+                        Icon(Icons.Default.ReceiptLong, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ver pedidos entregados", fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
                     
                     Button(
                         onClick = { 
@@ -483,6 +571,104 @@ fun EmployeesScreen(
                     }
                 }
             }
+
+            if (showEmployeeOrders) {
+                AlertDialog(
+                    onDismissRequest = { showEmployeeOrders = false },
+                    title = {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Pedidos entregados", fontWeight = FontWeight.Bold, color = DarkGray)
+                            Text(emp.nombre, style = MaterialTheme.typography.bodySmall, color = MediumGray)
+                        }
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier.widthIn(max = 420.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                "${pedidosEmpleado.size} pedidos entregados",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = PrimaryOrange,
+                                fontWeight = FontWeight.Bold
+                            )
+                            when {
+                                cargandoPedidosEmpleado -> Box(
+                                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = PrimaryOrange)
+                                }
+                                errorPedidosEmpleado != null -> AppSnackbar(
+                                    message = errorPedidosEmpleado.orEmpty(),
+                                    containerColor = Color(0xFFFFEBEE),
+                                    contentColor = TrafficRed
+                                )
+                                pedidosEmpleado.isEmpty() -> Text(
+                                    "Este empleado aún no tiene pedidos entregados.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MediumGray
+                                )
+                                else -> LazyColumn(
+                                    modifier = Modifier.heightIn(max = 340.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(pedidosEmpleado, key = { it.id }) { pedido ->
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            color = ExtraLightGray,
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    val identificador = pedido.turno.takeIf { it > 0 }
+                                                        ?.toString() ?: pedido.id.takeLast(6)
+                                                    Text(
+                                                        "Pedido #$identificador",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = DarkGray
+                                                    )
+                                                    val fecha = pedido.actualizadoAt.takeIf { it > 0L }
+                                                        ?: pedido.createdAt
+                                                    Text(
+                                                        formatPedidoFecha(fecha),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MediumGray
+                                                    )
+                                                }
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        "Entregado",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = TrafficGreen,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        "MXN ${pedido.total}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = DarkGray
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showEmployeeOrders = false }) {
+                            Text("Cerrar", color = PrimaryOrange, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    containerColor = LightSurface,
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
             
             if (showDeleteDialog) {
                 AlertDialog(
@@ -506,7 +692,19 @@ fun EmployeesScreen(
                 )
             }
         }
+        }
     }
+}
+
+private fun formatPedidoFecha(timestamp: Long): String {
+    if (timestamp <= 0L) return "Fecha no disponible"
+    val fecha = Instant.fromEpochMilliseconds(timestamp)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    val dia = fecha.dayOfMonth.toString().padStart(2, '0')
+    val mes = fecha.monthNumber.toString().padStart(2, '0')
+    val hora = fecha.hour.toString().padStart(2, '0')
+    val minuto = fecha.minute.toString().padStart(2, '0')
+    return "$dia/$mes/${fecha.year} · $hora:$minuto"
 }
 
 @Composable
@@ -518,13 +716,14 @@ fun CardEmpleado(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(1.dp, BorderGray.copy(alpha = 0.7f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(14.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -534,29 +733,36 @@ fun CardEmpleado(
                     modifier = Modifier.size(56.dp),
                     iconSize = 28.dp
                 )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(16.dp)
-                        .background(
-                            color = if (empleado.activo) TrafficGreen else MediumGray,
-                            shape = CircleShape
-                        )
-                        .border(2.dp, Color.White, CircleShape)
-                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = empleado.nombre,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkGray,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = empleado.nombre,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = if (empleado.activo) Color(0xFFE8F5E9) else ExtraLightGray,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = if (empleado.activo) stringResource(Res.string.emp_status_active) else stringResource(Res.string.emp_status_inactive),
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (empleado.activo) TrafficGreen else MediumGray,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                }
                 Text(
                     text = empleado.correo,
                     style = MaterialTheme.typography.labelSmall,
@@ -564,7 +770,7 @@ fun CardEmpleado(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
                 // Traducción de roles
                 val rolesText = empleado.roles.map { role ->
@@ -579,31 +785,25 @@ fun CardEmpleado(
                     }
                 }.joinToString(" • ").uppercase()
 
-                Text(
-                    text = rolesText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = PrimaryOrange,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                val badgeBg = if (empleado.activo) Color(0xFFE8F5E9) else ExtraLightGray
-                val badgeColor = if (empleado.activo) TrafficGreen else MediumGray
-                Surface(color = badgeBg, shape = RoundedCornerShape(8.dp)) {
-                    Text(
-                        text = if (empleado.activo) stringResource(Res.string.emp_status_active) else stringResource(Res.string.emp_status_inactive),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = badgeColor,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (rolesText.isNotBlank()) {
+                    Surface(color = SoftOrangeBg, shape = RoundedCornerShape(6.dp)) {
+                        Text(
+                            text = rolesText,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PrimaryOrange,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 
             Icon(
-                Icons.Default.MoreVert,
-                contentDescription = stringResource(Res.string.est_options),
-                tint = MediumGray,
+                Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = PrimaryOrange,
                 modifier = Modifier
                     .size(24.dp)
             )

@@ -295,6 +295,35 @@ class EmpleadoRepository {
         sumarContador(uid, "sesionAbandonados")
     }
 
+    suspend fun obtenerPedidosEntregadosEmpleado(
+        empleadoUid: String,
+        establecimientoIds: List<String>
+    ): Result<List<Pedido>> {
+        if (empleadoUid.isBlank()) return Result.success(emptyList())
+
+        return try {
+            val pedidos = establecimientoIds.distinct().filter { it.isNotBlank() }.flatMap { establecimientoId ->
+                db.collection("pedidos")
+                    .where { "establecimientoId" equalTo establecimientoId }
+                    .get()
+                    .documents
+                    .mapNotNull { documento ->
+                        runCatching { documento.data<Pedido>().copy(id = documento.id) }.getOrNull()
+                    }
+                    .filter { pedido ->
+                        pedido.empleadoUid == empleadoUid && pedido.estado == EstadoPedido.ENTREGADO
+                    }
+            }
+            Result.success(
+                pedidos.distinctBy { it.id }.sortedByDescending {
+                    if (it.actualizadoAt > 0L) it.actualizadoAt else it.createdAt
+                }
+            )
+        } catch (exception: Exception) {
+            Result.failure(exception)
+        }
+    }
+
     suspend fun cerrarSesion(sesion: SesionTurno): Result<ResumenTurno> {
         if (sesion.id.isBlank() || sesion.establecimientoId.isBlank()) {
             return Result.failure(Exception("La sesión no tiene identificador"))

@@ -146,7 +146,12 @@ fun PasswordInputField(
             trailingIcon = {
                 val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
                 IconButton(onClick = { onVisibilityChange(!passwordVisible) }, enabled = enabled) {
-                    Icon(imageVector = image, contentDescription = null)
+                    Icon(
+                        imageVector = image,
+                        contentDescription = stringResource(
+                            if (passwordVisible) Res.string.password_hide else Res.string.password_show
+                        )
+                    )
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
@@ -283,13 +288,67 @@ fun AppSnackbarHost(
     modifier: Modifier = Modifier
 ) {
     SnackbarHost(hostState = hostState, modifier = modifier) { snackbarData ->
-        Snackbar(
-            snackbarData = snackbarData,
-            shape = RoundedCornerShape(12.dp),
-            containerColor = DarkGray,
-            contentColor = Color.White,
-            actionColor = SoftOrangeBg
+        AppSnackbar(
+            message = snackbarData.visuals.message,
+            modifier = Modifier.padding(horizontal = 16.dp),
+            action = snackbarData.visuals.actionLabel?.let { label ->
+                {
+                    TextButton(onClick = snackbarData::performAction) {
+                        Text(label)
+                    }
+                }
+            },
+            dismissAction = if (snackbarData.visuals.withDismissAction) {
+                {
+                    IconButton(onClick = snackbarData::dismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(Res.string.snackbar_dismiss)
+                        )
+                    }
+                }
+            } else {
+                null
+            }
         )
+    }
+}
+
+@Composable
+fun AppSnackbar(
+    message: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = DarkGray,
+    contentColor: Color = Color.White,
+    action: (@Composable () -> Unit)? = null,
+    dismissAction: (@Composable () -> Unit)? = null
+) {
+    Snackbar(
+        modifier = modifier,
+        action = action,
+        dismissAction = dismissAction,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = containerColor,
+        contentColor = contentColor,
+        actionContentColor = SoftOrangeBg
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(Res.drawable.logot),
+                contentDescription = null,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = message,
+                modifier = Modifier.weight(1f),
+                color = contentColor,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }
 

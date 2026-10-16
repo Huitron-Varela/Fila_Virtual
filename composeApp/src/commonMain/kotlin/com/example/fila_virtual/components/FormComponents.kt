@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.core.LocalWindowSize
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import com.example.fila_virtual.core.ImageBytesPreview
@@ -40,6 +42,7 @@ fun FormHeader(
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
+    val windowSize = LocalWindowSize.current
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = LightBackground // Fondo gris uniforme
@@ -65,10 +68,11 @@ fun FormHeader(
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = DarkGray,
-                fontSize = 20.sp
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = windowSize.adaptiveSp(20),
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
@@ -150,6 +154,7 @@ fun FormTextField(
     onValueChange: (String) -> Unit,
     placeholder: String = "",
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
     minHeight: Int = 0,
     leadingIcon: @Composable (() -> Unit)? = null,
@@ -179,6 +184,7 @@ fun FormTextField(
             shape = RoundedCornerShape(12.dp),
             singleLine = singleLine,
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             visualTransformation = visualTransformation,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,

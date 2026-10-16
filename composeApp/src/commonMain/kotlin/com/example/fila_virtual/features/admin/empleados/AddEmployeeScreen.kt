@@ -156,7 +156,7 @@ fun AddEmployeeScreen(
                 }
             },
             shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = LightSurface
         )
     }
 
@@ -165,7 +165,11 @@ fun AddEmployeeScreen(
         onBack = onNavigateBack,
         isSaveEnabled = uiState !is FormState.Loading,
         snackbarHostState = snackbarHostState,
-        saveButtonText = if (isEditing) stringResource(Res.string.est_save_changes) else stringResource(Res.string.emp_bind_employee),
+        saveButtonText = when {
+            uiState is FormState.Loading -> stringResource(Res.string.est_saving)
+            isEditing -> stringResource(Res.string.est_save_changes)
+            else -> stringResource(Res.string.emp_bind_employee)
+        },
         onSave = {
             when {
                 correo.isBlank() || !isValidEmail(correo) -> {
@@ -203,163 +207,194 @@ fun AddEmployeeScreen(
             }
         }
     ) {
-        if (!isEditing) {
-            Text(
-                text = stringResource(Res.string.emp_warning_registered_account),
-                color = PrimaryOrange,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-                    .background(SoftOrangeBg, RoundedCornerShape(8.dp))
-                    .padding(12.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 640.dp)
+                .align(Alignment.CenterHorizontally)
+        ) {
+            if (!isEditing) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    color = SoftOrangeBg,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = PrimaryOrange,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(Res.string.emp_warning_registered_account),
+                            color = DarkGray,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = stringResource(Res.string.emp_editing_role, empleado?.nombre ?: ""),
+                    color = DarkGray,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
+            InputField(
+                label = stringResource(Res.string.emp_user_email_label),
+                value = correo,
+                onValueChange = { correo = it },
+                placeholder = "ejemplo@correo.com",
+                leadingIcon = Icons.Default.Email,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
             )
-        } else {
+
+            Spacer(modifier = Modifier.height(windowSize.compactDp(24)))
+
             Text(
-                text = stringResource(Res.string.emp_editing_role, empleado?.nombre ?: ""),
-                color = DarkGray,
+                text = stringResource(Res.string.emp_branch),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                color = DarkGray
             )
-        }
+            Spacer(modifier = Modifier.height(12.dp))
 
-        InputField(
-            label = stringResource(Res.string.emp_user_email_label),
-            value = correo,
-            onValueChange = { correo = it },
-            placeholder = "ejemplo@correo.com",
-            leadingIcon = Icons.Default.Email,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = stringResource(Res.string.emp_branch),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = DarkGray
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        Column {
-            Surface(
-                color = LightSurface,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = permitirCambiarEstablecimiento) {
-                        expandedEstablecimiento = !expandedEstablecimiento
-                    },
-                border = BorderStroke(1.dp, ExtraLightGray)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            Column {
+                Surface(
+                    color = LightSurface,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = permitirCambiarEstablecimiento) {
+                            expandedEstablecimiento = !expandedEstablecimiento
+                        },
+                    border = BorderStroke(1.dp, BorderGray)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        tint = PrimaryOrange,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = sucursalActual,
-                        color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (permitirCambiarEstablecimiento) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
-                            imageVector = if (expandedEstablecimiento) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            imageVector = Icons.Outlined.LocationOn,
                             contentDescription = null,
-                            tint = MediumGray,
+                            tint = PrimaryOrange,
                             modifier = Modifier.size(20.dp)
                         )
-                    }
-                }
-            }
-            if (permitirCambiarEstablecimiento) {
-                DropdownMenu(
-                    expanded = expandedEstablecimiento,
-                    onDismissRequest = { expandedEstablecimiento = false },
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .background(LightSurface)
-                ) {
-                    establecimientos.forEach { sucursal ->
-                        DropdownMenuItem(
-                            text = { Text(sucursal.nombre) },
-                            onClick = {
-                                selectedEstablecimientoId = sucursal.id
-                                expandedEstablecimiento = false
-                            }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = sucursalActual,
+                            color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
+                        if (permitirCambiarEstablecimiento) {
+                            Icon(
+                                imageVector = if (expandedEstablecimiento) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = MediumGray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+                if (permitirCambiarEstablecimiento) {
+                    DropdownMenu(
+                        expanded = expandedEstablecimiento,
+                        onDismissRequest = { expandedEstablecimiento = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .background(LightSurface)
+                    ) {
+                        establecimientos.forEach { sucursal ->
+                            DropdownMenuItem(
+                                text = { Text(sucursal.nombre) },
+                                onClick = {
+                                    selectedEstablecimientoId = sucursal.id
+                                    expandedEstablecimiento = false
+                                }
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = stringResource(Res.string.emp_roles_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = DarkGray
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(windowSize.compactDp(24)))
+            Text(
+                text = stringResource(Res.string.emp_roles_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = DarkGray
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    stringResource(Res.string.emp_info_multiple_roles),
+                    color = MediumGray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    stringResource(Res.string.emp_selected_roles_count, rolesSeleccionados.size),
+                    color = PrimaryOrange,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
 
-        RoleRow(
-            roles = listOf("cajero", "cocina"),
-            selectedRoles = rolesSeleccionados,
-            onRoleClick = { role ->
-                rolesSeleccionados = toggleRole(rolesSeleccionados, role)
-            }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        RoleRow(
-            roles = listOf("entrega", "gerente"),
-            selectedRoles = rolesSeleccionados,
-            onRoleClick = { role ->
-                rolesSeleccionados = toggleRole(rolesSeleccionados, role)
-            }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        RoleRow(
-            roles = listOf("supervisor", "admin"),
-            selectedRoles = rolesSeleccionados,
-            onRoleClick = { role ->
-                rolesSeleccionados = toggleRole(rolesSeleccionados, role)
-            }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        val allRolesText = stringResource(Res.string.est_all)
-        RoleRow(
-            roles = listOf(allRolesText),
-            selectedRoles = rolesSeleccionados,
-            onRoleClick = { role ->
-                rolesSeleccionados = if (role == allRolesText) {
-                    if (rolesSeleccionados.containsAll(rolesDisponibles)) emptyList() else rolesDisponibles
-                } else {
-                    toggleRole(rolesSeleccionados, role)
+            RoleRow(
+                roles = listOf("cajero", "cocina"),
+                selectedRoles = rolesSeleccionados,
+                onRoleClick = { role ->
+                    rolesSeleccionados = toggleRole(rolesSeleccionados, role)
                 }
-            }
-        )
-        Text(
-            text = stringResource(Res.string.emp_info_multiple_roles),
-            color = MediumGray,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 8.dp)
-        )
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            RoleRow(
+                roles = listOf("entrega", "gerente"),
+                selectedRoles = rolesSeleccionados,
+                onRoleClick = { role ->
+                    rolesSeleccionados = toggleRole(rolesSeleccionados, role)
+                }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            RoleRow(
+                roles = listOf("supervisor", "admin"),
+                selectedRoles = rolesSeleccionados,
+                onRoleClick = { role ->
+                    rolesSeleccionados = toggleRole(rolesSeleccionados, role)
+                }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            val allRolesText = stringResource(Res.string.est_all)
+            RoleRow(
+                roles = listOf(allRolesText),
+                selectedRoles = rolesSeleccionados,
+                onRoleClick = { role ->
+                    rolesSeleccionados = if (role == allRolesText) {
+                        if (rolesSeleccionados.containsAll(rolesDisponibles)) emptyList() else rolesDisponibles
+                    } else {
+                        toggleRole(rolesSeleccionados, role)
+                    }
+                }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
     }
 }
 
@@ -407,20 +442,42 @@ private fun RoleChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(if (isSelected) PrimaryOrange else LightSurface)
             .border(1.dp, if (isSelected) Color.Transparent else BorderGray, RoundedCornerShape(20.dp))
-            .clickable { onClick() }
-            .padding(vertical = 12.dp),
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+            .defaultMinSize(minHeight = 48.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            color = if (isSelected) LightSurface else MediumGray,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isSelected) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    tint = LightSurface,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = label,
+                color = if (isSelected) LightSurface else MediumGray,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
