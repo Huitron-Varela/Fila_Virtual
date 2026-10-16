@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
@@ -66,6 +68,7 @@ fun EstablishmentsScreen(
     }
     // Obtenemos la lista real desde el ViewModel
     val establecimientos by viewModel.establecimientos.collectAsState()
+    val cargandoEstablecimientos by viewModel.isLoadingEstablecimientos.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState) {
@@ -104,11 +107,12 @@ fun EstablishmentsScreen(
         },
         snackbarHost = { AppSnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+        AppPullToRefreshBox(
+            isRefreshing = cargandoEstablecimientos,
+            onRefresh = viewModel::recargarEstablecimientos,
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
@@ -151,7 +155,13 @@ fun EstablishmentsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (listaFiltrada.isEmpty()) {
+            if (cargandoEstablecimientos && establecimientos.isEmpty()) {
+                AppListSkeleton(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding),
+                    itemCount = 5,
+                    imageSize = 72.dp
+                )
+            } else if (listaFiltrada.isEmpty()) {
                 EstablishmentsEmptyState(
                     isSearching = searchQuery.isNotBlank(),
                     onCreateClick = {
@@ -181,6 +191,7 @@ fun EstablishmentsScreen(
                     }
                 }
             }
+        }
         }
     }
 

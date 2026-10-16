@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.Crossfade
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material3.ButtonDefaults
@@ -116,6 +117,12 @@ fun EmpleadoMainScreen(
     val estacion = estacionName?.let { name ->
         runCatching { EstacionOperativa.valueOf(name) }.getOrNull()
     }
+    val contentKey = when {
+        verGerente && puedeGestionar -> "manager"
+        verPerfil -> "profile"
+        estacion != null -> "station:${estacion.name}"
+        else -> "home"
+    }
     val agotadosSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val cerrarAgotados = {
         verAgotados = false
@@ -182,60 +189,66 @@ fun EmpleadoMainScreen(
                 }
             ) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) {
-                    when {
-                        verGerente && puedeGestionar -> GerenteMenuScreen(
-                            establecimientoId = establecimientoId,
-                            establecimientoNombre = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
-                            onBack = { verGerente = false; indiceSeleccionado = 0 }
-                        )
-                        verPerfil -> ProfileComponent(
-                            usuario = viewModel.usuario,
-                            viewModel = viewModel,
-                            onLogout = { viewModel.signOut(onLogout) },
-                            onNavigateToEdit = { editarPerfil = true },
-                            onNavigateToSecurity = { mostrarSeguridad = true },
-                            onNavigateToHelp = { mostrarAyuda = true },
-                            onNavigateToTerms = { mostrarTerminos = true }
-                        )
-                        estacion != null -> EstacionOperativaScreen(
-                            estacion = estacion,
-                            turnoGuardado = turnoGuardado,
-                            establecimientoId = establecimientoId,
-                            empleadoUid = uid,
-                            sesionId = turnoViewModel.sesion?.id.orEmpty(),
-                            puedeGestionarAgotados = puedeGestionarAgotados,
-                            onAgotados = {
-                                indiceAnteriorAgotados = indiceSeleccionado
-                                verAgotados = true
-                            }
-                        )
-                        else -> EmpleadoHome(
-                            nombre = viewModel.usuario?.nombre?.ifBlank { viewModel.usuario?.email }.orEmpty(),
-                            establecimiento = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
-                            correo = viewModel.usuario?.email.orEmpty(),
-                            sinAsignacion = sinAsignacion,
-                            cargando = turnoViewModel.cargando,
-                            guardando = turnoViewModel.guardando,
-                            error = turnoViewModel.error,
-                            soloGerente = esGerente && estaciones.isEmpty() && !sinAsignacion,
-                            estaciones = estaciones,
-                            estacionTurno = turnoViewModel.estadisticasSesion?.estacion
-                                ?.let { clave -> EstacionOperativa.values().firstOrNull { it.clave() == clave } },
-                            turnoEnCurso = turnoGuardado,
-                            estadisticasSesion = turnoViewModel.estadisticasSesion,
-                            resumenUltimoTurno = resumen,
-                            onIniciar = { estacionElegida ->
-                                turnoViewModel.iniciar(uid, estacionElegida) { guardada ->
-                                    turnoGuardado = guardada
-                                    if (guardada) estacionName = estacionElegida.name
+                    Crossfade(targetState = contentKey, label = "employee_screen_transition") { screen ->
+                        when {
+                            screen == "manager" -> GerenteMenuScreen(
+                                establecimientoId = establecimientoId,
+                                establecimientoNombre = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
+                                onBack = { verGerente = false; indiceSeleccionado = 0 }
+                            )
+                            screen == "profile" -> ProfileComponent(
+                                usuario = viewModel.usuario,
+                                viewModel = viewModel,
+                                onLogout = { viewModel.signOut(onLogout) },
+                                onNavigateToEdit = { editarPerfil = true },
+                                onNavigateToSecurity = { mostrarSeguridad = true },
+                                onNavigateToHelp = { mostrarAyuda = true },
+                                onNavigateToTerms = { mostrarTerminos = true }
+                            )
+                            screen.startsWith("station:") -> EstacionOperativaScreen(
+                                estacion = EstacionOperativa.valueOf(screen.substringAfter(':')),
+                                turnoGuardado = turnoGuardado,
+                                establecimientoId = establecimientoId,
+                                empleadoUid = uid,
+                                sesionId = turnoViewModel.sesion?.id.orEmpty(),
+                                puedeGestionarAgotados = puedeGestionarAgotados,
+                                onAgotados = {
+                                    indiceAnteriorAgotados = indiceSeleccionado
+                                    verAgotados = true
                                 }
-                            },
-                            onTerminar = terminarTurno,
-                            onInvitacionAceptada = {
-                                viewModel.loadUserData()
-                                turnoViewModel.cargar(uid)
-                            }
-                        )
+                            )
+                            else -> EmpleadoHome(
+                                nombre = viewModel.usuario?.nombre?.ifBlank { viewModel.usuario?.email }.orEmpty(),
+                                establecimiento = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
+                                correo = viewModel.usuario?.email.orEmpty(),
+                                sinAsignacion = sinAsignacion,
+                                cargando = turnoViewModel.cargando,
+                                guardando = turnoViewModel.guardando,
+                                error = turnoViewModel.error,
+                                soloGerente = esGerente && estaciones.isEmpty() && !sinAsignacion,
+                                estaciones = estaciones,
+                                estacionTurno = turnoViewModel.estadisticasSesion?.estacion
+                                    ?.let { clave -> EstacionOperativa.values().firstOrNull { it.clave() == clave } },
+                                turnoEnCurso = turnoGuardado,
+                                estadisticasSesion = turnoViewModel.estadisticasSesion,
+                                resumenUltimoTurno = resumen,
+                                onIniciar = { estacionElegida ->
+                                    turnoViewModel.iniciar(uid, estacionElegida) { guardada ->
+                                        turnoGuardado = guardada
+                                        if (guardada) estacionName = estacionElegida.name
+                                    }
+                                },
+                                onTerminar = terminarTurno,
+                                onInvitacionAceptada = {
+                                    viewModel.loadUserData()
+                                    turnoViewModel.cargar(uid)
+                                },
+                                onRefresh = {
+                                    viewModel.loadUserData()
+                                    turnoViewModel.cargar(uid)
+                                }
+                            )
+                        }
                     }
                 }
             }

@@ -34,8 +34,8 @@ class CajeroViewModel(
             .filter { it.estado != EstadoPedido.CANCELADO }
             .sumOf { it.total }
 
-    fun escuchar(establecimientoId: String) {
-        if (establecimientoId == establecimientoActual && escucha?.isActive == true) return
+    fun escuchar(establecimientoId: String, forceRefresh: Boolean = false) {
+        if (!forceRefresh && establecimientoId == establecimientoActual && escucha?.isActive == true) return
         establecimientoActual = establecimientoId
         escucha?.cancel()
         if (establecimientoId.isBlank()) {

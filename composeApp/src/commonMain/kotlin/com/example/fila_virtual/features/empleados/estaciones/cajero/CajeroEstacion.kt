@@ -37,6 +37,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.ActionBlue
 import com.example.fila_virtual.core.theme.BorderGray
@@ -78,7 +80,12 @@ fun CajeroEstacion(
         viewModel.escuchar(establecimientoId)
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    AppPullToRefreshBox(
+        isRefreshing = viewModel.cargando,
+        onRefresh = { viewModel.escuchar(establecimientoId, forceRefresh = true) },
+        modifier = modifier.fillMaxSize()
+    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -120,7 +127,7 @@ fun CajeroEstacion(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
                 viewModel.cargando && viewModel.pedidos.isEmpty() -> {
-                    CircularProgressIndicator(color = PrimaryOrange, modifier = Modifier.align(Alignment.Center))
+                    AppListSkeleton(Modifier.fillMaxSize().padding(8.dp), itemCount = 4)
                 }
                 viewModel.pedidos.isEmpty() -> {
                     Card(
@@ -151,6 +158,7 @@ fun CajeroEstacion(
                 }
             }
         }
+    }
     }
 }
 

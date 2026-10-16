@@ -11,16 +11,51 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class UserHomeViewModel : ViewModel() {
 
     private val establecimientoRepo = EstablecimientoRepository()
     private val productoRepo = ProductoRepository()
 
-    // 1. Traer TODOS los establecimientos en tiempo real desde Firestore
-    private val _todosLosEstablecimientos = establecimientoRepo.getEstablecimientos()
+    private val _refreshVersion = MutableStateFlow(0)
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+    private val refreshedSources = mutableSetOf<Int>()
+    private var establishmentsLoaded = false
+    private var productsLoaded = false
+
+    private fun onSourceLoaded(source: Int) {
+        if (source == 0) establishmentsLoaded = true else productsLoaded = true
+        if (establishmentsLoaded && productsLoaded) _isLoading.value = false
+
+        if (_isRefreshing.value && refreshedSources.add(source) && refreshedSources.size == 2) {
+            refreshedSources.clear()
+            _isRefreshing.value = false
+        }
+    }
+
+    // Reopen both live streams when the user requests a refresh.
+    private val _todosLosEstablecimientos = _refreshVersion
+        .flatMapLatest {
+            establecimientoRepo.getEstablecimientos().onEach { onSourceLoaded(0) }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    private val _todosLosProductos = _refreshVersion
+        .flatMapLatest {
+            productoRepo.getProductosGlobales().onEach { onSourceLoaded(1) }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -60,7 +95,7 @@ class UserHomeViewModel : ViewModel() {
     // 5. Variable para el TOP 5
     val recomendaciones: StateFlow<List<Pair<Producto, String>>> = combine(
         _todosLosEstablecimientos,
-        productoRepo.getProductosGlobales()
+        _todosLosProductos
     ) { locales, productos ->
         productos.filter { it.enCatalogo && it.disponible }.map { producto ->
             val nombreLocal = locales.find { it.id == producto.establecimientoId }?.nombre ?: "Local"
@@ -74,6 +109,12 @@ class UserHomeViewModel : ViewModel() {
 
     fun seleccionarCategoria(categoria: String) {
         _categoriaSeleccionada.value = categoria
+    }
+
+    fun recargar() {
+        refreshedSources.clear()
+        _isRefreshing.value = true
+        _refreshVersion.value += 1
     }
 
     // --- 👇 LÓGICA DEL BUSCADOR INTEGRADA 👇 ---
@@ -91,7 +132,7 @@ class UserHomeViewModel : ViewModel() {
     val resultadosBusqueda: StateFlow<List<Pair<Producto, String>>> = combine(
         _searchQuery,
         _todosLosEstablecimientos,
-        productoRepo.getProductosGlobales()
+        _todosLosProductos
     ) { query, locales, productos ->
         if (query.isBlank()) {
             emptyList() // Si no ha escrito nada, mandamos una lista vacía

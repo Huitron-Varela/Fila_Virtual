@@ -53,6 +53,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.VisorCodigoQr
 import com.example.fila_virtual.core.rememberPermissionsManager
@@ -164,7 +166,12 @@ fun EntregaEstacion(
         )
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    AppPullToRefreshBox(
+        isRefreshing = viewModel.cargando,
+        onRefresh = { viewModel.escuchar(establecimientoId, forceRefresh = true) },
+        modifier = modifier.fillMaxSize()
+    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -346,7 +353,7 @@ fun EntregaEstacion(
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
                 viewModel.cargando && viewModel.pedidos.isEmpty() -> {
-                    CircularProgressIndicator(color = PrimaryOrange, modifier = Modifier.align(Alignment.Center))
+                    AppListSkeleton(Modifier.fillMaxSize().padding(8.dp), itemCount = 4)
                 }
                 viewModel.pedidos.isEmpty() -> {
                     Card(
@@ -391,6 +398,7 @@ fun EntregaEstacion(
             }
             }
         }
+    }
     }
 }
 

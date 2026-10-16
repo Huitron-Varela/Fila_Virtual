@@ -51,6 +51,8 @@ class OrdenesViewModel : ViewModel() {
      */
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
 
     /*
      * ==========================================================
@@ -65,15 +67,18 @@ class OrdenesViewModel : ViewModel() {
     }
 
     private var escucha: Job? = null
+    private var userIdActual: String? = null
 
     init {
         viewModelScope.launch {
             Firebase.auth.authStateChanged.collect { user ->
                 escucha?.cancel()
+                userIdActual = user?.uid
                 if (user == null) {
                     _pedidosActivos.value = emptyList()
                     _pedidosHistorial.value = emptyList()
                     _isLoading.value = false
+                    _isRefreshing.value = false
                 } else {
                     escucha = escucharPedidosDelUsuario(user.uid)
                 }
@@ -81,8 +86,17 @@ class OrdenesViewModel : ViewModel() {
         }
     }
 
+    fun refrescarPedidos() {
+        val userId = userIdActual ?: return
+        _isRefreshing.value = true
+        escucha?.cancel()
+        escucha = escucharPedidosDelUsuario(userId)
+    }
+
     private fun escucharPedidosDelUsuario(userId: String): Job {
-        _isLoading.value = true
+        if (_pedidosActivos.value.isEmpty() && _pedidosHistorial.value.isEmpty()) {
+            _isLoading.value = true
+        }
         return viewModelScope.launch {
             pedidosRef
                 .where { "userId" equalTo userId }
@@ -98,6 +112,7 @@ class OrdenesViewModel : ViewModel() {
                 .catch { exception ->
                     println("ORDENES_VM: Error escuchando pedidos: " + exception.message)
                     _isLoading.value = false
+                    _isRefreshing.value = false
                 }
                 .collect { todosLosPedidos ->
                     _pedidosActivos.value = todosLosPedidos.filter { pedido ->
@@ -114,6 +129,7 @@ class OrdenesViewModel : ViewModel() {
                     }.sortedByDescending { it.createdAt }
 
                     _isLoading.value = false
+                    _isRefreshing.value = false
                 }
         }
     }

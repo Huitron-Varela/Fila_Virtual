@@ -16,6 +16,8 @@ import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.user.UserHomeViewModel
 
 import com.example.fila_virtual.components.AppSnackbarHost
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
 import fila_virtual.composeapp.generated.resources.Res
@@ -53,8 +55,15 @@ fun HomeView(
 
     val searchQuery by viewModel.searchQuery.collectAsState()
     val resultadosBusqueda by viewModel.resultadosBusqueda.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
+        AppPullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::recargar,
+            modifier = Modifier.fillMaxSize()
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -81,7 +90,14 @@ fun HomeView(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                if (searchQuery.isNotBlank()) {
+                if (isLoading) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    AppListSkeleton(
+                        modifier = Modifier.padding(horizontal = horizontalPadding),
+                        itemCount = 5,
+                        imageSize = 72.dp
+                    )
+                } else if (searchQuery.isNotBlank()) {
                     Spacer(modifier = Modifier.height(16.dp))
                     SectionHeader(title = stringResource(Res.string.home_search_results), padding = horizontalPadding)
                     Spacer(modifier = Modifier.height(16.dp))
@@ -124,6 +140,7 @@ fun HomeView(
 
                 Spacer(modifier = Modifier.height(100.dp))
             }
+        }
         }
 
         AppSnackbarHost(

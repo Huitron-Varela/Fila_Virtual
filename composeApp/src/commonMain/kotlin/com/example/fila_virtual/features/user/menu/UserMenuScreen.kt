@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.AppSnackbarHost
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.features.user.home.ProductCard
 import com.example.fila_virtual.features.user.home.ProductDetailModal
 import com.example.fila_virtual.data.Producto
@@ -138,9 +140,14 @@ fun UserMenuScreen(
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { AppSnackbarHost(snackbarHostState) }
         ) { padding ->
-            Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            AppPullToRefreshBox(
+                isRefreshing = menuCargando,
+                onRefresh = { menuViewModel.cargarMenu(establecimientoId) },
+                modifier = Modifier.padding(padding).fillMaxSize()
+            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 val contentState = when {
-                    menuCargando -> "loading"
+                    menuCargando && productos.isEmpty() -> "loading"
                     menuError -> "error"
                     productos.isEmpty() -> "empty"
                     else -> "products"
@@ -152,12 +159,8 @@ fun UserMenuScreen(
                     label = "user_menu_content"
                 ) { state ->
                     when (state) {
-                        "loading" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = PrimaryOrange)
-                                Spacer(Modifier.height(12.dp))
-                                Text(stringResource(Res.string.user_menu_loading), color = MediumGray)
-                            }
+                        "loading" -> Box(Modifier.fillMaxSize().padding(horizontal = windowSize.compactDp(24), vertical = 16.dp)) {
+                            AppListSkeleton(itemCount = 5, imageSize = 72.dp)
                         }
                         "error" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Card(
@@ -242,6 +245,7 @@ fun UserMenuScreen(
                         }
                     }
                 }
+            }
             }
         }
 

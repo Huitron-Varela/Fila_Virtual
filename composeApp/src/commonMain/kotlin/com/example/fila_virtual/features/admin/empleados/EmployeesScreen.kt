@@ -6,7 +6,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.components.AppSnackbar
 import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.SearchBar
@@ -74,7 +79,6 @@ fun EmployeesScreen(
     var searchQuery by remember { mutableStateOf("") }
     
     var currentEstablecimientoId by remember { mutableStateOf(if (establecimientoId.isEmpty()) "TODOS" else establecimientoId) }
-    var showSucursalSelector by remember { mutableStateOf(false) }
 
     var selectedEmpleado by remember { mutableStateOf<EmpleadoDetalle?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -139,14 +143,24 @@ fun EmployeesScreen(
                 }
             }
         }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorScheme.background)
-                .padding(innerPadding),
-            contentAlignment = Alignment.TopCenter
+    ) {
+        AppPullToRefreshBox(
+            isRefreshing = uiState is FormState.Loading,
+            onRefresh = {
+                if (currentEstablecimientoId == "TODOS") {
+                    viewModel.cargarTodosLosEmpleados(establecimientos.map { it.id })
+                } else if (currentEstablecimientoId.isNotBlank()) {
+                    viewModel.cargarEmpleados(currentEstablecimientoId)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.background),
+                contentAlignment = Alignment.TopCenter
+            ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -188,77 +202,80 @@ fun EmployeesScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Box {
-                    Surface(
-                        color = LightSurface,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = permitirCambiarEstablecimiento) {
-                                showSucursalSelector = true
-                            },
-                        border = BorderStroke(1.dp, BorderGray)
+                if (permitirCambiarEstablecimiento) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Storefront,
-                                contentDescription = null,
-                                tint = DarkGray,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = sucursalActual,
-                                color = if (currentEstablecimientoId.isEmpty()) MediumGray else DarkGray,
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (permitirCambiarEstablecimiento) {
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = DarkGray,
-                                    modifier = Modifier.size(24.dp)
+                        item(key = "all_branches") {
+                            val isSelected = currentEstablecimientoId == "TODOS"
+                            Surface(
+                                color = if (isSelected) PrimaryOrange else LightSurface,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 30.dp)
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton
+                                    ) {
+                                        currentEstablecimientoId = "TODOS"
+                                    },
+                                border = if (isSelected) null else BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.all_branches_chip),
+                                    color = if (isSelected) LightSurface else DarkGray,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        items(establecimientos, key = { it.id }) { sucursal ->
+                            val isSelected = sucursal.id == currentEstablecimientoId
+                            Surface(
+                                color = if (isSelected) PrimaryOrange else LightSurface,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 30.dp)
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton
+                                    ) {
+                                        currentEstablecimientoId = sucursal.id
+                                    },
+                                border = if (isSelected) null else BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Text(
+                                    text = sucursal.nombre,
+                                    color = if (isSelected) LightSurface else DarkGray,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
                     }
-
-                    if (permitirCambiarEstablecimiento) {
-                        DropdownMenu(
-                            expanded = showSucursalSelector,
-                            onDismissRequest = { showSucursalSelector = false },
-                            modifier = Modifier.fillMaxWidth(0.9f).background(LightSurface)
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Filled.People, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(Res.string.est_all_branches), fontWeight = FontWeight.Bold, color = PrimaryOrange)
-                                    }
-                                },
-                                onClick = {
-                                    currentEstablecimientoId = "TODOS"
-                                    showSucursalSelector = false
-                                }
-                            )
-                            HorizontalDivider()
-                            establecimientos.forEach { sucursal ->
-                                DropdownMenuItem(
-                                    text = { Text(sucursal.nombre) },
-                                    onClick = {
-                                        currentEstablecimientoId = sucursal.id
-                                        showSucursalSelector = false
-                                    }
-                                )
-                            }
-                        }
+                } else {
+                    Surface(
+                        color = if (currentEstablecimientoId == "TODOS") LightSurface else PrimaryOrange,
+                        shape = RoundedCornerShape(12.dp),
+                        border = if (currentEstablecimientoId == "TODOS") BorderStroke(1.dp, BorderGray) else null
+                    ) {
+                        Text(
+                            text = sucursalActual,
+                            color = if (currentEstablecimientoId == "TODOS") MediumGray else LightSurface,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
@@ -292,12 +309,10 @@ fun EmployeesScreen(
 
                 when {
                     uiState is FormState.Loading && empleados.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = PrimaryOrange)
-                        }
+                        AppListSkeleton(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                            itemCount = 5
+                        )
                     }
 
                     uiState is FormState.Error -> {
@@ -693,6 +708,7 @@ fun EmployeesScreen(
             }
         }
         }
+        }
     }
 }
 
@@ -803,7 +819,7 @@ fun CardEmpleado(
             Icon(
                 Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
-                tint = PrimaryOrange,
+                tint = MediumGray,
                 modifier = Modifier
                     .size(24.dp)
             )

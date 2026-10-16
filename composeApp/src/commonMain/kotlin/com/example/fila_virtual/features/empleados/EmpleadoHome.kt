@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,6 +56,8 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.role
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.LightBackground
 import com.example.fila_virtual.core.theme.MediumGray
@@ -111,7 +114,8 @@ fun EmpleadoHome(
     resumenUltimoTurno: ResumenTurno?,
     onIniciar: (EstacionOperativa) -> Unit,
     onTerminar: () -> Unit,
-    onInvitacionAceptada: () -> Unit
+    onInvitacionAceptada: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     var estacionSeleccionadaName by rememberSaveable {
         mutableStateOf(estacionTurno?.name ?: estaciones.firstOrNull()?.name.orEmpty())
@@ -128,11 +132,12 @@ fun EmpleadoHome(
     val estadisticasVisibles = estadisticasSesion ?: resumenUltimoTurno
     val haptic = LocalHapticFeedback.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LightBackground)
+    AppPullToRefreshBox(
+        isRefreshing = cargando,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize().background(LightBackground)
     ) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp)) {
             Text(
                 text = stringResource(Res.string.emp_home_hello, nombreYApellido(nombre).ifBlank { "—" }),
@@ -187,7 +192,11 @@ fun EmpleadoHome(
                 )
             } else if (cargando) {
                 Spacer(Modifier.height(12.dp))
-                CircularProgressIndicator(color = PrimaryOrange, modifier = Modifier.size(28.dp))
+                AppListSkeleton(
+                    modifier = Modifier.fillMaxWidth(),
+                    itemCount = 2,
+                    imageSize = 44.dp
+                )
             }
             if (sinAsignacion) {
                 var puedeUnirse by remember { mutableStateOf(false) }
@@ -248,6 +257,7 @@ fun EmpleadoHome(
         }
 
         Spacer(Modifier.height(16.dp))
+    }
     }
 }
 

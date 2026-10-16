@@ -47,8 +47,8 @@ class CocinaViewModel(
             .map { (nombre, productos) -> nombre to productos.sumOf { it.cantidad } }
             .sortedByDescending { it.second }
 
-    fun escuchar(establecimientoId: String) {
-        if (establecimientoId == establecimientoActual && escucha?.isActive == true) return
+    fun escuchar(establecimientoId: String, forceRefresh: Boolean = false) {
+        if (!forceRefresh && establecimientoId == establecimientoActual && escucha?.isActive == true) return
         establecimientoActual = establecimientoId
         escucha?.cancel()
         if (establecimientoId.isBlank()) {

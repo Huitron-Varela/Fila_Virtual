@@ -5,12 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -88,8 +91,6 @@ fun AddEmployeeScreen(
             }
         )
     }
-    var expandedEstablecimiento by remember { mutableStateOf(false) }
-
     LaunchedEffect(empleado?.uid) {
         val uid = empleado?.uid.orEmpty()
         if (uid.isBlank()) return@LaunchedEffect
@@ -270,64 +271,56 @@ fun AddEmployeeScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column {
-                Surface(
-                    color = LightSurface,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = permitirCambiarEstablecimiento) {
-                            expandedEstablecimiento = !expandedEstablecimiento
-                        },
-                    border = BorderStroke(1.dp, BorderGray)
+            if (permitirCambiarEstablecimiento && establecimientos.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.LocationOn,
-                            contentDescription = null,
-                            tint = PrimaryOrange,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = sucursalActual,
-                            color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (permitirCambiarEstablecimiento) {
-                            Icon(
-                                imageVector = if (expandedEstablecimiento) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = MediumGray,
-                                modifier = Modifier.size(20.dp)
+                    items(establecimientos, key = { it.id }) { sucursal ->
+                        val isSelected = sucursal.id == selectedEstablecimientoId
+                        Surface(
+                            color = if (isSelected) PrimaryOrange else LightSurface,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.selectable(
+                                selected = isSelected,
+                                role = Role.RadioButton
+                            ) {
+                                selectedEstablecimientoId = sucursal.id
+                            },
+                            border = if (isSelected) null else BorderStroke(1.dp, BorderGray)
+                        ) {
+                            Text(
+                                text = sucursal.nombre,
+                                color = if (isSelected) LightSurface else DarkGray,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
-                if (permitirCambiarEstablecimiento) {
-                    DropdownMenu(
-                        expanded = expandedEstablecimiento,
-                        onDismissRequest = { expandedEstablecimiento = false },
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .background(LightSurface)
-                    ) {
-                        establecimientos.forEach { sucursal ->
-                            DropdownMenuItem(
-                                text = { Text(sucursal.nombre) },
-                                onClick = {
-                                    selectedEstablecimientoId = sucursal.id
-                                    expandedEstablecimiento = false
-                                }
-                            )
-                        }
+            } else {
+                Surface(
+                    color = if (selectedEstablecimientoId.isEmpty()) LightSurface else PrimaryOrange,
+                    shape = RoundedCornerShape(12.dp),
+                    border = if (selectedEstablecimientoId.isEmpty()) {
+                        BorderStroke(1.dp, BorderGray)
+                    } else {
+                        null
                     }
+                ) {
+                    Text(
+                        text = sucursalActual,
+                        color = if (selectedEstablecimientoId.isEmpty()) MediumGray else LightSurface,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 

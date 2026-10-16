@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.LightBackground
 import com.example.fila_virtual.core.theme.LightSurface
@@ -63,11 +65,12 @@ fun AgotadoTemporalScreen(
         viewModel.escuchar(establecimientoId)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LightBackground)
+    AppPullToRefreshBox(
+        isRefreshing = viewModel.cargando,
+        onRefresh = { viewModel.escuchar(establecimientoId, forceRefresh = true) },
+        modifier = Modifier.fillMaxSize().background(LightBackground)
     ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,7 +111,7 @@ fun AgotadoTemporalScreen(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
                 viewModel.cargando && viewModel.productos.isEmpty() -> {
-                    CircularProgressIndicator(color = PrimaryOrange, modifier = Modifier.align(Alignment.Center))
+                    AppListSkeleton(Modifier.fillMaxSize().padding(horizontal = 16.dp), itemCount = 4)
                 }
                 viewModel.productos.isEmpty() -> {
                     Text(
@@ -135,6 +138,7 @@ fun AgotadoTemporalScreen(
                 }
             }
         }
+    }
     }
 }
 

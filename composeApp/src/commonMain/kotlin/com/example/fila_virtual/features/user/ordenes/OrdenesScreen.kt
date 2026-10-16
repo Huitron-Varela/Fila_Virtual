@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
@@ -92,6 +94,7 @@ fun OrdenesScreen(
     val pedidosActivos by viewModel.pedidosActivos.collectAsState()
     val pedidosHistorial by viewModel.pedidosHistorial.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var showQRModal by remember { mutableStateOf(false) }
     var selectedPedidoForQR by remember { mutableStateOf<Pedido?>(null) }
@@ -103,9 +106,12 @@ fun OrdenesScreen(
     // 🔥 Memoria del ViewModel que sobrevive a la navegación
     val ratedOrders by viewModel.pedidosCalificados.collectAsState()
 
-    Column(
+    AppPullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = viewModel::refrescarPedidos,
         modifier = Modifier.fillMaxSize().background(LightBackground)
     ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = "Mis Órdenes",
             style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(20)),
@@ -148,9 +154,11 @@ fun OrdenesScreen(
         }
 
         if (isLoading) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            AppListSkeleton(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = horizontalPadding),
+                itemCount = 5,
+                imageSize = 72.dp
+            )
         } else {
             Crossfade(
                 targetState = selectedTabIndex,
@@ -210,6 +218,7 @@ fun OrdenesScreen(
                 }
             }
         }
+    }
     }
 
     val pedidoSeleccionadoId = selectedPedidoForQR?.id

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
@@ -61,7 +65,6 @@ fun MenuScreen(
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
     
     var currentEstablecimientoId by remember { mutableStateOf(establecimientoId) }
-    var showSucursalSelector by remember { mutableStateOf(false) }
 
     var selectedProducto by remember { mutableStateOf<Producto?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -76,10 +79,11 @@ fun MenuScreen(
 
     // Observamos los productos y establecimientos
     val productos by viewModel.productos.collectAsState()
+    val productosCargando by viewModel.isRefreshing.collectAsState()
     val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
     
     val sucursalActual = establecimientoNombreFijo.ifBlank { if (currentEstablecimientoId.isEmpty()) {
-        stringResource(Res.string.est_all_branches)
+        stringResource(Res.string.all_branches_chip)
     } else {
         establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: "Sucursal desconocida"
     } }
@@ -103,14 +107,18 @@ fun MenuScreen(
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.menu_title_add))
             }
         }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorScheme.background)
-                .padding(innerPadding),
-            contentAlignment = Alignment.TopCenter
+    ) {
+        AppPullToRefreshBox(
+            isRefreshing = productosCargando,
+            onRefresh = viewModel::refreshProducts,
+            modifier = Modifier.fillMaxSize()
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.background),
+                contentAlignment = Alignment.TopCenter
+            ) {
             Column(
                 modifier = Modifier
                     .widthIn(max = 960.dp)
@@ -152,70 +160,80 @@ fun MenuScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Box {
-                    Surface(
-                        color = LightSurface,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = permitirCambiarEstablecimiento) {
-                                showSucursalSelector = true
-                            },
-                        border = BorderStroke(1.dp, BorderGray)
+                if (permitirCambiarEstablecimiento) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Storefront,
-                                contentDescription = null,
-                                tint = DarkGray,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = sucursalActual,
-                                color = if (currentEstablecimientoId.isEmpty()) MediumGray else DarkGray,
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (permitirCambiarEstablecimiento) {
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = DarkGray,
-                                    modifier = Modifier.size(24.dp)
+                        item(key = "all_branches") {
+                            val isSelected = currentEstablecimientoId.isEmpty()
+                            Surface(
+                                color = if (isSelected) PrimaryOrange else LightSurface,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 30.dp)
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton
+                                    ) {
+                                        currentEstablecimientoId = ""
+                                    },
+                                border = if (isSelected) null else BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.all_branches_chip),
+                                    color = if (isSelected) LightSurface else DarkGray,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        items(establecimientos, key = { it.id }) { sucursal ->
+                            val isSelected = sucursal.id == currentEstablecimientoId
+                            Surface(
+                                color = if (isSelected) PrimaryOrange else LightSurface,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 30.dp)
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton
+                                    ) {
+                                        currentEstablecimientoId = sucursal.id
+                                    },
+                                border = if (isSelected) null else BorderStroke(1.dp, BorderGray)
+                            ) {
+                                Text(
+                                    text = sucursal.nombre,
+                                    color = if (isSelected) LightSurface else DarkGray,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
                     }
-
-                    if (permitirCambiarEstablecimiento) {
-                        DropdownMenu(
-                            expanded = showSucursalSelector,
-                            onDismissRequest = { showSucursalSelector = false },
-                            modifier = Modifier.fillMaxWidth(0.9f).background(LightSurface)
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.est_all_branches)) },
-                                onClick = {
-                                    currentEstablecimientoId = ""
-                                    showSucursalSelector = false
-                                }
-                            )
-                            establecimientos.forEach { sucursal ->
-                                DropdownMenuItem(
-                                    text = { Text(sucursal.nombre) },
-                                    onClick = {
-                                        currentEstablecimientoId = sucursal.id
-                                        showSucursalSelector = false
-                                    }
-                                )
-                            }
-                        }
+                } else {
+                    Surface(
+                        color = if (currentEstablecimientoId.isEmpty()) LightSurface else PrimaryOrange,
+                        shape = RoundedCornerShape(12.dp),
+                        border = if (currentEstablecimientoId.isEmpty()) BorderStroke(1.dp, BorderGray) else null
+                    ) {
+                        Text(
+                            text = sucursalActual,
+                            color = if (currentEstablecimientoId.isEmpty()) MediumGray else LightSurface,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
@@ -247,7 +265,13 @@ fun MenuScreen(
             }
 
             // Lista de Platillos o Estado Vacío
-            if (productosFiltrados.isEmpty()) {
+            if (productosCargando && productos.isEmpty()) {
+                AppListSkeleton(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp),
+                    itemCount = 5,
+                    imageSize = 72.dp
+                )
+            } else if (productosFiltrados.isEmpty()) {
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -282,6 +306,7 @@ fun MenuScreen(
                     }
                 }
             }
+        }
         }
         }
     }
@@ -640,7 +665,7 @@ private fun CardMenuItem(
             Icon(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
-                tint = PrimaryOrange,
+                tint = MediumGray,
                 modifier = Modifier.size(24.dp)
             )
         }

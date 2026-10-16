@@ -24,6 +24,8 @@ class GerenteViewModel(
         private set
     var pedidos by mutableStateOf<List<Pedido>>(emptyList())
         private set
+    var cargandoCola by mutableStateOf(true)
+        private set
     var errorCola by mutableStateOf("")
         private set
 
@@ -32,17 +34,19 @@ class GerenteViewModel(
     private var escuchaCola: Job? = null
     private var cargaOwner: Job? = null
 
-    fun escuchar(establecimientoId: String) {
-        if (establecimientoId == establecimientoActual && escuchaCola?.isActive == true) return
+    fun escuchar(establecimientoId: String, forceRefresh: Boolean = false) {
+        if (!forceRefresh && establecimientoId == establecimientoActual && escuchaCola?.isActive == true) return
         establecimientoActual = establecimientoId
         escuchaCola?.cancel()
         cargaOwner?.cancel()
         ownerUid = ""
         cargandoOwner = true
+        cargandoCola = true
         errorOwner = ""
         if (establecimientoId.isBlank()) {
             pedidos = emptyList()
             cargandoOwner = false
+            cargandoCola = false
             return
         }
         cargaOwner = viewModelScope.launch {
@@ -56,10 +60,12 @@ class GerenteViewModel(
                 .catch { fallo ->
                     errorCola = fallo.message ?: "No se pudo cargar la cola de pedidos."
                     pedidos = emptyList()
+                    cargandoCola = false
                 }
                 .collect { lista ->
                     errorCola = ""
                     pedidos = lista
+                    cargandoCola = false
                 }
         }
     }

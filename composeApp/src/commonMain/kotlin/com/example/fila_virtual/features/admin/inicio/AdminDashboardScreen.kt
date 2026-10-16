@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.RolesEmpleado
@@ -49,72 +51,73 @@ fun AdminDashboardScreen(
         viewModel.load(ownerUid)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LightBackground)
+    AppPullToRefreshBox(
+        isRefreshing = dashboard.isLoading,
+        onRefresh = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            viewModel.load(ownerUid)
+        },
+        modifier = Modifier.fillMaxSize().background(LightBackground)
     ) {
-        // --- SECCIÓN FIJA: Header (Consistente con home.kt) ---
-        AdminHeader(
-            padding = horizontalPadding,
-            isRefreshing = dashboard.isLoading,
-            onRefresh = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                viewModel.load(ownerUid)
-            }
-        )
-
-        Crossfade(
-            targetState = when {
-                dashboard.isLoading -> "loading"
-                dashboard.errorMessage != null -> "error"
-                !dashboard.hasEstablishments -> "empty"
-                else -> "content"
-            },
-            modifier = Modifier.weight(1f),
-            label = "admin_dashboard_state"
-        ) {
-            when (it) {
-                "loading" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = PrimaryOrange)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text("Cargando métricas…", color = MediumGray, style = MaterialTheme.typography.bodyMedium)
-                    }
+        Column(modifier = Modifier.fillMaxSize()) {
+            // --- SECCIÓN FIJA: Header (Consistente con home.kt) ---
+            AdminHeader(
+                padding = horizontalPadding,
+                isRefreshing = dashboard.isLoading,
+                onRefresh = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.load(ownerUid)
                 }
-                "error" -> DashboardMessage(
-                    icon = Icons.Default.ErrorOutline,
-                    title = "No se pudieron cargar las métricas",
-                    description = dashboard.errorMessage.orEmpty(),
-                    actionLabel = "Reintentar",
-                    onAction = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.load(ownerUid)
+            )
+
+            Crossfade(
+                targetState = when {
+                    dashboard.isLoading -> "loading"
+                    dashboard.errorMessage != null -> "error"
+                    !dashboard.hasEstablishments -> "empty"
+                    else -> "content"
+                },
+                modifier = Modifier.weight(1f),
+                label = "admin_dashboard_state"
+            ) {
+                when (it) {
+                    "loading" -> Box(Modifier.fillMaxSize().padding(horizontal = horizontalPadding, vertical = 16.dp)) {
+                        AppListSkeleton(itemCount = 5)
                     }
-                )
-                "empty" -> DashboardMessage(
-                    icon = Icons.Default.Storefront,
-                    title = "Aún no tienes establecimientos",
-                    description = "Crea un establecimiento para empezar a revisar sus pedidos y actividad.",
-                    actionLabel = "Gestionar establecimientos",
-                    onAction = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onNavigateToManage()
-                    }
-                )
-                else -> DashboardContent(
-                    state = dashboard,
-                    padding = horizontalPadding,
-                    isCompact = isCompact,
-                    onManageEstablishments = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onNavigateToManage()
-                    },
-                    onEmployeesClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onNavigateToEmployees()
-                    }
-                )
+                    "error" -> DashboardMessage(
+                        icon = Icons.Default.ErrorOutline,
+                        title = "No se pudieron cargar las métricas",
+                        description = dashboard.errorMessage.orEmpty(),
+                        actionLabel = "Reintentar",
+                        onAction = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.load(ownerUid)
+                        }
+                    )
+                    "empty" -> DashboardMessage(
+                        icon = Icons.Default.Storefront,
+                        title = "Aún no tienes establecimientos",
+                        description = "Crea un establecimiento para empezar a revisar sus pedidos y actividad.",
+                        actionLabel = "Gestionar establecimientos",
+                        onAction = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onNavigateToManage()
+                        }
+                    )
+                    else -> DashboardContent(
+                        state = dashboard,
+                        padding = horizontalPadding,
+                        isCompact = isCompact,
+                        onManageEstablishments = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onNavigateToManage()
+                        },
+                        onEmployeesClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onNavigateToEmployees()
+                        }
+                    )
+                }
             }
         }
     }

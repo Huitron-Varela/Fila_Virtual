@@ -255,6 +255,7 @@
     <!-- Fields, Labels and Selectors -->
     <string name="emp_user_email_label">User email</string>
     <string name="emp_branch">Branch</string>
+    <string name="all_branches_chip">All</string>
     <string name="emp_select_branch">Select Branch</string>
     <string name="emp_unknown_branch">Unknown branch</string>
     <string name="emp_roles_title">Roles in the establishment</string>

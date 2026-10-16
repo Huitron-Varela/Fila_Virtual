@@ -10,7 +10,11 @@ import com.example.fila_virtual.repository.uploadImage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -22,10 +26,16 @@ class ProductoViewModel : ViewModel() {
 
     private val _establecimientoId = MutableStateFlow<String?>(null)
     private val _ownerUid = MutableStateFlow<String?>(null)
+    private val _refreshVersion = MutableStateFlow(0)
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    val productos: StateFlow<List<Producto>> = _establecimientoId
-        .flatMapLatest { id ->
-            val ownerId = _ownerUid.value
+    val productos: StateFlow<List<Producto>> = combine(
+        _establecimientoId,
+        _ownerUid,
+        _refreshVersion
+    ) { id, ownerId, _ -> id to ownerId }
+        .flatMapLatest { (id, ownerId) ->
             if (id != null && id.isNotEmpty()) {
                 repository.getProductos(id)
             } else if (ownerId != null) {
@@ -34,6 +44,8 @@ class ProductoViewModel : ViewModel() {
                 MutableStateFlow(emptyList())
             }
         }
+        .onStart { _isRefreshing.value = true }
+        .onEach { _isRefreshing.value = false }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -46,6 +58,11 @@ class ProductoViewModel : ViewModel() {
     
     fun setOwnerUid(uid: String) {
         _ownerUid.value = uid
+    }
+
+    fun refreshProducts() {
+        _isRefreshing.value = true
+        _refreshVersion.value += 1
     }
 
     fun guardarProducto(

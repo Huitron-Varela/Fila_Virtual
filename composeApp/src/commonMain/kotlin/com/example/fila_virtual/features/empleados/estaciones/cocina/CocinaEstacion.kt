@@ -50,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.theme.BorderGray
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.ActionBlue
@@ -139,7 +141,12 @@ fun CocinaEstacion(
         if (viewModel.error.isNotBlank()) avancePendiente = null
     }
 
-    Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    AppPullToRefreshBox(
+        isRefreshing = viewModel.cargando,
+        onRefresh = { viewModel.escuchar(establecimientoId, forceRefresh = true) },
+        modifier = modifier.fillMaxSize()
+    ) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = LightSurface,
@@ -208,10 +215,7 @@ fun CocinaEstacion(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
                 viewModel.cargando && viewModel.pedidos.isEmpty() -> {
-                    CircularProgressIndicator(
-                        color = PrimaryOrange,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    AppListSkeleton(Modifier.fillMaxSize().padding(8.dp), itemCount = 4)
                 }
                 else -> {
                     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -248,6 +252,7 @@ fun CocinaEstacion(
                 }
             }
         }
+    }
     }
 }
 

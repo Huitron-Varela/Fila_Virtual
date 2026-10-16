@@ -8,7 +8,11 @@ import com.example.fila_virtual.repository.uploadImage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -19,10 +23,16 @@ class EstablecimientoViewModel : ViewModel() {
     val uiState: StateFlow<FormState> = _uiState
 
     private val _ownerUid = MutableStateFlow<String?>(null)
+    private val _refreshVersion = MutableStateFlow(0)
+    private val _isLoadingEstablecimientos = MutableStateFlow(true)
+    val isLoadingEstablecimientos: StateFlow<Boolean> = _isLoadingEstablecimientos.asStateFlow()
 
     // Flow de establecimientos filtrados por dueño
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val establecimientos: StateFlow<List<Establecimiento>> = _ownerUid
+    val establecimientos: StateFlow<List<Establecimiento>> = combine(
+        _ownerUid,
+        _refreshVersion
+    ) { uid, _ -> uid }
         .flatMapLatest { uid ->
             if (uid != null) {
                 repository.getEstablecimientosByOwner(uid)
@@ -30,6 +40,8 @@ class EstablecimientoViewModel : ViewModel() {
                 repository.getEstablecimientos()
             }
         }
+        .onStart { _isLoadingEstablecimientos.value = true }
+        .onEach { _isLoadingEstablecimientos.value = false }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -38,6 +50,11 @@ class EstablecimientoViewModel : ViewModel() {
 
     fun setOwnerUid(uid: String) {
         _ownerUid.value = uid
+    }
+
+    fun recargarEstablecimientos() {
+        _isLoadingEstablecimientos.value = true
+        _refreshVersion.value += 1
     }
 
     fun guardarEstablecimiento(

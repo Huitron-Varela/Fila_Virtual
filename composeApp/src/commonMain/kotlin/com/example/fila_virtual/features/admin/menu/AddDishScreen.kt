@@ -4,6 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -16,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -68,8 +72,6 @@ fun AddDishScreen(
             }
         )
     }
-    var showSucursalSelector by remember { mutableStateOf(false) }
-
     LaunchedEffect(ownerUid) {
         establecimientoViewModel.setOwnerUid(ownerUid)
     }
@@ -315,65 +317,57 @@ fun AddDishScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        Box {
-            Surface(
-                color = LightSurface,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = permitirCambiarEstablecimiento) {
-                        if (establecimientos.isEmpty()) {
-                            showNoEstablecimientosAlert = true
-                        } else {
-                            showSucursalSelector = true 
-                        }
-                    },
-                border = BorderStroke(1.dp, BorderGray)
+        if (permitirCambiarEstablecimiento && establecimientos.isNotEmpty()) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Storefront,
-                        contentDescription = null,
-                        tint = DarkGray,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = sucursalActual,
-                        color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (permitirCambiarEstablecimiento) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = DarkGray,
-                            modifier = Modifier.size(24.dp)
+                items(establecimientos, key = { it.id }) { sucursal ->
+                    val isSelected = sucursal.id == selectedEstablecimientoId
+                    Surface(
+                        color = if (isSelected) PrimaryOrange else LightSurface,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .defaultMinSize(minHeight = 30.dp)
+                            .selectable(
+                                selected = isSelected,
+                                role = Role.RadioButton
+                            ) {
+                                selectedEstablecimientoId = sucursal.id
+                            },
+                        border = if (isSelected) null else BorderStroke(1.dp, BorderGray)
+                    ) {
+                        Text(
+                            text = sucursal.nombre,
+                            color = if (isSelected) LightSurface else DarkGray,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
-
-            if (permitirCambiarEstablecimiento) {
-                DropdownMenu(
-                    expanded = showSucursalSelector,
-                    onDismissRequest = { showSucursalSelector = false },
-                    modifier = Modifier.background(LightSurface)
-                ) {
-                    establecimientos.forEach { sucursal ->
-                        DropdownMenuItem(
-                            text = { Text(sucursal.nombre) },
-                            onClick = {
-                                selectedEstablecimientoId = sucursal.id
-                                showSucursalSelector = false
-                            }
-                        )
-                    }
-                }
+        } else {
+            Surface(
+                color = if (selectedEstablecimientoId.isEmpty()) LightSurface else PrimaryOrange,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.clickable(enabled = permitirCambiarEstablecimiento) {
+                    showNoEstablecimientosAlert = true
+                },
+                border = if (selectedEstablecimientoId.isEmpty()) BorderStroke(1.dp, BorderGray) else null
+            ) {
+                Text(
+                    text = sucursalActual,
+                    color = if (selectedEstablecimientoId.isEmpty()) MediumGray else LightSurface,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
 

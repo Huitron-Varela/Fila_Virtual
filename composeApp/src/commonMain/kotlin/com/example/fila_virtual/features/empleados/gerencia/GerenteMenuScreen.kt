@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.components.AppListSkeleton
+import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.LightBackground
 import com.example.fila_virtual.core.theme.LightSurface
@@ -160,9 +161,8 @@ fun GerenteMenuScreen(
         when {
             viewModel.cargandoOwner -> Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = PrimaryOrange)
+                AppListSkeleton(Modifier.fillMaxSize().padding(horizontal = 24.dp), itemCount = 4)
             }
             viewModel.ownerUid.isBlank() -> Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -237,11 +237,21 @@ fun GerenteMenuScreen(
                         permitirCambiarEstablecimiento = false,
                         establecimientoNombreFijo = establecimientoNombre
                     )
-                    Seccion.PEDIDOS -> ColaTurnosGerente(
-                        pedidos = viewModel.pedidos,
-                        error = viewModel.errorCola,
+                    Seccion.PEDIDOS -> AppPullToRefreshBox(
+                        isRefreshing = viewModel.cargandoCola,
+                        onRefresh = { viewModel.escuchar(establecimientoId, forceRefresh = true) },
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        if (viewModel.cargandoCola && viewModel.pedidos.isEmpty()) {
+                            AppListSkeleton(Modifier.fillMaxSize().padding(horizontal = 24.dp), itemCount = 4)
+                        } else {
+                            ColaTurnosGerente(
+                                pedidos = viewModel.pedidos,
+                                error = viewModel.errorCola,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
                 }
             }
         }

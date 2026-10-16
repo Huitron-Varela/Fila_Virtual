@@ -242,6 +242,7 @@
     <!-- Campos de Texto, Etiquetas y Selectores -->
     <string name="emp_user_email_label">Correo electrónico del usuario</string>
     <string name="emp_branch">Sucursal</string>
+    <string name="all_branches_chip">Todo</string>
     <string name="emp_select_branch">Seleccionar Sucursal</string>
     <string name="emp_unknown_branch">Sucursal desconocida</string>
     <string name="emp_roles_title">Roles en el establecimiento</string>
