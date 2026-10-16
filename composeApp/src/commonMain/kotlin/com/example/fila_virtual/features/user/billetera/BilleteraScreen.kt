@@ -21,6 +21,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,13 +39,6 @@ import kotlinx.coroutines.launch
 
 private val MPBlue = Color(0xFF009EE3)
 private val LightBlueBg = Color(0xFFE1F5FE)
-private val OrangeGradient = Brush.horizontalGradient(
-    colors = listOf(
-        Color(0xFFE94E1B),
-        Color(0xFFF26522)
-    )
-)
-
 enum class BottomSheetStateView {
     SELECCION_METODO,
     FORMULARIO_TARJETA,
@@ -58,6 +53,7 @@ fun BilleteraScreen(
     val windowSize = LocalWindowSize.current
     val colorScheme = MaterialTheme.colorScheme
     val typography = MaterialTheme.typography
+    val haptic = LocalHapticFeedback.current
 
     val usuario = viewModel.usuario
     val metodosPago = usuario?.metodosPago ?: emptyList()
@@ -186,20 +182,16 @@ fun BilleteraScreen(
                         color = MediumGray
                     )
 
-                    Surface(shape = RoundedCornerShape(12.dp), color = LightBlueBg) {
-                        Text(
-                            text = if (mercadoPagoVinculado) "ACTIVA" else "SIN VINCULAR",
-                            color = MPBlue,
-                            style = typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
                 }
 
                 Box(modifier = Modifier.padding(horizontal = 24.dp)) {
                     LinkedMPView(
                         isLinked = mercadoPagoVinculado,
-                        onDesvincular = { viewModel.toggleMercadoPagoVinculado(false) }
+                        onDesvincular = { viewModel.toggleMercadoPagoVinculado(false) },
+                        onConnect = {
+                            currentSheetView = BottomSheetStateView.MOCK_CARGANDO_MP
+                            showBottomSheet = true
+                        }
                     )
                 }
 
@@ -213,45 +205,31 @@ fun BilleteraScreen(
             ) {
                 Button(
                     onClick = {
-                        currentSheetView = BottomSheetStateView.SELECCION_METODO
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.clearWalletMessage()
+                        currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
                         showProximamente = false
                         showBottomSheet = true
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp).background(OrangeGradient, RoundedCornerShape(16.dp)),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    shape = RoundedCornerShape(16.dp),
-                    contentPadding = PaddingValues(0.dp)
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = "Añadir nuevo método de pago",
+                            text = stringResource(Res.string.wallet_new_card),
                             style = typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)),
                             color = Color.White
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Default.Lock, contentDescription = "Seguridad", tint = MediumGray, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Los datos sensibles se validan antes de guardar el método de pago",
-                        color = MediumGray,
-                        style = typography.labelSmall,
-                        textAlign = TextAlign.Center
-                    )
-                }
             }
         }
 
@@ -277,10 +255,6 @@ fun BilleteraScreen(
                     BottomSheetStateView.FORMULARIO_TARJETA -> {
                         FormularioTarjetaScreen(
                             viewModel = viewModel,
-                            onBack = {
-                                viewModel.clearWalletMessage()
-                                currentSheetView = BottomSheetStateView.SELECCION_METODO
-                            },
                             onSuccess = {
                                 coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                                     showBottomSheet = false
@@ -416,55 +390,86 @@ fun BilleteraScreen(
 }
 
 @Composable
-fun LinkedMPView(isLinked: Boolean, onDesvincular: () -> Unit) {
+fun LinkedMPView(
+    isLinked: Boolean,
+    onDesvincular: () -> Unit,
+    onConnect: () -> Unit
+) {
     val windowSize = LocalWindowSize.current
+    val haptic = LocalHapticFeedback.current
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if(isLinked) MPBlue else LightBlueBg),
-        elevation = CardDefaults.cardElevation(if(isLinked) 8.dp else 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isLinked) Color(0xFFB7DFC2) else BorderGray),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(if(isLinked) Color.White else MPBlue),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.AccountBalanceWallet, null, tint = if(isLinked) MPBlue else Color.White, modifier = Modifier.size(24.dp))
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "Mercado Pago",
-                            color = if(isLinked) Color.White else MPBlue,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = windowSize.adaptiveSp(18)
-                        )
-                        Text(
-                            text = if(isLinked) "Conectado y listo para usar" else "No configurado",
-                            color = if(isLinked) Color.White.copy(alpha = 0.8f) else MPBlue.copy(alpha = 0.7f),
-                            fontSize = windowSize.adaptiveSp(14)
-                        )
-                    }
+                Box(
+                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(LightBlueBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.AccountBalanceWallet, null, tint = MPBlue, modifier = Modifier.size(26.dp))
                 }
-                Icon(if(isLinked) Icons.Default.CheckCircle else Icons.Default.Schedule, contentDescription = null, tint = if(isLinked) Color.White else MPBlue)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Mercado Pago",
+                        color = DarkGray,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = windowSize.adaptiveSp(17)
+                    )
+                    Text(
+                        text = if (isLinked) "Cuenta conectada" else "Vincula tu cuenta para continuar",
+                        color = MediumGray,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (isLinked) Color(0xFFE8F5E9) else LightBlueBg
+                ) {
+                    Text(
+                        text = if (isLinked) "ACTIVA" else "PENDIENTE",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                        color = if (isLinked) Color(0xFF2E7D32) else MPBlue,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             if (isLinked) {
-                Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(
-                    onClick = onDesvincular,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onDesvincular()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 ) {
                     Text("Desvincular cuenta", fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Button(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onConnect()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
+                ) {
+                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Vincular Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }

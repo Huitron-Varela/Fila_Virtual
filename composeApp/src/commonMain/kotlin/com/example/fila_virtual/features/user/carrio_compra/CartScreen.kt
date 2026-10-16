@@ -1,22 +1,23 @@
 package com.example.fila_virtual.features.user.carrio_compra
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.core.LocalWindowSize
-import com.example.fila_virtual.core.theme.MediumGray
+import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.user.UserViewModel
-import com.example.fila_virtual.data.TarjetaGuardada
-import org.jetbrains.compose.resources.stringResource
-import fila_virtual.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
 
 private val MPBlue = Color(0xFF009EE3)
@@ -30,7 +31,7 @@ fun CartScreen(
     viewModel: UserViewModel
 ) {
     val windowSize = LocalWindowSize.current
-    val padding = windowSize.adaptiveDp(16).value.dp
+    val padding = windowSize.compactDp(16)
 
     val cartItems by viewModel.carrito.collectAsState()
     val subtotal = viewModel.calcularTotalCarrito()
@@ -41,6 +42,14 @@ fun CartScreen(
 
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val haptic = LocalHapticFeedback.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel.errorMessage) {
+        if (viewModel.errorMessage.isNotBlank()) {
+            snackbarHostState.showSnackbar(viewModel.errorMessage)
+        }
+    }
 
     LaunchedEffect(cartItems.isEmpty()) {
         if (cartItems.isEmpty()) {
@@ -49,26 +58,26 @@ fun CartScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = LightBackground,
         topBar = { CartTopBar(onBackClick = onBackClick) },
+        snackbarHost = {
+            AppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        },
         bottomBar = {
-            Column {
-
-                if (viewModel.errorMessage.isNotEmpty() && !viewModel.isWaitingForPayment) {
-                    Text(
-                        text = viewModel.errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                if (viewModel.isWaitingForPayment) {
-                    // 🔥 UI KMP-Friendly con botón de Cancelar explícito
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            if (viewModel.isWaitingForPayment) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = padding, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                         Button(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.confirmarPedidoDelCarrito(
                                     onSuccess = {
                                         viewModel.isWaitingForPayment = false
@@ -76,54 +85,57 @@ fun CartScreen(
                                     }
                                 )
                             },
-                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = TrafficGreen)
                         ) {
-                            Text("✅ Confirmar Pago Realizado", fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("Confirmar pago", fontWeight = FontWeight.Bold, color = Color.White)
                         }
 
-                        // Botón de escape sin usar el BackHandler de Android
                         OutlinedButton(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.isWaitingForPayment = false
                                 viewModel.errorMessage = "Pago cancelado. Intenta nuevamente."
                             },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                         ) {
-                            Text("Cancelar / Hubo un problema", fontWeight = FontWeight.SemiBold)
+                            Text("Cancelar pago", fontWeight = FontWeight.SemiBold)
                         }
-                    }
                 }
-                else {
-                    if (cartItems.isNotEmpty()) {
-                        Button(
-                            onClick = {
-                                if (isGenerandoLink) return@Button
+            } else if (cartItems.isNotEmpty()) {
+                Button(
+                    onClick = {
+                        if (isGenerandoLink) return@Button
 
-                                isGenerandoLink = true
-                                viewModel.clearWalletMessage()
-                                scope.launch {
-                                    val linkPago = viewModel.generarLinkMercadoPago()
-                                    isGenerandoLink = false
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        isGenerandoLink = true
+                        viewModel.clearWalletMessage()
+                        scope.launch {
+                            val linkPago = viewModel.generarLinkMercadoPago()
+                            isGenerandoLink = false
 
-                                    if (linkPago != null) {
-                                        uriHandler.openUri(linkPago)
-                                        viewModel.isWaitingForPayment = true
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp).height(56.dp),
-                            enabled = !isGenerandoLink,
-                            colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
-                        ) {
-                            if (isGenerandoLink) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                            } else {
-                                Text("Pagar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
+                            if (linkPago != null) {
+                                uriHandler.openUri(linkPago)
+                                viewModel.isWaitingForPayment = true
                             }
                         }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = padding, vertical = 12.dp)
+                        .height(54.dp),
+                    enabled = !isGenerandoLink,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
+                ) {
+                    if (isGenerandoLink) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Continuar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -134,52 +146,87 @@ fun CartScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = padding),
-            verticalArrangement = Arrangement.spacedBy(windowSize.adaptiveDp(24).value.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 12.dp)
         ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
 
-            if (viewModel.isWaitingForPayment) {
+            if (cartItems.isEmpty()) {
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))) {
-                        Text(
-                            text = "Completa tu pago en el navegador. Si regresaste sin pagar, presiona 'Cancelar' debajo.",
-                            modifier = Modifier.padding(16.dp),
-                            color = Color(0xFFE65100),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    EmptyCartState(onBrowseClick = onBackClick)
                 }
             } else {
-                item { InfoBanner() }
-            }
-
-            item {
-                Text(
-                    text = "Tu Pedido",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = windowSize.adaptiveSp(18)
-                    ),
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-
-                if (cartItems.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text(stringResource(Res.string.cart_empty), color = MediumGray)
+                item {
+                    if (viewModel.isWaitingForPayment) {
+                        PaymentWaitingBanner()
+                    } else {
+                        InfoBanner()
                     }
-                } else {
+                }
+
+                item {
+                    CartSectionHeading(itemCount = cartItems.sumOf { it.cantidad })
+                    Spacer(modifier = Modifier.height(10.dp))
                     CartItemsList(
                         items = cartItems,
                         onIncrement = { idProducto -> viewModel.incrementarCantidad(idProducto) },
                         onDecrement = { idProducto -> viewModel.decrementarCantidad(idProducto) }
                     )
                 }
-            }
 
-            item { SummarySection(subtotal = subtotal, tarifa = tarifaServicio, total = total) }
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+                item { SummarySection(subtotal = subtotal, tarifa = tarifaServicio, total = total) }
+
+                item {
+                    PaymentMethodSection(
+                        tarjetas = viewModel.usuario?.metodosPago.orEmpty(),
+                        onEditClick = onNavigateToWallet
+                    )
+                }
+            }
         }
     }
+}
 
+@Composable
+private fun CartSectionHeading(itemCount: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Tu pedido",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Surface(
+            color = Color(0xFFFFF0E6),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Text(
+                text = "$itemCount artículos",
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                color = PrimaryOrange,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaymentWaitingBanner() {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = "Completa el pago en el navegador. Al regresar, confirma si el pago se realizó o cancélalo.",
+            modifier = Modifier.padding(16.dp),
+            color = Color(0xFFE65100),
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
 }

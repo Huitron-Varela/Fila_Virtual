@@ -1,5 +1,8 @@
 package com.example.fila_virtual.features.user.ordenes
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,15 +26,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.data.EstadoPedido
 import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.codigoVisible
@@ -76,6 +83,9 @@ fun EstadoPedido.toUIColor(): Color {
 fun OrdenesScreen(
     viewModel: OrdenesViewModel = viewModel()
 ) {
+    val windowSize = LocalWindowSize.current
+    val haptic = LocalHapticFeedback.current
+    val horizontalPadding = windowSize.compactDp(20)
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Activas", "Historial")
 
@@ -98,15 +108,16 @@ fun OrdenesScreen(
     ) {
         Text(
             text = "Mis Órdenes",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(20)),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = windowSize.compactDp(24), bottom = 16.dp)
         )
 
         TabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = Color.Transparent,
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             indicator = { tabPositions ->
                 if (selectedTabIndex < tabPositions.size) {
                     TabRowDefaults.SecondaryIndicator(
@@ -119,7 +130,12 @@ fun OrdenesScreen(
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
+                    onClick = {
+                        if (selectedTabIndex != index) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            selectedTabIndex = index
+                        }
+                    },
                     text = {
                         Text(
                             text = title,
@@ -132,67 +148,63 @@ fun OrdenesScreen(
         }
 
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            if (selectedTabIndex == 0) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
-                ) {
-                    if (pedidosActivos.isEmpty()) {
-                        item {
-                            Text("No tienes órdenes activas.", color = MediumGray, modifier = Modifier.padding(16.dp))
-                        }
-                    } else {
-                        items(items = pedidosActivos, key = { pedido -> pedido.id }) { pedido ->
-                            OrderCard(
-                                // 🔥 El título es la comida
-                                restaurantName = pedido.descripcion,
-
-                                // 🔥 Adiós "Al Toque Food". Hola folio limpio y profesional:
-                                description = "Folio de compra: #${pedido.id.takeLast(6).uppercase()}",
-
-                                price = "$${pedido.total}",
-                                status = pedido.estado.toUIText(),
-                                statusColor = pedido.estado.toUIColor(),
-                                onClick = {
-                                    selectedPedidoForQR = pedido
-                                    showQRModal = true
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+            Crossfade(
+                targetState = selectedTabIndex,
+                modifier = Modifier.weight(1f),
+                label = "orders_tab_content"
+            ) { tabIndex ->
+                if (tabIndex == 0) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+                    ) {
+                        if (pedidosActivos.isEmpty()) {
+                            item { OrdersEmptyState(isHistory = false) }
+                        } else {
+                            items(items = pedidosActivos, key = { pedido -> pedido.id }) { pedido ->
+                                OrderCard(
+                                    restaurantName = pedido.descripcion,
+                                    description = "Folio de compra: #${pedido.id.takeLast(6).uppercase()}",
+                                    price = "$${pedido.total}",
+                                    status = pedido.estado.toUIText(),
+                                    statusColor = pedido.estado.toUIColor(),
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        selectedPedidoForQR = pedido
+                                        showQRModal = true
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                         }
                     }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
-                ) {
-                    if (pedidosHistorial.isEmpty()) {
-                        item {
-                            Text("No hay historial de órdenes.", color = MediumGray, modifier = Modifier.padding(16.dp))
-                        }
-                    } else {
-                        items(items = pedidosHistorial, key = { pedido -> pedido.id }) { pedido ->
-                            OrderHistoryCard(
-                                // 🔥 El título es la comida
-                                restaurantName = pedido.descripcion,
-
-                                // 🔥 Adiós "Al Toque Food". Hola folio limpio y profesional:
-                                description = "Folio de compra: #${pedido.id.takeLast(6).uppercase()}",
-
-                                price = "$${pedido.total}",
-                                status = pedido.estado.toUIText(),
-                                yaCalificado = ratedOrders.contains(pedido.id),
-                                onRateClick = {
-                                    selectedPedidoForRating = pedido
-                                    showRatingModal = true
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+                    ) {
+                        if (pedidosHistorial.isEmpty()) {
+                            item { OrdersEmptyState(isHistory = true) }
+                        } else {
+                            items(items = pedidosHistorial, key = { pedido -> pedido.id }) { pedido ->
+                                OrderHistoryCard(
+                                    restaurantName = pedido.descripcion,
+                                    description = "Folio de compra: #${pedido.id.takeLast(6).uppercase()}",
+                                    price = "$${pedido.total}",
+                                    status = pedido.estado.toUIText(),
+                                    yaCalificado = ratedOrders.contains(pedido.id),
+                                    onRateClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        selectedPedidoForRating = pedido
+                                        showRatingModal = true
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                         }
                     }
                 }
@@ -223,6 +235,8 @@ fun OrdenesScreen(
 
     if (showQRModal && pedidoEnVivo != null) {
         val pedidoActual = pedidoEnVivo
+        val qrSize = windowSize.compactDp(260).coerceIn(180.dp, 260.dp)
+        val modalMaxHeight = (windowSize.height * 0.88f).coerceAtMost(760.dp)
 
         ModalBottomSheet(
             onDismissRequest = { showQRModal = false },
@@ -231,7 +245,7 @@ fun OrdenesScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth().fillMaxHeight(0.85f)
+                    .fillMaxWidth().heightIn(max = modalMaxHeight)
                     .padding(horizontal = 24.dp).padding(bottom = 32.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -264,10 +278,10 @@ fun OrdenesScreen(
                         modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
                     )
                     Card(
-                        shape = RoundedCornerShape(28.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                        modifier = Modifier.size(260.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        modifier = Modifier.size(qrSize)
                     ) {
                         Box(modifier = Modifier.fillMaxSize().padding(18.dp), contentAlignment = Alignment.Center) {
                             Image(
@@ -290,14 +304,19 @@ fun OrdenesScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = codigo,
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.displaySmall.copy(fontSize = windowSize.adaptiveSp(30)),
                         fontWeight = FontWeight.ExtraBold,
                         color = DarkGray,
-                        letterSpacing = 8.sp
+                        letterSpacing = 4.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
-                        onClick = { showQRModal = false },
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showQRModal = false
+                        },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                         shape = RoundedCornerShape(16.dp)
@@ -326,7 +345,10 @@ fun OrdenesScreen(
                     }
                     Spacer(modifier = Modifier.height(32.dp))
                     OutlinedButton(
-                        onClick = { showQRModal = false },
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showQRModal = false
+                        },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, MediumGray)
@@ -359,7 +381,7 @@ fun OrderProgressTimeline(estadoActual: EstadoPedido) {
         EstadoPedido.NO_RECLAMADO, EstadoPedido.CANCELADO -> 0
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = LocalWindowSize.current.compactDp(32), vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -373,7 +395,10 @@ fun OrderProgressTimeline(estadoActual: EstadoPedido) {
 
 @Composable
 fun ProgressStep(text: String, isActive: Boolean) {
-    val color = if (isActive) PrimaryOrange else LightGray
+    val color by animateColorAsState(
+        targetValue = if (isActive) PrimaryOrange else LightGray,
+        label = "progress_step_color"
+    )
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(modifier = Modifier.size(24.dp).background(color, CircleShape), contentAlignment = Alignment.Center) {}
         Spacer(modifier = Modifier.height(4.dp))
@@ -383,44 +408,51 @@ fun ProgressStep(text: String, isActive: Boolean) {
 
 @Composable
 fun ProgressLine(isActive: Boolean, modifier: Modifier = Modifier) {
-    val color = if (isActive) PrimaryOrange else LightGray
+    val color by animateColorAsState(
+        targetValue = if (isActive) PrimaryOrange else LightGray,
+        label = "progress_line_color"
+    )
     Box(modifier = modifier.height(3.dp).padding(horizontal = 8.dp).background(color, RoundedCornerShape(50)))
 }
 
 @Composable
 fun OrderCard(restaurantName: String, description: String, price: String, status: String, statusColor: Color, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = LightSurface)
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)).background(LightBackground), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                // 🔥 Nativos maxLines = 1 y Ellipsis para que no brinque la línea
-                Text(
-                    text = restaurantName,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = description,
-                    color = DarkGray.copy(alpha = 0.7f),
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(price, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
-            }
-            Box(modifier = Modifier.fillMaxHeight().padding(start = 8.dp)) {
-                Surface(shape = RoundedCornerShape(16.dp), color = statusColor, modifier = Modifier.align(Alignment.TopEnd)) {
-                    Text(status, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+        BoxWithConstraints {
+            val compact = maxWidth < 380.dp
+            if (compact) {
+                Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        OrderFoodIcon(size = 56.dp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        OrderDetails(restaurantName, description, price, Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        OrderStatusAndArrow(status, statusColor)
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    OrderFoodIcon(size = 68.dp)
+                    Spacer(modifier = Modifier.width(14.dp))
+                    OrderDetails(restaurantName, description, price, Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OrderStatusAndArrow(status, statusColor)
                 }
             }
         }
@@ -429,59 +461,161 @@ fun OrderCard(restaurantName: String, description: String, price: String, status
 
 @Composable
 fun OrderHistoryCard(restaurantName: String, description: String, price: String, status: String, yaCalificado: Boolean, onRateClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = LightSurface)
+        modifier = Modifier.fillMaxWidth().animateContentSize(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)).background(LightBackground), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
+        BoxWithConstraints {
+            val compact = maxWidth < 380.dp
+            Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                if (compact) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OrderFoodIcon(size = 56.dp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        OrderDetails(restaurantName, description, price, Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OrderStatusBadge(status, MediumGray)
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        OrderFoodIcon(size = 68.dp)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        OrderDetails(restaurantName, description, price, Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OrderStatusBadge(status, MediumGray)
+                    }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    // 🔥 Nativos maxLines = 1 y Ellipsis para que no brinque la línea
-                    Text(
-                        text = restaurantName,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        color = DarkGray.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(price, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = LightGray.copy(alpha = 0.7f))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // 🔥 BADGE RESTAURADO A LA DERECHA
-                Surface(shape = RoundedCornerShape(16.dp), color = LightGray.copy(alpha = 0.5f)) {
-                    Text(status, color = MediumGray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                OutlinedButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onRateClick()
+                    },
+                    enabled = !yaCalificado,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, if (yaCalificado) LightGray else PrimaryOrange),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryOrange, disabledContentColor = MediumGray)
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (yaCalificado) "Platillos calificados" else "Calificar platillos", fontWeight = FontWeight.Bold)
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = LightGray.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = onRateClick,
-                enabled = !yaCalificado,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, if (yaCalificado) LightGray else PrimaryOrange),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryOrange, disabledContentColor = MediumGray)
-            ) {
-                Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (yaCalificado) "Platillos calificados" else "Calificar platillos", fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
+
+@Composable
+private fun OrderFoodIcon(size: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(12.dp))
+            .background(ExtraLightGray),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray, modifier = Modifier.size(size * 0.46f))
+    }
+}
+
+@Composable
+private fun OrderDetails(
+    name: String,
+    folio: String,
+    price: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = name,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyLarge,
+            color = DarkGray,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = folio,
+            color = MediumGray,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(price, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge, color = PrimaryOrange)
+    }
+}
+
+@Composable
+private fun OrderStatusBadge(status: String, color: Color) {
+    val animatedColor by animateColorAsState(targetValue = color, label = "order_status_color")
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = animatedColor.copy(alpha = 0.13f)
+    ) {
+        Text(
+            text = status,
+            color = animatedColor,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+        )
+    }
+}
+
+@Composable
+private fun OrderStatusAndArrow(status: String, statusColor: Color) {
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        OrderStatusBadge(status, statusColor)
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = "Ver detalle de la orden",
+            tint = MediumGray
+        )
+    }
+}
+
+@Composable
+private fun OrdersEmptyState(isHistory: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp).padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(modifier = Modifier.size(84.dp), shape = CircleShape, color = SoftOrangeBg) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Fastfood, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(38.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(18.dp))
+        Text(
+            text = if (isHistory) "Aún no hay órdenes en tu historial" else "Aún no tienes órdenes activas",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = DarkGray,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = if (isHistory) "Tus pedidos completados aparecerán aquí." else "Tus pedidos aparecerán aquí cuando confirmes una compra.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MediumGray,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -492,6 +626,8 @@ fun RatingModal(
     onDismiss: () -> Unit,
     onRatingSubmitted: () -> Unit
 ) {
+    val windowSize = LocalWindowSize.current
+    val haptic = LocalHapticFeedback.current
     var productRatings by remember { mutableStateOf(mapOf<String, Int>()) }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -500,6 +636,7 @@ fun RatingModal(
     val scope = rememberCoroutineScope()
     val productoRepo = remember { ProductoRepository() }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val modalMaxHeight = (windowSize.height * 0.82f).coerceAtMost(720.dp)
 
     val productosDeLaOrden = pedido.productos
 
@@ -510,7 +647,12 @@ fun RatingModal(
     ) {
         if (showSuccessMessage) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = modalMaxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = windowSize.compactDp(24))
+                    .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(Icons.Default.ThumbUp, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(48.dp))
@@ -518,7 +660,10 @@ fun RatingModal(
                 Text("¡Gracias por calificar!", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(32.dp))
                 Button(
-                    onClick = { onRatingSubmitted() },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onRatingSubmitted()
+                    },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(12.dp)
@@ -528,7 +673,12 @@ fun RatingModal(
             }
         } else {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = modalMaxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = windowSize.compactDp(24))
+                    .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("¿Qué te pareció tu orden?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -547,8 +697,9 @@ fun RatingModal(
                                     imageVector = if (i <= currentRating) Icons.Default.Star else Icons.Outlined.StarOutline,
                                     contentDescription = "Estrella",
                                     tint = if (i <= currentRating) TrafficYellow else BorderGray,
-                                    modifier = Modifier.size(36.dp).clickable {
+                                    modifier = Modifier.size(windowSize.compactDp(36)).clickable {
                                         if (!isSubmitting) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             val newMap = productRatings.toMutableMap()
                                             newMap[producto.idProducto] = i
                                             productRatings = newMap
@@ -569,6 +720,7 @@ fun RatingModal(
 
                 Button(
                     onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         isSubmitting = true
                         errorMessage = null
                         scope.launch {
@@ -591,7 +743,17 @@ fun RatingModal(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Cancelar", fontWeight = FontWeight.Bold, color = MediumGray, modifier = Modifier.clickable { if (!isSubmitting) onDismiss() })
+                Text(
+                    "Cancelar",
+                    fontWeight = FontWeight.Bold,
+                    color = MediumGray,
+                    modifier = Modifier.clickable {
+                        if (!isSubmitting) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onDismiss()
+                        }
+                    }
+                )
             }
         }
     }

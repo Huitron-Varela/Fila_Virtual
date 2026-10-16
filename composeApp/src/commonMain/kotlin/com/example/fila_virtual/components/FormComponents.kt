@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
@@ -156,7 +157,8 @@ fun FormTextField(
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -177,6 +179,7 @@ fun FormTextField(
             shape = RoundedCornerShape(12.dp),
             singleLine = singleLine,
             keyboardOptions = keyboardOptions,
+            visualTransformation = visualTransformation,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
             enabled = enabled && onClick == null,

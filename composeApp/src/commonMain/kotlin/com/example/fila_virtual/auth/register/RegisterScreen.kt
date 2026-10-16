@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.ActionButton
 import com.example.fila_virtual.components.InputField
@@ -59,11 +60,15 @@ import com.example.fila_virtual.core.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun RegisterScreen(onNavigate: (Screens) -> Unit) {
+fun RegisterScreen(
+    onNavigate: (Screens) -> Unit,
+    topContentPadding: Dp = 0.dp,
+    formOffset: Dp = 0.dp
+) {
     val scope = rememberCoroutineScope()
     BackHandler(onBack = { onNavigate(Screens.Login) })
     val focusManager = LocalFocusManager.current
-    val windowSize = LocalWindowSize.current 
+    val windowSize = LocalWindowSize.current
     val authRepository = remember { AuthRepository() }
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
@@ -106,26 +111,13 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(top = topContentPadding)
                 .navigationBarsPadding()
-                .imePadding() 
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
+                .imePadding()
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(windowSize.compactDp(48).value.dp))
-
-            Image(
-                painter = painterResource(Res.drawable.logot),
-                contentDescription = "Logo",
-                modifier = Modifier.size(70.dp)
-            )
-            Text(
-                text = stringResource(Res.string.app_name),
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.displayLarge
-            )
-
-            Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
+            Spacer(modifier = Modifier.height(16.dp))   // breathing room bajo el logo
 
             Text(
                 text = stringResource(Res.string.create_account),
@@ -139,6 +131,13 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
 
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .offset(y = formOffset)
+                    .verticalScroll(rememberScrollState())
+            ) {
             InputField(
                 label = stringResource(Res.string.label_name),
                 value = nombre,
@@ -280,8 +279,17 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            NavigationLink(stringResource(Res.string.already_have_account), stringResource(Res.string.btn_login)) { onNavigate(Screens.Login) }
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                NavigationLink(
+                    stringResource(Res.string.already_have_account),
+                    stringResource(Res.string.btn_login)
+                ) { onNavigate(Screens.Login) }
+            }
             Spacer(modifier = Modifier.height(48.dp))
+            }
         }
 
         AnimatedVisibility(visible = isSuccess, enter = slideInVertically(initialOffsetY = { it }) + fadeIn()) {

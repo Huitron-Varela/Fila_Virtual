@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -21,17 +23,19 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.core.theme.DarkGray
-import com.example.fila_virtual.core.theme.MediumGray
-import com.example.fila_virtual.core.theme.PrimaryOrange
+import com.example.fila_virtual.components.FormTextField
+import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.user.UserViewModel
 
 @Composable
 fun FormularioTarjetaScreen(
     viewModel: UserViewModel,
-    onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
+    val windowSize = LocalWindowSize.current
+    val haptic = LocalHapticFeedback.current
+
     LaunchedEffect(Unit) {
         viewModel.clearWalletMessage()
     }
@@ -39,56 +43,34 @@ fun FormularioTarjetaScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(
-                start = 24.dp,
-                end = 24.dp,
+                start = windowSize.compactDp(24),
+                end = windowSize.compactDp(24),
                 top = 4.dp,
                 bottom = 40.dp
             )
     ) {
-        Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = {
-                    viewModel.clearWalletMessage()
-                    onBack()
-                }
+        Box(modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector =
-                        Icons.Default.ArrowBack,
-                    contentDescription =
-                        "Regresar"
-                )
-            }
-
-            Spacer(
-                modifier =
-                    Modifier.width(4.dp)
-            )
-
-            Column {
                 Text(
-                    text =
-                        "Agregar tarjeta",
-                    style =
-                        MaterialTheme.typography.titleLarge,
-                    fontWeight =
-                        FontWeight.Bold
+                    text = "Agregar tarjeta",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-
                 Text(
-                    text =
-                        "Ingresa los datos tal como aparecen en tu tarjeta.",
-                    style =
-                        MaterialTheme.typography.bodySmall,
-                    color =
-                        MediumGray
+                    text = "Ingresa los datos tal como aparecen en tu tarjeta.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MediumGray,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
@@ -99,290 +81,73 @@ fun FormularioTarjetaScreen(
         )
 
         Surface(
-            modifier =
-                Modifier.fillMaxWidth(),
-            shape =
-                RoundedCornerShape(14.dp),
-            color =
-                Color(0xFFF4F8FF)
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = ExtraLightGray
         ) {
             Row(
-                modifier =
-                    Modifier.padding(14.dp),
-                verticalAlignment =
-                    Alignment.CenterVertically
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector =
-                        Icons.Default.Lock,
-                    contentDescription =
-                        null,
-                    tint =
-                        Color(0xFF1976D2),
-                    modifier =
-                        Modifier.size(20.dp)
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(20.dp)
                 )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(10.dp)
-                )
-
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text =
-                        "Validamos primero el formato localmente y después intentamos tokenizar la tarjeta con Mercado Pago.",
-                    style =
-                        MaterialTheme.typography.bodySmall,
-                    color =
-                        DarkGray
+                    text = "Validamos primero el formato localmente y después intentamos tokenizar la tarjeta con Mercado Pago.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = DarkGray
                 )
             }
         }
 
-        Spacer(
-            modifier =
-                Modifier.height(24.dp)
-        )
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text =
-                "Número de tarjeta",
-            fontWeight =
-                FontWeight.SemiBold,
-            color =
-                DarkGray
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value =
-                viewModel.numeroTarjeta,
+        FormTextField(
+            label = "Número de tarjeta",
+            value = viewModel.numeroTarjeta,
             onValueChange = { valor ->
-                // 🔥 FILTRO: Solo números, máximo 16 dígitos
                 val filtrado = valor.filter { it.isDigit() }.take(16)
                 viewModel.onNumeroTarjetaChange(filtrado)
             },
-            modifier =
-                Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    "1234 5678 9012 3456"
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector =
-                        Icons.Default.CreditCard,
-                    contentDescription =
-                        null
-                )
-            },
-            singleLine =
-                true,
-            visualTransformation =
-                CardNumberVisualTransformation(),
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Number,
-                    imeAction =
-                        ImeAction.Next
-                ),
-            shape =
-                RoundedCornerShape(14.dp)
+            placeholder = "1234 5678 9012 3456",
+            leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            visualTransformation = CardNumberVisualTransformation()
         )
 
         Text(
-            text =
-                "Si el número es inválido, te explicaremos exactamente por qué.",
-            style =
-                MaterialTheme.typography.labelSmall,
-            color =
-                MediumGray,
-            modifier =
-                Modifier.padding(
-                    start = 4.dp,
-                    top = 5.dp
-                )
+            text = "Si el número es inválido, te explicaremos exactamente por qué.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MediumGray,
+            modifier = Modifier.padding(start = 4.dp, top = 5.dp)
         )
 
-        Spacer(
-            modifier =
-                Modifier.height(20.dp)
-        )
+        Spacer(modifier = Modifier.height(20.dp))
 
-        Text(
-            text =
-                "Nombre del titular",
-            fontWeight =
-                FontWeight.SemiBold,
-            color =
-                DarkGray
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value =
-                viewModel.nombreTitular,
+        FormTextField(
+            label = "Nombre del titular",
+            value = viewModel.nombreTitular,
             onValueChange = { valor ->
-                // 🔥 FILTRO: Máximo 50 caracteres para el nombre
                 viewModel.onNombreTitularChange(valor.take(50))
             },
-            modifier =
-                Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    "Ej. Juan Pérez"
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector =
-                        Icons.Default.Person,
-                    contentDescription =
-                        null
-                )
-            },
-            singleLine =
-                true,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType =
-                        KeyboardType.Text,
-                    imeAction =
-                        ImeAction.Next
-                ),
-            shape =
-                RoundedCornerShape(14.dp)
+            placeholder = "Ej. Juan Pérez",
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next)
         )
 
         Text(
-            text =
-                "Solo letras, espacios, apóstrofes y guiones.",
-            style =
-                MaterialTheme.typography.labelSmall,
-            color =
-                MediumGray,
-            modifier =
-                Modifier.padding(
-                    start = 4.dp,
-                    top = 5.dp
-                )
+            text = "Solo letras, espacios, apóstrofes y guiones.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MediumGray,
+            modifier = Modifier.padding(start = 4.dp, top = 5.dp)
         )
 
-        Spacer(
-            modifier =
-                Modifier.height(20.dp)
-        )
-
-        Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(12.dp)
-        ) {
-            Column(
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                Text(
-                    text =
-                        "Vencimiento",
-                    fontWeight =
-                        FontWeight.SemiBold,
-                    color =
-                        DarkGray
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
-
-                OutlinedTextField(
-                    value =
-                        viewModel.fechaExpiracion,
-                    onValueChange = { valor ->
-                        // 🔥 FILTRO: Solo números, máximo 4 dígitos (MMAA)
-                        val filtrado = valor.filter { it.isDigit() }.take(4)
-                        viewModel.onFechaExpiracionChange(filtrado)
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text("MM/AA")
-                    },
-                    singleLine =
-                        true,
-                    visualTransformation =
-                        ExpiryDateVisualTransformation(),
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType =
-                                KeyboardType.Number,
-                            imeAction =
-                                ImeAction.Next
-                        ),
-                    shape =
-                        RoundedCornerShape(14.dp)
-                )
-            }
-
-            Column(
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                Text(
-                    text =
-                        "CVV",
-                    fontWeight =
-                        FontWeight.SemiBold,
-                    color =
-                        DarkGray
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
-
-                OutlinedTextField(
-                    value =
-                        viewModel.cvv,
-                    onValueChange = { valor ->
-                        // 🔥 FILTRO: Solo números, máximo 4 dígitos
-                        val filtrado = valor.filter { it.isDigit() }.take(4)
-                        viewModel.onCvvChange(filtrado)
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text("•••")
-                    },
-                    singleLine =
-                        true,
-                    visualTransformation =
-                        PasswordVisualTransformation(),
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType =
-                                KeyboardType.Number,
-                            imeAction =
-                                ImeAction.Done
-                        ),
-                    shape =
-                        RoundedCornerShape(14.dp)
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(20.dp))
+        ExpirationAndCvvFields(viewModel = viewModel, compact = windowSize.isSmallScreen)
 
         Spacer(
             modifier =
@@ -474,6 +239,7 @@ fun FormularioTarjetaScreen(
 
         Button(
             onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 viewModel.procesarPagoSeguro(
                     onSuccess = {
                         onSuccess()
@@ -487,7 +253,7 @@ fun FormularioTarjetaScreen(
                     .fillMaxWidth()
                     .height(56.dp),
             shape =
-                RoundedCornerShape(16.dp),
+                RoundedCornerShape(12.dp),
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor =
@@ -548,6 +314,53 @@ fun FormularioTarjetaScreen(
                 Modifier.height(20.dp)
         )
     }
+}
+
+@Composable
+private fun ExpirationAndCvvFields(viewModel: UserViewModel, compact: Boolean) {
+    if (compact) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ExpirationField(viewModel)
+            CvvField(viewModel)
+        }
+    } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                ExpirationField(viewModel)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                CvvField(viewModel)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpirationField(viewModel: UserViewModel) {
+    FormTextField(
+        label = "Vencimiento",
+        value = viewModel.fechaExpiracion,
+        onValueChange = { value ->
+            viewModel.onFechaExpiracionChange(value.filter(Char::isDigit).take(4))
+        },
+        placeholder = "MM/AA",
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        visualTransformation = ExpiryDateVisualTransformation()
+    )
+}
+
+@Composable
+private fun CvvField(viewModel: UserViewModel) {
+    FormTextField(
+        label = "CVV",
+        value = viewModel.cvv,
+        onValueChange = { value ->
+            viewModel.onCvvChange(value.filter(Char::isDigit).take(4))
+        },
+        placeholder = "•••",
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+        visualTransformation = PasswordVisualTransformation()
+    )
 }
 
 /*

@@ -1,42 +1,27 @@
 package com.example.fila_virtual.features.user.home
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material3.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.user.UserHomeViewModel
 
-import com.example.fila_virtual.components.InputField
+import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.SearchBar
-import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
-import com.example.fila_virtual.core.theme.*
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-
-// 👇 Importaciones exclusivas de Compose Multiplatform para la vibración
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeView(
@@ -47,6 +32,18 @@ fun HomeView(
 ) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var selectedProduct by remember { mutableStateOf<Pair<Producto, String>?>(null) }
+    val handleQuickAdd: (Producto) -> Unit = { producto ->
+        onAddToCart(producto)
+        scope.launch {
+            snackbarHostState.showSnackbar(
+                "${producto.nombre} añadido al carrito",
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     val viewModel = remember { UserHomeViewModel() }
     val categoriasDisponibles by viewModel.categoriasDisponibles.collectAsState()
@@ -57,368 +54,99 @@ fun HomeView(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val resultadosBusqueda by viewModel.resultadosBusqueda.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Spacer(modifier = Modifier.height(8.dp))
-        HomeHeader(
-            padding = horizontalPadding,
-            cartCount = cartCount,
-            onCartClick = onCartClick
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = { viewModel.actualizarBusqueda(it) }
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            if (searchQuery.isNotBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                SectionHeader(title = stringResource(Res.string.home_search_results), padding = horizontalPadding)
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            HomeHeader(
+                padding = horizontalPadding,
+                cartCount = cartCount,
+                onCartClick = onCartClick
+            )
+            Spacer(modifier = Modifier.height(20.dp))
 
-                RecommendationsList(
-                    productosConLocal = resultadosBusqueda,
-                    padding = horizontalPadding,
-                    onAddToCart = onAddToCart
-                )
-            } else {
-                SectionHeader(title = stringResource(Res.string.home_categories), padding = horizontalPadding)
-                Spacer(modifier = Modifier.height(16.dp))
-                CategoryRow(
-                    categorias = categoriasDisponibles,
-                    seleccion = categoriaSeleccionada,
-                    onSelect = { viewModel.seleccionarCategoria(it) },
-                    padding = horizontalPadding
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-                SectionHeader(title = stringResource(Res.string.home_featured), padding = horizontalPadding)
-                Spacer(modifier = Modifier.height(16.dp))
-                CafeteriasList(
-                    establecimientos = establecimientos,
-                    padding = horizontalPadding,
-                    onEstablecimientoClick = onEstablecimientoClick
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-                SectionHeader(title = stringResource(Res.string.home_recommendations), padding = horizontalPadding)
-                Spacer(modifier = Modifier.height(16.dp))
-                RecommendationsList(
-                    productosConLocal = listaRecomendaciones,
-                    padding = horizontalPadding,
-                    onAddToCart = onAddToCart
+            Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = { viewModel.actualizarBusqueda(it) }
                 )
             }
-
-            Spacer(modifier = Modifier.height(100.dp))
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeHeader(padding: Dp, cartCount: Int, onCartClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = padding),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = stringResource(Res.string.client_welcome),
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 16.dp),
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = DarkGray,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        BadgedBox(
-            badge = {
-                if (cartCount > 0) {
-                    Badge(
-                        containerColor = PrimaryOrange,
-                        contentColor = Color.White
-                    ) { Text(cartCount.toString()) }
-                }
-            }
-        ) {
-            IconButton(
-                onClick = onCartClick,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(BorderGray.copy(alpha = 0.4f), CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ShoppingCart,
-                    contentDescription = stringResource(Res.string.user_cart_open),
-                    modifier = Modifier.padding(10.dp),
-                    tint = DarkGray
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SectionHeader(title: String, padding: Dp) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = padding),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge
-        )
-    }
-}
-
-fun getIconForCategory(categoria: String): ImageVector {
-    return when(categoria.lowercase()) {
-        "comida", "comidas" -> Icons.Default.Restaurant
-        "bebidas", "bebida", "café", "cafe" -> Icons.Default.LocalCafe
-        "snacks", "botanas" -> Icons.Default.Fastfood
-        "postres", "postre" -> Icons.Default.Icecream
-        "todos" -> Icons.Default.Menu
-        else -> Icons.Default.Category
-    }
-}
-
-@Composable
-fun CategoryRow(
-    categorias: List<String>,
-    seleccion: String,
-    onSelect: (String) -> Unit,
-    padding: Dp
-) {
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = padding),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(categorias.size) { index ->
-            val name = categorias[index]
-            val isSelected = name == seleccion
+            Spacer(modifier = Modifier.height(16.dp))
 
             Column(
-                modifier = Modifier.clickable { onSelect(name) },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Surface(
-                    modifier = Modifier.size(70.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (isSelected) PrimaryOrange else LightSurface,
-                    shadowElevation = if (isSelected) 4.dp else 2.dp
-                ) {
-                    Icon(
-                        imageVector = getIconForCategory(name),
-                        contentDescription = name,
-                        modifier = Modifier.padding(20.dp),
-                        tint = if (isSelected) Color.White else MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = if (isSelected) PrimaryOrange else DarkGray,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    )
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CafeteriasList(
-    establecimientos: List<Establecimiento>,
-    padding: Dp,
-    onEstablecimientoClick: (Establecimiento) -> Unit
-) {
-    if (establecimientos.isEmpty()) {
-        Text(
-            text = "Buscando establecimientos...",
-            modifier = Modifier.padding(horizontal = padding),
-            color = Color.Gray
-        )
-    } else {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = padding),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(establecimientos.size) { index ->
-                CafeteriaCard(
-                    establecimiento = establecimientos[index],
-                    onClick = { onEstablecimientoClick(establecimientos[index]) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CafeteriaCard(establecimiento: Establecimiento, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .width(260.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(ExtraLightGray),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                RemoteImage(
-                    url = establecimiento.logoUrl,
-                    contentDescription = establecimiento.nombre,
-                    modifier = Modifier.fillMaxSize(),
-                    fallback = {
-                        Icon(Icons.Default.Storefront, contentDescription = null, tint = MediumGray)
-                    }
-                )
-            }
+                if (searchQuery.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SectionHeader(title = stringResource(Res.string.home_search_results), padding = horizontalPadding)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(
-                    text = establecimiento.nombre.ifEmpty { "Local sin nombre" },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = TrafficYellow)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "4.5 • En el campus", style = MaterialTheme.typography.labelSmall)
+                    RecommendationsList(
+                        productosConLocal = resultadosBusqueda,
+                        padding = horizontalPadding,
+                        onQuickAdd = handleQuickAdd,
+                        onProductClick = { producto, local -> selectedProduct = producto to local }
+                    )
+                } else {
+                    SectionHeader(title = stringResource(Res.string.home_categories), padding = horizontalPadding)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CategoryRow(
+                        categorias = categoriasDisponibles,
+                        seleccion = categoriaSeleccionada,
+                        onSelect = { viewModel.seleccionarCategoria(it) },
+                        padding = horizontalPadding
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                    SectionHeader(title = stringResource(Res.string.home_featured), padding = horizontalPadding)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CafeteriasList(
+                        establecimientos = establecimientos,
+                        padding = horizontalPadding,
+                        onEstablecimientoClick = onEstablecimientoClick
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                    SectionHeader(title = stringResource(Res.string.home_recommendations), padding = horizontalPadding)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    RecommendationsList(
+                        productosConLocal = listaRecomendaciones,
+                        padding = horizontalPadding,
+                        onQuickAdd = handleQuickAdd,
+                        onProductClick = { producto, local -> selectedProduct = producto to local }
+                    )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    establecimiento.categorias.take(2).forEach { tag ->
-                        Text(
-                            text = tag,
-                            modifier = Modifier
-                                .background(SoftOrangeBg, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, color = PrimaryOrange)
+
+                Spacer(modifier = Modifier.height(100.dp))
+            }
+        }
+
+        AppSnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+        )
+
+        selectedProduct?.let { (producto, local) ->
+            ProductDetailModal(
+                producto = producto,
+                storeName = local,
+                onDismiss = { selectedProduct = null },
+                onAddToCart = { product, quantity ->
+                    repeat(quantity) { onAddToCart(product) }
+                    selectedProduct = null
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            "${product.nombre} añadido al carrito",
+                            duration = SnackbarDuration.Short
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun RecommendationsList(
-    productosConLocal: List<Pair<Producto, String>>,
-    padding: Dp,
-    onAddToCart: (Producto) -> Unit
-) {
-    Column(modifier = Modifier.padding(horizontal = padding)) {
-        if (productosConLocal.isEmpty()) {
-            Text(
-                text = "No se encontraron resultados...",
-                color = Color.Gray,
-                style = MaterialTheme.typography.bodyMedium
             )
-        } else {
-            productosConLocal.forEach { (producto, nombreLocal) ->
-                RecommendationCard(
-                    producto = producto,
-                    storeName = nombreLocal,
-                    onAddToCartClick = { onAddToCart(producto) }
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun RecommendationCard(
-    producto: Producto,
-    storeName: String,
-    onAddToCartClick: () -> Unit
-) {
-    // 👇 Referencia para la vibración más fuerte
-    val haptic = LocalHapticFeedback.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .background(Color(0xFF1E1E24)),
-                contentAlignment = Alignment.Center
-            ) {
-                RemoteImage(
-                    url = producto.imagenUrl,
-                    contentDescription = producto.nombre,
-                    modifier = Modifier.fillMaxSize(),
-                    fallback = {
-                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
-                    }
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = producto.nombre, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                    Text(text = storeName, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    Text(text = "$${producto.precio}", color = PrimaryOrange, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            // 👇 Disparamos el golpe de vibración sólido
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-
-                            // 👇 Ejecutamos la lógica de agregar al carrito
-                            onAddToCartClick()
-                        },
-                    shape = CircleShape,
-                    color = PrimaryOrange
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.padding(6.dp))
-                }
-            }
         }
     }
 }

@@ -1,13 +1,13 @@
 package com.example.fila_virtual.features.user.menu
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Fastfood
@@ -17,18 +17,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.AppSnackbarHost
+import com.example.fila_virtual.features.user.home.ProductCard
+import com.example.fila_virtual.features.user.home.ProductDetailModal
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.theme.*
-import com.example.fila_virtual.components.RemoteImage
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.general_back
 import fila_virtual.composeapp.generated.resources.user_cart_item_added
@@ -38,7 +40,6 @@ import fila_virtual.composeapp.generated.resources.user_menu_empty_desc
 import fila_virtual.composeapp.generated.resources.user_menu_load_error
 import fila_virtual.composeapp.generated.resources.user_menu_loading
 import fila_virtual.composeapp.generated.resources.user_menu_retry
-import fila_virtual.composeapp.generated.resources.user_product_add
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,6 +52,7 @@ fun UserMenuScreen(
     onNavigateToCart: () -> Unit,
     userViewModel: UserViewModel
 ) {
+    val windowSize = LocalWindowSize.current
     val menuViewModel = remember { UserMenuViewModel() }
     val productos by menuViewModel.productos.collectAsState()
     val menuCargando by menuViewModel.cargando.collectAsState()
@@ -62,6 +64,7 @@ fun UserMenuScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
+    var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
 
     BackHandler(onBack = onBack)
 
@@ -69,175 +72,198 @@ fun UserMenuScreen(
         menuViewModel.cargarMenu(establecimientoId)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(nombreEstablecimiento, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(Res.string.general_back))
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = onNavigateToCart,
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    Box(
                         modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(48.dp)
-                            .background(Color(0xFFF5F5F5), CircleShape)
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .height(56.dp)
                     ) {
-                        BadgedBox(
-                            badge = {
-                                if (cartItemsCount > 0) {
-                                    Badge(
-                                        containerColor = PrimaryOrange,
-                                        contentColor = Color.White,
-                                        modifier = Modifier.offset(x = 2.dp, y = (-2).dp)
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onBack()
+                            },
+                            modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(Res.string.general_back))
+                        }
+
+                        Text(
+                            text = nombreEstablecimiento,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .fillMaxWidth()
+                                .padding(horizontal = 88.dp),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onNavigateToCart()
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 8.dp)
+                                .size(44.dp)
+                                .background(ExtraLightGray, CircleShape)
+                        ) {
+                            BadgedBox(
+                                badge = {
+                                    if (cartItemsCount > 0) {
+                                        Badge(containerColor = PrimaryOrange, contentColor = Color.White) {
+                                            Text("$cartItemsCount")
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ShoppingCart,
+                                    contentDescription = stringResource(Res.string.user_cart_open),
+                                    tint = DarkGray
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { AppSnackbarHost(snackbarHostState) }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+                val contentState = when {
+                    menuCargando -> "loading"
+                    menuError -> "error"
+                    productos.isEmpty() -> "empty"
+                    else -> "products"
+                }
+
+                Crossfade(
+                    targetState = contentState,
+                    modifier = Modifier.fillMaxSize(),
+                    label = "user_menu_content"
+                ) { state ->
+                    when (state) {
+                        "loading" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(color = PrimaryOrange)
+                                Spacer(Modifier.height(12.dp))
+                                Text(stringResource(Res.string.user_menu_loading), color = MediumGray)
+                            }
+                        }
+                        "error" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = windowSize.compactDp(24)),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = LightSurface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.fillMaxWidth().padding(24.dp)
+                                ) {
+                                    Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(stringResource(Res.string.user_menu_load_error), color = DarkGray, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.height(16.dp))
+                                    Button(
+                                        onClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            menuViewModel.cargarMenu(establecimientoId)
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
                                     ) {
-                                        Text("$cartItemsCount")
+                                        Icon(Icons.Default.Refresh, contentDescription = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(stringResource(Res.string.user_menu_retry))
                                     }
                                 }
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ShoppingCart,
-                                contentDescription = stringResource(Res.string.user_cart_open),
-                                tint = Color(0xFF1E1E24)
-                            )
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { AppSnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            when {
-                menuCargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = PrimaryOrange)
-                        Spacer(Modifier.height(12.dp))
-                        Text(stringResource(Res.string.user_menu_loading), color = MediumGray)
-                    }
-                }
-                menuError -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                        Spacer(Modifier.height(12.dp))
-                        Text(stringResource(Res.string.user_menu_load_error), color = MaterialTheme.colorScheme.error)
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { menuViewModel.cargarMenu(establecimientoId) }) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(Res.string.user_menu_retry))
-                        }
-                    }
-                }
-                productos.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
-                        Spacer(Modifier.height(12.dp))
-                        Text(stringResource(Res.string.user_menu_empty), color = DarkGray, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            stringResource(Res.string.user_menu_empty_desc),
-                            color = MediumGray,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(productos.size) { index ->
-                        val producto = productos[index]
-                        val mensajeAgregado = stringResource(
-                            Res.string.user_cart_item_added,
-                            producto.nombre
-                        )
-                        ProductoClienteCard(
-                            producto = producto,
-                            onAddClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                userViewModel.agregarAlCarrito(
-                                    idProducto = producto.id,
-                                    nombre = producto.nombre,
-                                    precio = producto.precio,
-                                    establecimientoId = establecimientoId,
-                                    establecimientoNombre = nombreEstablecimiento
-                                )
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(mensajeAgregado)
+                        "empty" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(24.dp)
+                            ) {
+                                Surface(modifier = Modifier.size(88.dp), shape = CircleShape, color = SoftOrangeBg) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(40.dp))
+                                    }
                                 }
+                                Spacer(Modifier.height(16.dp))
+                                Text(stringResource(Res.string.user_menu_empty), color = DarkGray, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    stringResource(Res.string.user_menu_empty_desc),
+                                    color = MediumGray,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
                             }
-                        )
+                        }
+                        else -> LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                horizontal = windowSize.compactDp(16),
+                                vertical = windowSize.compactDp(12)
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(windowSize.compactDp(12))
+                        ) {
+                            items(items = productos, key = { producto -> producto.id }) { producto ->
+                                val mensajeAgregado = stringResource(
+                                    Res.string.user_cart_item_added,
+                                    producto.nombre
+                                )
+                                ProductCard(
+                                    producto = producto,
+                                    storeName = nombreEstablecimiento,
+                                    onClick = { productoSeleccionado = producto },
+                                    onAddToCartClick = {
+                                        userViewModel.agregarAlCarrito(
+                                            idProducto = producto.id,
+                                            nombre = producto.nombre,
+                                            precio = producto.precio,
+                                            establecimientoId = establecimientoId,
+                                            establecimientoNombre = nombreEstablecimiento
+                                        )
+                                        scope.launch { snackbarHostState.showSnackbar(mensajeAgregado) }
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
-    }
-}
 
-@Composable
-fun ProductoClienteCard(producto: Producto, onAddClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .background(Color(0xFF1E1E24)),
-                contentAlignment = Alignment.Center
-            ) {
-                RemoteImage(
-                    url = producto.imagenUrl,
-                    contentDescription = producto.nombre,
-                    modifier = Modifier.fillMaxSize(),
-                    fallback = {
-                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+        productoSeleccionado?.let { producto ->
+            ProductDetailModal(
+                producto = producto,
+                storeName = nombreEstablecimiento,
+                onDismiss = { productoSeleccionado = null },
+                onAddToCart = { product, quantity ->
+                    repeat(quantity) {
+                        userViewModel.agregarAlCarrito(
+                            idProducto = product.id,
+                            nombre = product.nombre,
+                            precio = product.precio,
+                            establecimientoId = establecimientoId,
+                            establecimientoNombre = nombreEstablecimiento
+                        )
                     }
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = producto.nombre, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                    Text(
-                        text = producto.descripcion.ifEmpty { "Sin descripción" },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray,
-                        maxLines = 2
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "$${producto.precio}", color = PrimaryOrange, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    productoSeleccionado = null
+                    scope.launch { snackbarHostState.showSnackbar("${product.nombre} añadido al carrito") }
                 }
-
-                IconButton(
-                    onClick = onAddClick,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(PrimaryOrange, CircleShape)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.user_product_add), tint = Color.White)
-                }
-            }
+            )
         }
     }
 }
