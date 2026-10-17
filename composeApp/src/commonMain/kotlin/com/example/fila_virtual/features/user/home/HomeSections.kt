@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.components.RemoteImage
+import com.example.fila_virtual.components.cards.FeaturedEstablishmentCard
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.data.Establecimiento
 import fila_virtual.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -178,6 +180,8 @@ fun CafeteriasList(
     padding: Dp,
     onEstablecimientoClick: (Establecimiento) -> Unit
 ) {
+    val windowSize = LocalWindowSize.current
+    val cardWidth = (windowSize.width - padding * 2).coerceIn(260.dp, 420.dp)
     if (establecimientos.isEmpty()) {
         Text(
             text = "Buscando establecimientos...",
@@ -190,84 +194,12 @@ fun CafeteriasList(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(establecimientos) { establecimiento ->
-                CafeteriaCard(
+                FeaturedEstablishmentCard(
                     establecimiento = establecimiento,
-                    onClick = { onEstablecimientoClick(establecimiento) }
+                    onClick = { onEstablecimientoClick(establecimiento) },
+                    modifier = Modifier.width(cardWidth)
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun CafeteriaCard(establecimiento: Establecimiento, onClick: () -> Unit) {
-    val haptic = LocalHapticFeedback.current
-    Card(
-        onClick = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onClick()
-        },
-        modifier = Modifier.width(260.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(ExtraLightGray),
-                contentAlignment = Alignment.Center
-            ) {
-                RemoteImage(
-                    url = establecimiento.logoUrl,
-                    contentDescription = establecimiento.nombre,
-                    modifier = Modifier.fillMaxSize(),
-                    fallback = {
-                        Icon(Icons.Default.Storefront, contentDescription = null, tint = MediumGray)
-                    }
-                )
-            }
-
-            Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Text(
-                    text = establecimiento.nombre.ifEmpty { "Local sin nombre" },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    establecimiento.categorias.take(1).forEach { tag ->
-                        Text(
-                            text = tag,
-                            modifier = Modifier
-                                .background(SoftOrangeBg, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, color = PrimaryOrange)
-                        )
-                    }
-                    if (establecimiento.categorias.size > 1) {
-                        Text(
-                            text = "+${establecimiento.categorias.size - 1}",
-                            color = MediumGray,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MediumGray
-            )
         }
     }
 }

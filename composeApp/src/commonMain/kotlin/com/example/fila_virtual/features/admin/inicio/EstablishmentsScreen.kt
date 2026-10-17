@@ -34,6 +34,7 @@ import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
+import com.example.fila_virtual.components.cards.FeaturedEstablishmentCard
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Establecimiento
@@ -181,8 +182,9 @@ fun EstablishmentsScreen(
                     )
                 ) {
                     items(listaFiltrada) { local ->
-                        EstablecimientoCard(
+                        FeaturedEstablishmentCard(
                             establecimiento = local,
+                            modifier = Modifier.fillMaxWidth(),
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 selectedEstablecimiento = local
@@ -483,7 +485,6 @@ private fun EstablishmentsEmptyState(isSearching: Boolean, onCreateClick: () -> 
         }
     }
 }
-
 @Composable
 private fun EstablishmentInfoCard(
     modifier: Modifier = Modifier,
@@ -517,131 +518,6 @@ private fun EstablishmentInfoCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun EstablecimientoCard(
-    establecimiento: Establecimiento,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 1. Imagen y Badge (Izquierda)
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(BorderGray) // Placeholder de la imagen
-            ) {
-                RemoteImage(
-                    url = establecimiento.logoUrl,
-                    contentDescription = establecimiento.nombre,
-                    modifier = Modifier.fillMaxSize(),
-                    fallback = {
-                        Icon(
-                            imageVector = Icons.Default.Storefront,
-                            contentDescription = null,
-                            tint = MediumGray,
-                            modifier = Modifier.align(Alignment.Center).size(36.dp)
-                        )
-                    }
-                )
-
-                // Etiqueta "ABIERTO" / "CERRADO"
-                val badgeBgColor = if (establecimiento.activo) TrafficGreen.copy(alpha = 0.15f) else ExtraLightGray
-                val badgeTextColor = if (establecimiento.activo) TrafficGreen else MediumGray
-
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = badgeBgColor
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(
-                                    color = badgeTextColor,
-                                    shape = CircleShape
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (establecimiento.activo) stringResource(Res.string.est_status_open) else stringResource(Res.string.est_status_closed),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = badgeTextColor
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // 2. Información Principal (Centro)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = establecimiento.nombre.ifEmpty { stringResource(Res.string.est_no_name) },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkGray
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MediumGray,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = establecimiento.ubicacion.direccion.ifEmpty { stringResource(Res.string.est_no_address) },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MediumGray,
-                        maxLines = 1
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // 3. Acciones (Derecha)
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.height(80.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = stringResource(Res.string.est_options),
-                    tint = MediumGray
                 )
             }
         }

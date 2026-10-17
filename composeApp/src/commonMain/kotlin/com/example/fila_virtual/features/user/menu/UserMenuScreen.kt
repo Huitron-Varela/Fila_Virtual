@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
-import com.example.fila_virtual.features.user.home.ProductCard
 import com.example.fila_virtual.features.user.home.ProductDetailModal
+import com.example.fila_virtual.components.cards.RecommendationProductCard
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.BackHandler
 import com.example.fila_virtual.core.LocalWindowSize
@@ -226,7 +226,7 @@ fun UserMenuScreen(
                                     Res.string.user_cart_item_added,
                                     producto.nombre
                                 )
-                                ProductCard(
+                                RecommendationProductCard(
                                     producto = producto,
                                     storeName = nombreEstablecimiento,
                                     onClick = { productoSeleccionado = producto },

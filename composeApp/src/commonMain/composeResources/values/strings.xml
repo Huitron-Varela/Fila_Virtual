@@ -212,6 +212,8 @@
     <string name="est_status_title">Estado del Local</string>
     <string name="est_status_open">ABIERTO</string>
     <string name="est_status_closed">CERRADO</string>
+    <string name="est_status_active">ACTIVO</string>
+    <string name="est_status_inactive">INACTIVO</string>
     <string name="est_category_label">CATEGORÍA</string>
     <string name="est_schedule_label">HORARIO</string>
     <string name="est_admin_button">Administrar Establecimiento</string>

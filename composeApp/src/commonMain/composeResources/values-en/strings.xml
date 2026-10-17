@@ -225,6 +225,8 @@
     <string name="est_status_title">Location Status</string>
     <string name="est_status_open">OPEN</string>
     <string name="est_status_closed">CLOSED</string>
+    <string name="est_status_active">ACTIVE</string>
+    <string name="est_status_inactive">INACTIVE</string>
     <string name="est_category_label">CATEGORY</string>
     <string name="est_schedule_label">SCHEDULE</string>
     <string name="est_admin_button">Manage Establishment</string>
