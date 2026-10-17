@@ -5,7 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,32 +23,62 @@ import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.data.TarjetaGuardada
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.cart_pay_button
+import fila_virtual.composeapp.generated.resources.cart_payment_confirm_title
+import fila_virtual.composeapp.generated.resources.cart_payment_confirm_question
+import fila_virtual.composeapp.generated.resources.cart_payment_checkout_note
+import fila_virtual.composeapp.generated.resources.cart_payment_saved_card_note
+import fila_virtual.composeapp.generated.resources.cart_payment_continue
+import fila_virtual.composeapp.generated.resources.cart_payment_review
+import fila_virtual.composeapp.generated.resources.cart_payment_selected
 import kotlinx.coroutines.launch
-
-private val MPBlue = Color(0xFF009EE3)
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     onBackClick: () -> Unit,
     onOrderSuccess: () -> Unit,
-    onNavigateToWallet: () -> Unit,
     viewModel: UserViewModel
 ) {
     val windowSize = LocalWindowSize.current
     val padding = windowSize.compactDp(16)
 
     val cartItems by viewModel.carrito.collectAsState()
-    val subtotal = viewModel.calcularTotalCarrito()
-    val tarifaServicio = if (cartItems.isEmpty()) 0.0 else 5.0
-    val total = subtotal + tarifaServicio
+    val total = viewModel.calcularTotalCarrito()
 
     var isGenerandoLink by remember { mutableStateOf(false) }
+    var mostrarConfirmacionPago by remember { mutableStateOf(false) }
+    var selectedCardKey by rememberSaveable { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val tarjetas = viewModel.usuario?.metodosPago.orEmpty()
+    val tarjetaSeleccionada = tarjetas.firstOrNull { it.selectorKey() == selectedCardKey }
+
+    LaunchedEffect(tarjetas, selectedCardKey) {
+        if (selectedCardKey.isNotBlank() && tarjetaSeleccionada == null) selectedCardKey = ""
+    }
+
+    val continuarACheckout: () -> Unit = {
+        if (!isGenerandoLink) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            isGenerandoLink = true
+            viewModel.clearWalletMessage()
+            scope.launch {
+                val linkPago = viewModel.generarLinkMercadoPago()
+                isGenerandoLink = false
+                if (linkPago != null) {
+                    uriHandler.openUri(linkPago)
+                    viewModel.isWaitingForPayment = true
+                }
+            }
+        }
+    }
 
     LaunchedEffect(viewModel.errorMessage) {
         if (viewModel.errorMessage.isNotBlank()) {
@@ -107,35 +142,26 @@ fun CartScreen(
                         }
                 }
             } else if (cartItems.isNotEmpty()) {
-                Button(
-                    onClick = {
-                        if (isGenerandoLink) return@Button
-
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        isGenerandoLink = true
-                        viewModel.clearWalletMessage()
-                        scope.launch {
-                            val linkPago = viewModel.generarLinkMercadoPago()
-                            isGenerandoLink = false
-
-                            if (linkPago != null) {
-                                uriHandler.openUri(linkPago)
-                                viewModel.isWaitingForPayment = true
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(LightBackground)
+                            .padding(horizontal = padding, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SummarySection(items = cartItems)
+                        Button(
+                            onClick = { if (!isGenerandoLink) mostrarConfirmacionPago = true },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            enabled = !isGenerandoLink,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+                        ) {
+                            if (isGenerandoLink) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                            } else {
+                                Text(stringResource(Res.string.cart_pay_button), fontWeight = FontWeight.Bold, color = Color.White)
                             }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = padding, vertical = 12.dp)
-                        .height(54.dp),
-                    enabled = !isGenerandoLink,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MPBlue)
-                ) {
-                    if (isGenerandoLink) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Continuar con Mercado Pago", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -163,7 +189,6 @@ fun CartScreen(
                         InfoBanner()
                     }
                 }
-
                 item {
                     CartSectionHeading(itemCount = cartItems.sumOf { it.cantidad })
                     Spacer(modifier = Modifier.height(10.dp))
@@ -173,17 +198,91 @@ fun CartScreen(
                         onDecrement = { idProducto -> viewModel.decrementarCantidad(idProducto) }
                     )
                 }
-
-                item { SummarySection(subtotal = subtotal, tarifa = tarifaServicio, total = total) }
-
                 item {
                     PaymentMethodSection(
-                        tarjetas = viewModel.usuario?.metodosPago.orEmpty(),
-                        onEditClick = onNavigateToWallet
+                        tarjetas = tarjetas,
+                        tarjetaSeleccionada = tarjetaSeleccionada,
+                        onSelectCard = { tarjeta -> selectedCardKey = tarjeta?.selectorKey().orEmpty() }
                     )
                 }
             }
         }
+    }
+
+    if (mostrarConfirmacionPago && cartItems.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacionPago = false },
+            title = { Text(stringResource(Res.string.cart_payment_confirm_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(Res.string.cart_payment_confirm_question))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = SoftOrangeBg),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryOrange)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (tarjetaSeleccionada == null) Icons.Default.AccountBalanceWallet else Icons.Default.CreditCard,
+                                contentDescription = null,
+                                tint = if (tarjetaSeleccionada == null) Color(0xFF009EE3) else PrimaryOrange
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(Res.string.cart_payment_selected),
+                                    color = MediumGray,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    if (tarjetaSeleccionada == null) "Mercado Pago"
+                                    else "${tarjetaSeleccionada.marca} •••• ${tarjetaSeleccionada.ultimos4}",
+                                    color = DarkGray,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (tarjetaSeleccionada != null) {
+                                    Text(
+                                        "Vence ${tarjetaSeleccionada.expiracion}",
+                                        color = MediumGray,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PrimaryOrange)
+                        }
+                    }
+                    Text(
+                        stringResource(
+                            if (tarjetaSeleccionada == null) Res.string.cart_payment_checkout_note
+                            else Res.string.cart_payment_saved_card_note
+                        ),
+                        color = MediumGray,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        mostrarConfirmacionPago = false
+                        continuarACheckout()
+                    },
+                    enabled = !isGenerandoLink,
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+                ) {
+                    Text(stringResource(Res.string.cart_payment_continue), color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacionPago = false }) {
+                    Text(stringResource(Res.string.cart_payment_review), color = DarkGray)
+                }
+            }
+        )
     }
 }
 

@@ -15,7 +15,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material3.ButtonDefaults
@@ -34,12 +35,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.BottomNavigationBar
@@ -72,6 +77,8 @@ import fila_virtual.composeapp.generated.resources.emp_station_cocina
 import fila_virtual.composeapp.generated.resources.emp_station_entrega
 import fila_virtual.composeapp.generated.resources.emp_stock_open
 import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,12 +88,9 @@ fun EmpleadoMainScreen(
     turnoViewModel: EmpleadoTurnoViewModel = viewModel()
 ) {
     val uid = viewModel.usuario?.uid.orEmpty()
-    var estacionName by rememberSaveable { mutableStateOf<String?>(null) }
     var turnoGuardado by rememberSaveable { mutableStateOf(false) }
     var resumen by remember { mutableStateOf<ResumenTurno?>(null) }
     var verAgotados by rememberSaveable { mutableStateOf(false) }
-    var verGerente by rememberSaveable { mutableStateOf(false) }
-    var verPerfil by rememberSaveable { mutableStateOf(false) }
     var editarPerfil by rememberSaveable { mutableStateOf(false) }
     var mostrarSeguridad by rememberSaveable { mutableStateOf(false) }
     var mostrarAyuda by rememberSaveable { mutableStateOf(false) }
@@ -101,7 +105,6 @@ fun EmpleadoMainScreen(
             ?.let { clave -> EstacionOperativa.values().firstOrNull { it.clave() == clave } }
         if (estacionActiva != null) {
             turnoGuardado = true
-            estacionName = estacionActiva.name
         }
     }
     val establecimientoId = turnoViewModel.asignacion?.establecimientoId.orEmpty()
@@ -111,18 +114,15 @@ fun EmpleadoMainScreen(
     val sinAsignacion = !turnoViewModel.cargando && turnoViewModel.asignacion == null
     val puedeGestionar = esGerente && establecimientoId.isNotBlank()
     val estaciones = turnoViewModel.estaciones.sortedBy { it.ordinal }
-    val elementosNav = NavigationDefaults.employeeItems(estaciones, puedeGestionar, puedeGestionarAgotados)
-    val indiceGerencia = estaciones.size + 1
-    val indiceAgotados = indiceGerencia + if (puedeGestionar) 1 else 0
-    val estacion = estacionName?.let { name ->
-        runCatching { EstacionOperativa.valueOf(name) }.getOrNull()
-    }
-    val contentKey = when {
-        verGerente && puedeGestionar -> "manager"
-        verPerfil -> "profile"
-        estacion != null -> "station:${estacion.name}"
-        else -> "home"
-    }
+    val elementosNav = NavigationDefaults.employeeItems(estaciones, puedeGestionar)
+    val indiceMenu = estaciones.size + 1
+    val indiceEmpleados = indiceMenu + if (puedeGestionar) 1 else 0
+    val pagerState = rememberPagerState(
+        initialPage = indiceSeleccionado.coerceIn(0, elementosNav.lastIndex),
+        pageCount = { elementosNav.size }
+    )
+    val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val agotadosSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val cerrarAgotados = {
         verAgotados = false
@@ -131,9 +131,42 @@ fun EmpleadoMainScreen(
     val terminarTurno = {
         turnoViewModel.terminar { cerrado ->
             turnoGuardado = false
-            estacionName = null
             indiceSeleccionado = 0
+            coroutineScope.launch { pagerState.animateScrollToPage(0) }
             resumen = cerrado
+        }
+    }
+
+    LaunchedEffect(pagerState, elementosNav.size) {
+        snapshotFlow { pagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { page ->
+                if (page != indiceSeleccionado) {
+                    if (page !in 1..estaciones.size || !turnoViewModel.guardando) {
+                        indiceSeleccionado = page
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        verAgotados = false
+                        when {
+                            page == 0 -> Unit
+                            page in 1..estaciones.size -> {
+                                turnoViewModel.iniciar(uid, estaciones[page - 1]) { guardada ->
+                                    turnoGuardado = guardada
+                                }
+                            }
+                            puedeGestionar && page == indiceMenu -> Unit
+                            puedeGestionar && page == indiceEmpleados -> Unit
+                        }
+                    } else {
+                        coroutineScope.launch { pagerState.animateScrollToPage(indiceSeleccionado) }
+                    }
+                }
+            }
+    }
+
+    LaunchedEffect(elementosNav.size) {
+        val ultimaPagina = elementosNav.lastIndex
+        if (pagerState.currentPage > ultimaPagina) {
+            pagerState.scrollToPage(ultimaPagina)
         }
     }
 
@@ -160,43 +193,33 @@ fun EmpleadoMainScreen(
                         selectedIndex = indiceSeleccionado,
                         onItemSelected = { index ->
                             if (index in 1..estaciones.size && turnoViewModel.guardando) return@BottomNavigationBar
-                            val indiceAnterior = indiceSeleccionado
-                            indiceSeleccionado = index
-                            verPerfil = false
-                            verGerente = false
-                            verAgotados = false
-                            when {
-                                index == 0 -> estacionName = null
-                                index in 1..estaciones.size -> {
-                                    estacionName = null
-                                    turnoViewModel.iniciar(uid, estaciones[index - 1]) { guardada ->
-                                        turnoGuardado = guardada
-                                        estacionName = estaciones[index - 1].name
-                                    }
-                                }
-                                puedeGestionar && index == indiceGerencia -> {
-                                    estacionName = null
-                                    verGerente = true
-                                }
-                                puedeGestionarAgotados && index == indiceAgotados -> {
-                                    indiceAnteriorAgotados = indiceAnterior
-                                    verAgotados = true
-                                }
-                                else -> verPerfil = true
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
                             }
                         }
                     )
                 }
-            ) { padding ->
-                Box(Modifier.fillMaxSize().padding(padding)) {
-                    Crossfade(targetState = contentKey, label = "employee_screen_transition") { screen ->
+            ) { innerPadding ->
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    userScrollEnabled = !turnoViewModel.guardando
+                ) { page ->
                         when {
-                            screen == "manager" -> GerenteMenuScreen(
+                            page == indiceMenu && puedeGestionar -> GerenteMenuScreen(
                                 establecimientoId = establecimientoId,
                                 establecimientoNombre = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
-                                onBack = { verGerente = false; indiceSeleccionado = 0 }
+                                onBack = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                                mostrarSoloSeccion = true
                             )
-                            screen == "profile" -> ProfileComponent(
+                            page == indiceEmpleados && puedeGestionar -> GerenteMenuScreen(
+                                establecimientoId = establecimientoId,
+                                establecimientoNombre = turnoViewModel.asignacion?.establecimientoNombre.orEmpty(),
+                                onBack = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                                mostrarEmpleadosInicial = true,
+                                mostrarSoloSeccion = true
+                            )
+                            page == elementosNav.lastIndex -> ProfileComponent(
                                 usuario = viewModel.usuario,
                                 viewModel = viewModel,
                                 onLogout = { viewModel.signOut(onLogout) },
@@ -205,8 +228,8 @@ fun EmpleadoMainScreen(
                                 onNavigateToHelp = { mostrarAyuda = true },
                                 onNavigateToTerms = { mostrarTerminos = true }
                             )
-                            screen.startsWith("station:") -> EstacionOperativaScreen(
-                                estacion = EstacionOperativa.valueOf(screen.substringAfter(':')),
+                            page in 1..estaciones.size -> EstacionOperativaScreen(
+                                estacion = estaciones[page - 1],
                                 turnoGuardado = turnoGuardado,
                                 establecimientoId = establecimientoId,
                                 empleadoUid = uid,
@@ -227,6 +250,7 @@ fun EmpleadoMainScreen(
                                 error = turnoViewModel.error,
                                 soloGerente = esGerente && estaciones.isEmpty() && !sinAsignacion,
                                 estaciones = estaciones,
+                                pedidosEntregadosRecientes = turnoViewModel.pedidosEntregadosRecientes,
                                 estacionTurno = turnoViewModel.estadisticasSesion?.estacion
                                     ?.let { clave -> EstacionOperativa.values().firstOrNull { it.clave() == clave } },
                                 turnoEnCurso = turnoGuardado,
@@ -235,7 +259,12 @@ fun EmpleadoMainScreen(
                                 onIniciar = { estacionElegida ->
                                     turnoViewModel.iniciar(uid, estacionElegida) { guardada ->
                                         turnoGuardado = guardada
-                                        if (guardada) estacionName = estacionElegida.name
+                                        if (guardada) {
+                                            val paginaEstacion = estaciones.indexOf(estacionElegida) + 1
+                                            if (paginaEstacion in 1..estaciones.size) {
+                                                coroutineScope.launch { pagerState.animateScrollToPage(paginaEstacion) }
+                                            }
+                                        }
                                     }
                                 },
                                 onTerminar = terminarTurno,
@@ -249,7 +278,6 @@ fun EmpleadoMainScreen(
                                 }
                             )
                         }
-                    }
                 }
             }
         }

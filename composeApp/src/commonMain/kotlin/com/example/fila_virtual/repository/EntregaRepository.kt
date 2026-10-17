@@ -13,14 +13,16 @@ class EntregaRepository {
     private val db = Firebase.firestore
     private val pedidosRef = db.collection("pedidos")
 
-    fun escucharListos(establecimientoId: String): Flow<List<Pedido>> {
+    fun escucharPedidosEntrega(establecimientoId: String): Flow<List<Pedido>> {
         return pedidosRef
             .where { "establecimientoId" equalTo establecimientoId }
             .snapshots
             .map { snapshot ->
                 snapshot.documents.mapNotNull { documento ->
                     runCatching { documento.data<Pedido>().copy(id = documento.id) }.getOrNull()
-                }.filter { it.estado == EstadoPedido.LISTO }
+                }.filter {
+                    it.estado == EstadoPedido.LISTO || it.estado == EstadoPedido.ENTREGADO
+                }
                     .sortedWith(compareBy({ it.createdAt }, { it.turno }))
             }
     }

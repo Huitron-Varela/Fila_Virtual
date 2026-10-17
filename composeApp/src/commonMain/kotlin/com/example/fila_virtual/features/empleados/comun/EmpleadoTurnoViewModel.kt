@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.AsignacionEmpleado
 import com.example.fila_virtual.data.EstacionOperativa
+import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.ResumenTurno
 import com.example.fila_virtual.data.SesionTurno
 import com.example.fila_virtual.repository.EmpleadoRepository
@@ -27,9 +28,13 @@ class EmpleadoTurnoViewModel(
         private set
     var estadisticasSesion by mutableStateOf<ResumenTurno?>(null)
         private set
+    var pedidosEntregadosRecientes by mutableStateOf<List<Pedido>>(emptyList())
+        private set
     var error by mutableStateOf("")
         private set
     private var estadisticasJob: kotlinx.coroutines.Job? = null
+    private var ultimoPedidoJob: kotlinx.coroutines.Job? = null
+    private var ultimoPedidoKey = ""
 
     val estaciones: List<EstacionOperativa>
         get() = EstacionOperativa.desdeRoles(asignacion?.roles.orEmpty())
@@ -51,12 +56,31 @@ class EmpleadoTurnoViewModel(
                 sesion = asignacion?.let { actual ->
                     repository.buscarSesionActiva(uid, actual.establecimientoId)
                 }
+                cargarUltimoPedidoEntregado(uid, asignacion?.establecimientoId.orEmpty())
             } else {
                 asignacion = null
                 sesion = null
+                cargarUltimoPedidoEntregado(uid, "")
                 error = mensajeError(resultado.exceptionOrNull(), "No se pudo consultar tu establecimiento")
             }
             cargando = false
+        }
+    }
+
+    private fun cargarUltimoPedidoEntregado(uid: String, establecimientoId: String) {
+        val key = "$uid:$establecimientoId"
+        if (key == ultimoPedidoKey) return
+        ultimoPedidoKey = key
+        ultimoPedidoJob?.cancel()
+        pedidosEntregadosRecientes = emptyList()
+        if (uid.isBlank() || establecimientoId.isBlank()) return
+
+        ultimoPedidoJob = viewModelScope.launch {
+            val pedidos = repository.obtenerPedidosEntregadosEmpleado(uid, listOf(establecimientoId))
+                .getOrNull()
+                ?.take(3)
+                .orEmpty()
+            if (ultimoPedidoKey == key) pedidosEntregadosRecientes = pedidos
         }
     }
 

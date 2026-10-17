@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.components.FormHeader
+import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
@@ -139,61 +141,25 @@ fun CartItemsList(
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
-                BoxWithConstraints {
-                    val compact = maxWidth < 380.dp
-
-                    if (compact) {
-                        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                ProductPlaceholder()
-                                Spacer(modifier = Modifier.width(12.dp))
-                                CartItemDescription(producto, Modifier.weight(1f))
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "${producto.cantidad} × ${producto.precio.formatoMoneda()}",
-                                    color = MediumGray,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                CartQuantityControls(
-                                    quantity = producto.cantidad,
-                                    onDecrement = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onDecrement(producto.idProducto)
-                                    },
-                                    onIncrement = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onIncrement(producto.idProducto)
-                                    }
-                                )
-                            }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CartProductImage(producto)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    CartItemDescription(producto, Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    CartQuantityControls(
+                        quantity = producto.cantidad,
+                        onDecrement = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onDecrement(producto.idProducto)
+                        },
+                        onIncrement = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onIncrement(producto.idProducto)
                         }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ProductPlaceholder()
-                            Spacer(modifier = Modifier.width(12.dp))
-                            CartItemDescription(producto, Modifier.weight(1f))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            CartQuantityControls(
-                                quantity = producto.cantidad,
-                                onDecrement = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onDecrement(producto.idProducto)
-                                },
-                                onIncrement = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onIncrement(producto.idProducto)
-                                }
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -201,20 +167,16 @@ fun CartItemsList(
 }
 
 @Composable
-fun PaymentMethodSection(tarjetas: List<TarjetaGuardada>, onEditClick: () -> Unit) {
+fun PaymentMethodSection(
+    tarjetas: List<TarjetaGuardada>,
+    tarjetaSeleccionada: TarjetaGuardada?,
+    onSelectCard: (TarjetaGuardada?) -> Unit
+) {
     val haptic = LocalHapticFeedback.current
-    var selectedCardKey by rememberSaveable { mutableStateOf("") }
-    val selectedCard = tarjetas.firstOrNull { it.selectorKey() == selectedCardKey }
-    val orderedCards = if (selectedCard == null) {
+    val orderedCards = if (tarjetaSeleccionada == null) {
         tarjetas
     } else {
-        listOf(selectedCard) + tarjetas.filterNot { it.selectorKey() == selectedCardKey }
-    }
-
-    LaunchedEffect(selectedCardKey, tarjetas) {
-        if (selectedCardKey.isNotBlank() && selectedCard == null) {
-            selectedCardKey = ""
-        }
+        listOf(tarjetaSeleccionada) + tarjetas.filterNot { it.selectorKey() == tarjetaSeleccionada.selectorKey() }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -225,28 +187,50 @@ fun PaymentMethodSection(tarjetas: List<TarjetaGuardada>, onEditClick: () -> Uni
             color = DarkGray
         )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = LightSurface),
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray),
-            elevation = CardDefaults.cardElevation(0.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
+        if (tarjetaSeleccionada == null) {
+            Card(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSelectCard(null)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SoftOrangeBg.copy(alpha = 0.7f)),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryOrange),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
-                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = PrimaryOrange)
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Mercado Pago", fontWeight = FontWeight.Bold, color = DarkGray)
-                    Text(
-                        "Elige forma de pago en el checkout seguro.",
-                        color = MediumGray,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(color = Color(0xFF009EE3), shape = CircleShape, modifier = Modifier.size(36.dp)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Mercado Pago", fontWeight = FontWeight.Bold, color = DarkGray)
+                        Text(
+                            "Checkout seguro",
+                            color = MediumGray,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Seleccionado", tint = PrimaryOrange)
                 }
-                Icon(Icons.Default.CheckCircle, contentDescription = "Disponible", tint = PrimaryOrange)
+            }
+        } else {
+            TextButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSelectCard(null)
+                },
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+            ) {
+                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF009EE3), modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Cambiar a Mercado Pago", color = PrimaryOrange, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -279,12 +263,11 @@ fun PaymentMethodSection(tarjetas: List<TarjetaGuardada>, onEditClick: () -> Uni
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 orderedCards.forEach { tarjeta ->
-                    val cardKey = tarjeta.selectorKey()
-                    val isSelected = cardKey == selectedCardKey
+                    val isSelected = tarjeta.selectorKey() == tarjetaSeleccionada?.selectorKey()
                     Card(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            selectedCardKey = if (isSelected) "" else cardKey
+                            onSelectCard(if (isSelected) null else tarjeta)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -330,29 +313,29 @@ fun PaymentMethodSection(tarjetas: List<TarjetaGuardada>, onEditClick: () -> Uni
             }
         }
 
-        TextButton(
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onEditClick()
-            },
-            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
-        ) {
-            Text("Administrar tarjetas en Wallet", color = PrimaryOrange, fontWeight = FontWeight.Bold)
-        }
     }
 }
 
-private fun TarjetaGuardada.selectorKey(): String = "$marca|$ultimos4|$expiracion|$nombreTitular"
+internal fun TarjetaGuardada.selectorKey(): String = "$marca|$ultimos4|$expiracion|$nombreTitular"
 
 @Composable
-private fun ProductPlaceholder() {
+private fun CartProductImage(producto: ProductoCarrito) {
     Box(
         modifier = Modifier
-            .size(60.dp)
-            .background(ExtraLightGray, RoundedCornerShape(12.dp)),
+            .size(72.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(ExtraLightGray),
         contentAlignment = Alignment.Center
     ) {
-        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
+        RemoteImage(
+            url = producto.imagenUrl,
+            contentDescription = producto.nombre,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            fallback = {
+                Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
+            }
+        )
     }
 }
 
@@ -364,6 +347,14 @@ private fun CartItemDescription(producto: ProductoCarrito, modifier: Modifier = 
             fontWeight = FontWeight.Bold,
             color = DarkGray,
             maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = producto.descripcion.ifBlank { stringResource(Res.string.cart_item_description_fallback) },
+            color = MediumGray,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -384,9 +375,14 @@ private fun CartQuantityControls(
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(
             onClick = onDecrement,
-            modifier = Modifier.size(40.dp).background(PrimaryOrange, CircleShape)
+            modifier = Modifier.size(40.dp)
         ) {
-            Icon(Icons.Default.Remove, contentDescription = stringResource(Res.string.cart_quantity_decrease), tint = Color.White, modifier = Modifier.size(16.dp))
+            Box(
+                modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = stringResource(Res.string.cart_quantity_decrease), tint = Color.White, modifier = Modifier.size(14.dp))
+            }
         }
         Text(
             text = quantity.toString(),
@@ -396,15 +392,23 @@ private fun CartQuantityControls(
         )
         IconButton(
             onClick = onIncrement,
-            modifier = Modifier.size(40.dp).background(PrimaryOrange, CircleShape)
+            modifier = Modifier.size(40.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cart_quantity_increase), tint = Color.White, modifier = Modifier.size(16.dp))
+            Box(
+                modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cart_quantity_increase), tint = Color.White, modifier = Modifier.size(14.dp))
+            }
         }
     }
 }
 
 @Composable
-fun SummarySection(subtotal: Double, tarifa: Double, total: Double) {
+fun SummarySection(items: List<ProductoCarrito>) {
+    val total = items.sumOf { it.precio * it.cantidad }
+    val cantidadTotal = items.sumOf { it.cantidad }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = LightSurface),
@@ -412,23 +416,52 @@ fun SummarySection(subtotal: Double, tarifa: Double, total: Double) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Resumen", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Subtotal", color = DarkGray)
-                // 🔥 APLICAMOS FORMATO LIMPIO 🔥
-                Text(subtotal.formatoMoneda(), color = DarkGray, fontWeight = FontWeight.Medium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(Res.string.general_summary), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
+                Text(
+                    stringResource(Res.string.cart_summary_item_count, cantidadTotal),
+                    color = MediumGray,
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Tarifa de servicio", color = DarkGray)
-                // 🔥 APLICAMOS FORMATO LIMPIO 🔥
-                Text(tarifa.formatoMoneda(), color = DarkGray, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(12.dp))
+            items.take(3).forEach { producto ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "${producto.nombre} × ${producto.cantidad}",
+                        modifier = Modifier.weight(1f),
+                        color = MediumGray,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text(
+                        (producto.precio * producto.cantidad).formatoMoneda(),
+                        color = DarkGray,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+            if (items.size > 3) {
+                Text(
+                    stringResource(Res.string.cart_summary_more, items.size - 3),
+                    modifier = Modifier.padding(top = 4.dp),
+                    color = MediumGray,
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
             Divider(modifier = Modifier.padding(vertical = 12.dp), color = BorderGray)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
-                // 🔥 APLICAMOS FORMATO LIMPIO AL TOTAL 🔥
+                Text(stringResource(Res.string.general_total), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkGray)
                 Text(total.formatoMoneda(), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = PrimaryOrange)
             }
         }

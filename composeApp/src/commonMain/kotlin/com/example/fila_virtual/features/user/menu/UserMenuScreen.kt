@@ -236,7 +236,9 @@ fun UserMenuScreen(
                                             nombre = producto.nombre,
                                             precio = producto.precio,
                                             establecimientoId = establecimientoId,
-                                            establecimientoNombre = nombreEstablecimiento
+                                            establecimientoNombre = nombreEstablecimiento,
+                                            imagenUrl = producto.imagenUrl,
+                                            descripcion = producto.descripcion
                                         )
                                         scope.launch { snackbarHostState.showSnackbar(mensajeAgregado) }
                                     }
@@ -261,7 +263,9 @@ fun UserMenuScreen(
                             nombre = product.nombre,
                             precio = product.precio,
                             establecimientoId = establecimientoId,
-                            establecimientoNombre = nombreEstablecimiento
+                            establecimientoNombre = nombreEstablecimiento,
+                            imagenUrl = product.imagenUrl,
+                            descripcion = product.descripcion
                         )
                     }
                     productoSeleccionado = null

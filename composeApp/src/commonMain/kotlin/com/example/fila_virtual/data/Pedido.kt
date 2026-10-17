@@ -13,7 +13,7 @@ enum class EstadoPedido {
     CANCELADO        // Se canceló -> Pasa al Historial
 }
 
-private const val ALFABETO_CODIGO = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+private const val ALFABETO_CODIGO = "0123456789"
 
 fun generarCodigoRecogida(): String =
     buildString(4) { repeat(4) { append(ALFABETO_CODIGO.random()) } }

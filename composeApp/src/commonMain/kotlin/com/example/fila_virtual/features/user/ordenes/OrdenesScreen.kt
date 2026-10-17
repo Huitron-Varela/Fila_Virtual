@@ -62,7 +62,7 @@ fun EstadoPedido.toUIText(): String {
         EstadoPedido.EN_PREPARACION -> "Preparando"
         EstadoPedido.LISTO -> "¡Listo para recoger!"
         EstadoPedido.ENTREGADO -> "Entregado"
-        EstadoPedido.NO_RECLAMADO -> "No reclamado"
+        EstadoPedido.NO_RECLAMADO -> "Incidencia"
         EstadoPedido.CANCELADO -> "Cancelado"
     }
 }
@@ -267,12 +267,6 @@ fun OrdenesScreen(
                 if (pedidoActual.estado == EstadoPedido.LISTO) {
                     val codigo = codigoVisible(pedidoActual)
                     Text(
-                        text = "TURNO #${pedidoActual.turno}",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = PrimaryOrange
-                    )
-                    Text(
                         text = "Listo para recoger",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
@@ -280,7 +274,7 @@ fun OrdenesScreen(
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     Text(
-                        text = "Acerca este QR al lector del mostrador. Si no lo lee, dicta el código.",
+                        text = "Muestra este QR al lector del mostrador. Si no lo lee, dicta el código de recogida.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MediumGray,
                         textAlign = TextAlign.Center,

@@ -37,15 +37,6 @@ fun QRCodeModalContent(
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. Número de Turno
-        Text(
-            text = "TURNO #$turno",
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         // 3. Subtítulo
         Text(
             text = "CÓDIGO DE RECOGIDA",

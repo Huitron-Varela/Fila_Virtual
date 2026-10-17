@@ -115,7 +115,7 @@ object NavigationDefaults {
     )
 
     @Composable
-    fun employeeItems(estaciones: List<EstacionOperativa>, esGerente: Boolean, puedeGestionarAgotados: Boolean): List<NavigationItem> {
+    fun employeeItems(estaciones: List<EstacionOperativa>, esGerente: Boolean): List<NavigationItem> {
         val items = mutableListOf(
             NavigationItem(stringResource(Res.string.nav_home), Icons.Default.Home, 0)
         )
@@ -128,10 +128,8 @@ object NavigationDefaults {
             items += NavigationItem(label, icon, index + 1)
         }
         if (esGerente) {
-            items += NavigationItem(stringResource(Res.string.emp_role_gerente), Icons.Default.Storefront, items.size)
-        }
-        if (puedeGestionarAgotados) {
-            items += NavigationItem(stringResource(Res.string.emp_stock_open), Icons.Default.RemoveShoppingCart, items.size)
+            items += NavigationItem(stringResource(Res.string.admin_nav_menu), Icons.Default.RestaurantMenu, items.size)
+            items += NavigationItem(stringResource(Res.string.admin_nav_employees), Icons.Default.People, items.size)
         }
         items += NavigationItem(stringResource(Res.string.nav_profile), Icons.Default.Person, items.size)
         return items

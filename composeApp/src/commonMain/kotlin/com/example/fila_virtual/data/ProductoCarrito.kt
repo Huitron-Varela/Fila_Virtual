@@ -7,5 +7,7 @@ data class ProductoCarrito(
     val idProducto: String,
     val nombre: String,
     val precio: Double,
-    val cantidad: Int
+    val cantidad: Int,
+    val imagenUrl: String = "",
+    val descripcion: String = ""
 )

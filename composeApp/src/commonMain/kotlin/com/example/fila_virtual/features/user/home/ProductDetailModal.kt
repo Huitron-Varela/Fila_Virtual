@@ -3,6 +3,7 @@ package com.example.fila_virtual.features.user.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -251,9 +252,7 @@ private fun QuantitySelector(
         IconButton(
             onClick = onDecrease,
             enabled = quantity > 1,
-            modifier = Modifier
-                .size(40.dp)
-                .background(PrimaryOrange, RoundedCornerShape(50)),
+            modifier = Modifier.size(40.dp),
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = PrimaryOrange,
                 contentColor = Color.White,
@@ -261,7 +260,12 @@ private fun QuantitySelector(
                 disabledContentColor = Color.White
             )
         ) {
-            Icon(Icons.Default.Remove, contentDescription = "Reducir cantidad")
+            Box(
+                modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = "Reducir cantidad", modifier = Modifier.size(16.dp))
+            }
         }
         Text(
             text = quantity.toString().padStart(2, '0'),
@@ -270,15 +274,18 @@ private fun QuantitySelector(
         )
         IconButton(
             onClick = onIncrease,
-            modifier = Modifier
-                .size(40.dp)
-                .background(PrimaryOrange, RoundedCornerShape(50)),
+            modifier = Modifier.size(40.dp),
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = PrimaryOrange,
                 contentColor = Color.White
             )
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Aumentar cantidad")
+            Box(
+                modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Aumentar cantidad", modifier = Modifier.size(16.dp))
+            }
         }
     }
 }

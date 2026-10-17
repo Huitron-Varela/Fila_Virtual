@@ -16,6 +16,8 @@
     <string name="general_attention">Atención</string>
     <string name="general_understood">Entendido</string>
     <string name="general_back">Regresar</string>
+        <string name="emp_delivery_code_verified">Pedido confirmado</string>
+        <string name="emp_delivery_code_invalid">Código no válido</string>
 
     <!-- ========================================== -->
     <!-- NAVEGACIÓN PRINCIPAL                       -->
@@ -119,7 +121,17 @@
     <string name="cart_no_cards_message">No tienes tarjetas vinculadas. Agrega una desde la pestaña Billetera.</string>
     <string name="cart_tap_to_select">Toca para seleccionar o agregar</string>
     <string name="cart_select_payment">Selecciona método de pago</string>
-    <string name="cart_pay_button">Pagar y Generar Turno</string>
+    <string name="cart_pay_button">Pagar</string>
+    <string name="cart_item_description_fallback">Sin descripción adicional</string>
+    <string name="cart_payment_confirm_title">Confirmar pago</string>
+    <string name="cart_payment_confirm_question">¿Quieres continuar con el método seleccionado?</string>
+    <string name="cart_payment_checkout_note">Se abrirá el checkout seguro de Mercado Pago. Revisa allí el método antes de finalizar el pago.</string>
+    <string name="cart_payment_saved_card_note">La tarjeta guardada se muestra como referencia; este checkout no la preselecciona. Confirma allí que elegiste esta tarjeta antes de pagar.</string>
+    <string name="cart_payment_continue">Continuar a Mercado Pago</string>
+    <string name="cart_payment_review">Revisar método</string>
+    <string name="cart_payment_selected">Método seleccionado</string>
+    <string name="cart_summary_item_count">%1$d artículos</string>
+    <string name="cart_summary_more">+%1$d productos más</string>
     <string name="cart_ending_in">terminada en</string>
     <string name="cart_expires">Expira</string>
 
@@ -351,6 +363,14 @@
     <string name="emp_shift_select_station">Elige una estación</string>
     <string name="emp_shift_statistics_empty">Las estadísticas aparecerán cuando inicies tu turno.</string>
     <string name="emp_home_last_shift">Último turno registrado</string>
+    <string name="emp_home_last_delivered">Último pedido entregado</string>
+    <string name="emp_home_recent_delivered">Últimos pedidos entregados</string>
+    <string name="emp_home_delivered_empty">Aún no hay pedidos entregados.</string>
+    <string name="emp_home_establishment">Establecimiento</string>
+    <string name="emp_home_station">Estación</string>
+    <string name="emp_home_stat_delivered">Entregados</string>
+    <string name="emp_home_stat_prepared">Preparados</string>
+    <string name="emp_home_stat_incidents">Incidencias</string>
     <string name="emp_home_active_hint">Entra a una estación para continuar, o termina el turno cuando acabes.</string>
     <string name="emp_station_cocina">Cocina</string>
     <string name="emp_station_cocina_desc">Consulta pedidos recibidos, pásalos a preparación y márcalos como listos.</string>
@@ -375,7 +395,7 @@
     <string name="emp_cashier_total">Total</string>
     <string name="emp_status_pending">Pendiente</string>
     <string name="emp_status_delivered">Entregado</string>
-    <string name="emp_status_unclaimed">No reclamado</string>
+    <string name="emp_status_unclaimed">Incidencia</string>
     <string name="emp_status_cancelled">Cancelado</string>
     <string name="emp_scan_qr">Escanear QR</string>
     <string name="emp_scan_hint">Centra el código QR del cliente dentro del marco.</string>
@@ -399,7 +419,7 @@
     <string name="emp_summary_day">En el día: %1$d preparados, %2$d entregados y %3$d abandonados.</string>
     <string name="emp_summary_abandoned">Pedidos abandonados: %1$d</string>
     <string name="emp_summary_cashier">Cajero no prepara ni entrega. Este turno solo queda registrado.</string>
-    <string name="emp_summary_note">Los no reclamados no cuentan como entregados.</string>
+    <string name="emp_summary_note">Las incidencias no cuentan como entregadas.</string>
     <string name="emp_summary_history">Turnos de hoy</string>
     <string name="emp_summary_shift_kitchen">Cocina: %1$d preparados</string>
     <string name="emp_summary_shift_delivery">Entrega: %1$d entregados y %2$d abandonados</string>
@@ -426,22 +446,28 @@
     <string name="emp_code_help">Pega el código que generó el administrador. Debes entrar con el mismo correo de la invitación.</string>
     <string name="emp_code_hint">Código de 6 dígitos</string>
     <string name="emp_code_button">Unirme al establecimiento</string>
-    <string name="emp_delivery_code">Código del QR o N° de turno</string>
+    <string name="emp_delivery_code">Numero de pedido</string>
     <string name="emp_delivery_manual">Alternativa manual</string>
-    <string name="emp_delivery_manual_placeholder">Ej. 65 ó Q-928</string>
+    <string name="emp_delivery_manual_placeholder">Ej. 4826</string>
     <string name="emp_delivery_validate">Validar</string>
-    <string name="emp_delivery_manual_hint">Si la cámara no detecta el QR, ingresa el código numérico o turno del ticket.</string>
+    <string name="emp_delivery_manual_hint">Si la cámara no detecta el QR, ingresa el código de 4 dígitos.</string>
     <string name="emp_delivery_queue_title">Listos para entrega</string>
     <string name="emp_delivery_queue_sorted">Auto-ordenado por espera</string>
     <string name="emp_delivery_ready">Listo</string>
     <string name="emp_delivery_waiting_pickup">En espera para recogida</string>
     <string name="emp_delivery_ticket">#TK-%1$s</string>
     <string name="emp_delivery_confirm">Confirmar entrega</string>
-    <string name="emp_delivery_unclaimed">No reclamado</string>
-    <string name="emp_delivery_unclaimed_title">Marcar como no reclamado</string>
+    <string name="emp_delivery_unclaimed">Incidencia</string>
+    <string name="emp_delivery_unclaimed_title">Registrar incidencia</string>
     <string name="emp_delivery_unclaimed_body">El pedido saldrá de pendientes. No se contará como entregado y no cambia el pago.</string>
     <string name="emp_delivery_blocked">El turno debe quedar guardado para registrar la entrega.</string>
-    <string name="emp_delivery_hint">El código o el QR confirman la entrega. Si el cliente no llega, usa No reclamado sin código.</string>
+    <string name="emp_delivery_hint">El código o el QR confirman la entrega. Si el cliente no llega, registra una incidencia.</string>
+    <string name="emp_delivery_history_button">Entregados (%1$d)</string>
+    <string name="emp_delivery_history_title">Pedidos entregados</string>
+    <string name="emp_delivery_history_empty">Aún no hay pedidos entregados.</string>
+    <string name="emp_delivery_open_orders">Ver pedidos</string>
+    <string name="emp_delivery_ready_tab">Por entregar (%1$d)</string>
+    <string name="emp_delivery_delivered_tab">Entregados (%1$d)</string>
     <string name="profile_join_place">Unirme a un establecimiento</string>
     <string name="emp_gerente_open">Menú del local</string>
     <string name="emp_gerente_desc">Crea, consulta y edita el menú, incluida la foto. Puedes agotar un platillo, reponerlo o darlo de baja sin borrar pedidos, y ver la cola de turnos.</string>

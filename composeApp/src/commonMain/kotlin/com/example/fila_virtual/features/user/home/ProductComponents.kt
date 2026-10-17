@@ -141,11 +141,19 @@ fun ProductCard(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onAddToCartClick()
                         },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(PrimaryOrange, CircleShape)
+                        modifier = Modifier.size(44.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Añadir ${producto.nombre} al carrito", tint = Color.White)
+                        Box(
+                            modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Añadir ${producto.nombre} al carrito",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                     Icon(
                         imageVector = Icons.Default.ChevronRight,

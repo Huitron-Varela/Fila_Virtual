@@ -78,13 +78,17 @@ fun GerenteMenuScreen(
     establecimientoId: String,
     establecimientoNombre: String,
     onBack: () -> Unit,
+    mostrarEmpleadosInicial: Boolean = false,
+    mostrarSoloSeccion: Boolean = false,
     viewModel: GerenteViewModel = viewModel()
 ) {
     LaunchedEffect(establecimientoId) {
         viewModel.escuchar(establecimientoId)
     }
 
-    var seccion by rememberSaveable { mutableStateOf(Seccion.GESTION_MENU) }
+    var seccion by rememberSaveable(establecimientoId, mostrarEmpleadosInicial) {
+        mutableStateOf(if (mostrarEmpleadosInicial) Seccion.EMPLEADOS else Seccion.GESTION_MENU)
+    }
     var mostrarFormularioPlatillo by rememberSaveable { mutableStateOf(false) }
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
     var mostrarFormularioEmpleado by rememberSaveable { mutableStateOf(false) }
@@ -130,30 +134,32 @@ fun GerenteMenuScreen(
             .fillMaxSize()
             .background(LightBackground)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(Res.string.emp_back),
-                tint = DarkGray,
+        if (!mostrarSoloSeccion) {
+            Row(
                 modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack)
-                    .padding(12.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    stringResource(Res.string.emp_gerente_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkGray
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(Res.string.emp_back),
+                    tint = DarkGray,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(onClick = onBack)
+                        .padding(12.dp)
                 )
-                if (establecimientoNombre.isNotBlank()) {
-                    Text(establecimientoNombre, color = MediumGray, style = MaterialTheme.typography.bodySmall)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(Res.string.emp_gerente_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray
+                    )
+                    if (establecimientoNombre.isNotBlank()) {
+                        Text(establecimientoNombre, color = MediumGray, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
@@ -178,32 +184,34 @@ fun GerenteMenuScreen(
             }
             else -> {
                 Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SeccionGerente(
-                        texto = stringResource(Res.string.admin_nav_menu),
-                        activa = seccion == Seccion.GESTION_MENU,
-                        modifier = Modifier.weight(1f),
-                        onClick = { seccion = Seccion.GESTION_MENU }
-                    )
-                    SeccionGerente(
-                        texto = stringResource(Res.string.admin_nav_employees),
-                        activa = seccion == Seccion.EMPLEADOS,
-                        modifier = Modifier.weight(1f),
-                        onClick = { seccion = Seccion.EMPLEADOS }
-                    )
-                    SeccionGerente(
-                        texto = stringResource(Res.string.emp_gerente_tab_queue),
-                        activa = seccion == Seccion.PEDIDOS,
-                        modifier = Modifier.weight(1f),
-                        onClick = { seccion = Seccion.PEDIDOS }
-                    )
+                if (!mostrarSoloSeccion) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SeccionGerente(
+                            texto = stringResource(Res.string.admin_nav_menu),
+                            activa = seccion == Seccion.GESTION_MENU,
+                            modifier = Modifier.weight(1f),
+                            onClick = { seccion = Seccion.GESTION_MENU }
+                        )
+                        SeccionGerente(
+                            texto = stringResource(Res.string.admin_nav_employees),
+                            activa = seccion == Seccion.EMPLEADOS,
+                            modifier = Modifier.weight(1f),
+                            onClick = { seccion = Seccion.EMPLEADOS }
+                        )
+                        SeccionGerente(
+                            texto = stringResource(Res.string.emp_gerente_tab_queue),
+                            activa = seccion == Seccion.PEDIDOS,
+                            modifier = Modifier.weight(1f),
+                            onClick = { seccion = Seccion.PEDIDOS }
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
-                Spacer(Modifier.height(12.dp))
                 when (seccion) {
                     Seccion.GESTION_MENU -> MenuScreen(
                         establecimientoId = establecimientoId,

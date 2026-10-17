@@ -99,11 +99,6 @@ fun ClienteMainScreen(
                 showCart = false
                 selectedEstablecimiento = null
                 irAOrdenes = true
-            },
-            onNavigateToWallet = {
-                viewModel.updatePendingWalletAction("abrir_formulario")
-                showCart = false
-                scope.launch { pagerState.animateScrollToPage(2) }
             }
         )
     } else if (selectedEstablecimiento != null) {
@@ -151,7 +146,9 @@ fun ClienteMainScreen(
                                             producto.id,
                                             producto.nombre,
                                             producto.precio,
-                                            establecimientoId = producto.establecimientoId
+                                            establecimientoId = producto.establecimientoId,
+                                            imagenUrl = producto.imagenUrl,
+                                            descripcion = producto.descripcion
                                         )
                                     }
                                 )

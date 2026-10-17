@@ -371,7 +371,9 @@ class UserViewModel(
         nombre: String,
         precio: Double,
         establecimientoId: String = "",
-        establecimientoNombre: String = ""
+        establecimientoNombre: String = "",
+        imagenUrl: String = "",
+        descripcion: String = ""
     ) {
         if (
             establecimientoId.isNotBlank() &&
@@ -392,9 +394,22 @@ class UserViewModel(
 
         if (itemExistente != null) {
             val index = listaActual.indexOf(itemExistente)
-            listaActual[index] = itemExistente.copy(cantidad = itemExistente.cantidad + 1)
+            listaActual[index] = itemExistente.copy(
+                cantidad = itemExistente.cantidad + 1,
+                imagenUrl = itemExistente.imagenUrl.ifBlank { imagenUrl },
+                descripcion = itemExistente.descripcion.ifBlank { descripcion }
+            )
         } else {
-            listaActual.add(ProductoCarrito(idProducto, nombre, precio, 1))
+            listaActual.add(
+                ProductoCarrito(
+                    idProducto = idProducto,
+                    nombre = nombre,
+                    precio = precio,
+                    cantidad = 1,
+                    imagenUrl = imagenUrl,
+                    descripcion = descripcion
+                )
+            )
         }
         _carrito.value = listaActual
     }

@@ -21,6 +21,8 @@ class EntregaViewModel(
 
     var pedidos by mutableStateOf<List<Pedido>>(emptyList())
         private set
+    var entregados by mutableStateOf<List<Pedido>>(emptyList())
+        private set
     var cargando by mutableStateOf(false)
         private set
     var error by mutableStateOf("")
@@ -43,19 +45,22 @@ class EntregaViewModel(
         escucha?.cancel()
         if (establecimientoId.isBlank()) {
             pedidos = emptyList()
+            entregados = emptyList()
             cargando = false
             return
         }
         escucha = viewModelScope.launch {
             cargando = true
             error = ""
-            repository.escucharListos(establecimientoId)
+            repository.escucharPedidosEntrega(establecimientoId)
                 .catch { fallo ->
                     error = mensajeEntrega(fallo)
                     cargando = false
                 }
                 .collect { lista ->
-                    pedidos = lista
+                    pedidos = lista.filter { it.estado == EstadoPedido.LISTO }
+                    entregados = lista.filter { it.estado == EstadoPedido.ENTREGADO }
+                        .sortedWith(compareByDescending<Pedido> { it.actualizadoAt }.thenByDescending { it.createdAt })
                     cargando = false
                 }
         }
