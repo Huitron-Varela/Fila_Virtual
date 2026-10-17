@@ -49,6 +49,13 @@ Capítulo 3. Metodología 14
 3.2 Metodología de Desarrollo Híbrida (Scrum y Prototipado Iterativo) 14
 3.3 Técnicas de Recolección de Requerimientos 15
 3.4 Análisis, Diseño y Pruebas del Sistema 15
+3.5 Tecnologías y Arquitectura Específica del Proyecto 15
+3.5.1 Kotlin Multiplatform 15
+3.5.2 Servicios de Infraestructura en la Nube (Firebase / Google Cloud) 15
+3.5.3 Estructura de la Base de Datos NoSQL 15
+3.5.4 Control de Versiones y Flujo de Trabajo (Git + GitHub) 15
+3.5.5 Integración de Pagos mediante Mercado Pago Checkout Pro 15
+3.5.6 Especificación de Endpoints y APIs del Sistema 16
 Capítulo 4. Análisis del Sistema 16
 4.1 Identificación de Actores del Sistema 16
 4.2 Requerimientos Funcionales 16
@@ -74,6 +81,16 @@ Ilustración 10 CRUD Empleados 27
 Ilustración 11 CRUD Menu 29
 Ilustración 12 CRUD Establecimientos 31
 Ilustración 13 Diagrama Secuencia: Flujo Solicitar Turno en Tiempo Real 32
+
+Tabla de Tablas
+Tabla 1 Resumen General de Servicios y APIs de la Plataforma AlToque. Elaboración propia 16
+Tabla 2 Ejemplo de Endpoint para Autenticación y Usuarios. Elaboración propia 16
+Tabla 3 Ejemplo de Endpoint para Establecimientos. Elaboración propia 17
+Tabla 4 Ejemplo de Endpoint para Menú y Productos. Elaboración propia 17
+Tabla 5 Ejemplo de Endpoint para Pedidos y Turnos. Elaboración propia 18
+Tabla 6 Ejemplo de Endpoint para Operación de Empleados y Estaciones. Elaboración propia 18
+Tabla 7 Ejemplo de Endpoint para Pagos y Pasarelas de Cobro. Elaboración propia 19
+Tabla 8 Ejemplo de Endpoint para Servicios Multimedia y Notificaciones. Elaboración propia 19
 
 # Introducción
 
@@ -294,6 +311,111 @@ AlToque incorporará Mercado Pago Checkout Pro para que el cliente complete el p
 El backend será responsable de gestionar la comunicación con Mercado Pago y verificar el estado de la transacción, su importe y su asociación con el pedido correspondiente. El regreso del cliente a la aplicación no se considerará evidencia suficiente de un pago aprobado. Únicamente después de verificar su aprobación se confirmará el pedido, se asignará el turno y se habilitará el código QR.
 Los pagos pendientes permanecerán identificados como tales hasta obtener un resultado definitivo. El procesamiento deberá impedir que las notificaciones repetidas o los reintentos de una misma transacción generen pedidos o turnos duplicados. La información necesaria para el seguimiento del pago se conservará en Cloud Firestore.
 Esta integración no incluirá formularios propios para registrar tarjetas ni una Wallet interna. La incorporación de Mercado Pago Checkout API y la administración de tarjetas dentro de AlToque se contemplan como mejoras futuras.
+
+### 3.5.6 Especificación de Endpoints y APIs del Sistema
+
+Para soportar la interacción en tiempo real de los turnos virtuales, el procesamiento seguro de pagos, el control de acceso por roles y la administración descentralizada de cafeterías, AlToque implementa una arquitectura distribuida basada en servicios backend administrados (Backend as a Service con Firebase), funciones sin servidor (Cloud Functions HTTPS Callable) y pasarelas de pago externas (Mercado Pago REST APIs).
+
+Tabla 1 Resumen General de Servicios y APIs de la Plataforma AlToque. Elaboración propia
+
+| Servicio / API | Proveedor | Protocolo / Tipo | Propósito Principal | Ámbito |
+| :--- | :--- | :--- | :--- | :--- |
+| Firebase Authentication | Google Cloud | HTTPS / SDK | Registro, inicio de sesión y emisión de tokens seguros | Usuarios |
+| Cloud Firestore | Google Cloud | HTTPS / WebSocket | Almacén NoSQL y sincronización reactiva de turnos | Datos y Turnos |
+| Firebase Cloud Functions | Google Cloud | HTTPS (Callable) | Validación de transacciones y procesamiento de cobros | Pagos |
+| Mercado Pago Checkout Pro | Mercado Pago | HTTPS REST | Generación de órdenes de pago externas mediante redirección | Pagos |
+| Mercado Pago Card Token API | Mercado Pago | HTTPS REST | Tokenización de tarjetas bancarias desde la aplicación móvil | Billetera / Pagos |
+| Mercado Pago Payments API | Mercado Pago | HTTPS REST | Cargo directo a tarjeta tokenizada desde Cloud Functions | Pagos |
+| Firebase Cloud Storage | Google Cloud | HTTPS / SDK | Almacenamiento persistente de fotos de productos y logos | Multimedia |
+| Firebase Trigger Email | Google / Firebase | Extensión Firestore | Despacho de correos HTML para códigos OTP e invitaciones | Notificaciones |
+| Deep Linking Service | AlToque | URI Scheme | Manejo de retornos de pago e invitaciones a colaboradores | Navegación |
+
+Algunos de los endpoints implementados quedaron de la siguiente manera:
+
+Autenticación y Usuarios
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| POST | /auth/v1/accounts:signUp | email, password, returnSecureToken | Usuarios |
+| POST | /auth/v1/accounts:signInWithPassword | email, password, returnSecureToken | Usuarios |
+| POST | /auth/v1/accounts:signInWithIdp | idProvider, idToken, accessToken | Usuarios |
+| POST | /otp_codes/{email} | email, code, timestamp | Usuarios |
+| GET | /usuarios/{uid} | uid | Usuarios |
+| PATCH | /usuarios/{uid} | uid, nombre, telefono, fotoUrl, metodosPago, card_token, updatedAt | Usuarios |
+
+Tabla 2 Ejemplo de Endpoint para Autenticación y Usuarios. Elaboración propia
+
+Establecimientos
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| GET | /establecimientos | NA | Establecimientos |
+| GET | /establecimientos/{id} | id | Establecimientos |
+| GET | /establecimientos?ownerUid={ownerUid} | ownerUid | Establecimientos |
+| POST | /establecimientos | nombre, descripcion, logoUrl, ubicacion, horario, activo, ownerUid, categorias, createdAt | Establecimientos |
+| PUT | /establecimientos/{id} | id, nombre, descripcion, logoUrl, ubicacion, horario, updatedAt | Establecimientos |
+| PATCH | /establecimientos/{id}/status | id, activo, updatedAt | Establecimientos |
+| DELETE | /establecimientos/{id} | id | Establecimientos |
+
+Tabla 3 Ejemplo de Endpoint para Establecimientos. Elaboración propia
+
+Menú y Productos
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| GET | /productos?establecimientoId={id} | establecimientoId | Menú |
+| GET | /productos/{id} | id | Menú |
+| POST | /productos | establecimientoId, nombre, descripcion, precio, categoria, imagenUrl, disponible, ownerUid, createdAt | Menú |
+| PUT | /productos/{id} | id, nombre, descripcion, precio, categoria, imagenUrl, updatedAt | Menú |
+| PATCH | /productos/{id}/disponibilidad | id, disponible, updatedAt | Menú |
+| DELETE | /productos/{id} | id | Menú |
+
+Tabla 4 Ejemplo de Endpoint para Menú y Productos. Elaboración propia
+
+Pedidos y Turnos
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| GET | /pedidos?userId={uid} | userId | Pedidos |
+| GET | /pedidos?establecimientoId={id} | establecimientoId | Pedidos |
+| GET | /pedidos/{id} | id | Pedidos |
+| POST | /pedidos | userId, establecimientoId, establecimientoNombre, descripcion, total, estado, turno, codigoRecogida, productos, createdAt | Pedidos |
+| PATCH | /pedidos/{id}/estado | id, estado, empleadoUid, sesionId, actualizadoAt | Pedidos |
+
+Tabla 5 Ejemplo de Endpoint para Pedidos y Turnos. Elaboración propia
+
+Operación de Empleados y Estaciones
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| GET | /establecimientos/{id}/empleados | establecimientoId | Empleados |
+| POST | /establecimientos/{id}/empleados/{uid} | establecimientoId, uid, rol, roles, activo, joinedAt, updatedAt | Empleados |
+| DELETE | /establecimientos/{id}/empleados/{uid} | establecimientoId, uid | Empleados |
+| PATCH | /usuarios/{uid}/roles | uid, roles, establecimientoId, establecimientoNombre | Empleados |
+| POST | /establecimientos/{id}/empleadoMetricasDiarias/{docId} | uid, establecimientoId, estacion, sesionId, fecha, horaInicio, horaFin, pedidosAtendidos | Empleados |
+
+Tabla 6 Ejemplo de Endpoint para Operación de Empleados y Estaciones. Elaboración propia
+
+Pagos y Pasarelas de Cobro
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| POST | /v1/card_tokens | card_number, expiration_month, expiration_year, security_code, cardholder, public_key | Pagos |
+| POST | /checkout/preferences | items, back_urls, auto_return, external_reference | Pagos |
+| POST | /procesarPagoAlToque | uid, monto, descripcion | Pagos |
+| POST | /v1/payments | transaction_amount, token, description, installments, payment_method_id, payer | Pagos |
+
+Tabla 7 Ejemplo de Endpoint para Pagos y Pasarelas de Cobro. Elaboración propia
+
+Servicios Multimedia y Notificaciones
+
+| Método | PATH | Parámetros | Ámbito |
+| :--- | :--- | :--- | :--- |
+| POST | /b/{bucket}/o/{path} | path, bytes, contentType | Servicios |
+| POST | /mail | to, message.subject, message.text, message.html | Servicios |
+| GET | /invitacion/?token={token} | token | Servicios |
+
+Tabla 8 Ejemplo de Endpoint para Servicios Multimedia y Notificaciones. Elaboración propia
 
 # Capítulo 4. Análisis del Sistema
 
