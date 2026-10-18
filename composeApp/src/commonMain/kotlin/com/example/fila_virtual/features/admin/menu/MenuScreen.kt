@@ -35,6 +35,8 @@ import fila_virtual.composeapp.generated.resources.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
+import com.example.fila_virtual.components.CategoryFilterRow
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
@@ -126,24 +128,19 @@ fun MenuScreen(
                     .padding(horizontal = horizontalPadding)
                     .padding(bottom = 24.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = windowSize.compactDp(24), bottom = 16.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(Res.string.menu_title_manage),
-                        style = typography.titleLarge.copy(
-                            fontSize = windowSize.adaptiveSp(20),
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = colorScheme.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                StoreHeader(
+                    title = stringResource(Res.string.menu_title_manage),
+                    modifier = Modifier.padding(top = windowSize.compactDp(24), bottom = 16.dp),
+                    containerColor = colorScheme.background,
+                    titleStyle = typography.titleLarge.copy(
+                        fontSize = windowSize.adaptiveSp(20),
+                        fontWeight = FontWeight.Bold
+                    ),
+                    titleColor = colorScheme.onBackground,
+                    includeStatusBarPadding = false,
+                    minHeight = 0.dp,
+                    verticalPadding = 0.dp
+                )
 
                 SearchBar(
                     query = searchQuery,
@@ -239,30 +236,13 @@ fun MenuScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-            // Chips de categorías horizontal
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(categorias) { categoria ->
-                    val isSelected = categoria == categoriaSeleccionada
-                    Surface(
-                        color = if (isSelected) PrimaryOrange else LightSurface,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.clickable { categoriaSeleccionada = categoria },
-                        border = if (!isSelected) BorderStroke(1.dp, BorderGray) else null
-                    ) {
-                        Text(
-                            text = categoria,
-                            color = if (isSelected) LightSurface else DarkGray,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
+            CategoryFilterRow(
+                categories = categorias,
+                selectedCategory = categoriaSeleccionada,
+                onCategorySelected = { categoriaSeleccionada = it },
+                contentPadding = PaddingValues(bottom = 16.dp),
+                showIcons = false
+            )
 
             // Lista de Platillos o Estado Vacío
             if (productosCargando && productos.isEmpty()) {

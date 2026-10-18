@@ -1,19 +1,28 @@
 package com.example.fila_virtual.features.user.carrio_compra
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -23,8 +32,16 @@ import com.example.fila_virtual.components.AppSnackbarHost
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.features.user.UserHomeViewModel
 import com.example.fila_virtual.data.TarjetaGuardada
 import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.btn_cancel
+import fila_virtual.composeapp.generated.resources.cart_add_more_products
+import fila_virtual.composeapp.generated.resources.cart_add_more_products_at
+import fila_virtual.composeapp.generated.resources.cart_clear_action
+import fila_virtual.composeapp.generated.resources.cart_clear_confirmation
+import fila_virtual.composeapp.generated.resources.cart_clear_title
+import fila_virtual.composeapp.generated.resources.cart_get_ticket
 import fila_virtual.composeapp.generated.resources.cart_pay_button
 import fila_virtual.composeapp.generated.resources.cart_payment_confirm_title
 import fila_virtual.composeapp.generated.resources.cart_payment_confirm_question
@@ -33,6 +50,7 @@ import fila_virtual.composeapp.generated.resources.cart_payment_saved_card_note
 import fila_virtual.composeapp.generated.resources.cart_payment_continue
 import fila_virtual.composeapp.generated.resources.cart_payment_review
 import fila_virtual.composeapp.generated.resources.cart_payment_selected
+import fila_virtual.composeapp.generated.resources.cart_your_order
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -48,9 +66,12 @@ fun CartScreen(
 
     val cartItems by viewModel.carrito.collectAsState()
     val total = viewModel.calcularTotalCarrito()
+    val recommendationsViewModel = remember { UserHomeViewModel() }
+    val quickRecommendations by recommendationsViewModel.recomendaciones.collectAsState()
 
     var isGenerandoLink by remember { mutableStateOf(false) }
     var mostrarConfirmacionPago by remember { mutableStateOf(false) }
+    var mostrarConfirmacionVaciar by remember { mutableStateOf(false) }
     var selectedCardKey by rememberSaveable { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
@@ -94,7 +115,13 @@ fun CartScreen(
 
     Scaffold(
         containerColor = LightBackground,
-        topBar = { CartTopBar(onBackClick = onBackClick) },
+        topBar = {
+            CartTopBar(
+                onBackClick = onBackClick,
+                onClearClick = { mostrarConfirmacionVaciar = true },
+                canClearCart = cartItems.isNotEmpty()
+            )
+        },
         snackbarHost = {
             AppSnackbarHost(
                 hostState = snackbarHostState,
@@ -146,13 +173,11 @@ fun CartScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(LightBackground)
-                            .padding(horizontal = padding, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(horizontal = padding, vertical = 10.dp)
                     ) {
-                        SummarySection(items = cartItems)
                         Button(
                             onClick = { if (!isGenerandoLink) mostrarConfirmacionPago = true },
-                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            modifier = Modifier.fillMaxWidth().height(64.dp),
                             enabled = !isGenerandoLink,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
@@ -160,7 +185,39 @@ fun CartScreen(
                             if (isGenerandoLink) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                             } else {
-                                Text(stringResource(Res.string.cart_pay_button), fontWeight = FontWeight.Bold, color = Color.White)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Text(
+                                        text = "${stringResource(Res.string.cart_pay_button)} ${total.formatoMoneda()}",
+                                        modifier = Modifier.weight(1f),
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Surface(
+                                        color = Color.White.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(50)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = stringResource(Res.string.cart_get_ticket),
+                                                color = Color.White,
+                                                fontWeight = FontWeight.SemiBold,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                maxLines = 1
+                                            )
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                }
                             }
                     }
                 }
@@ -179,7 +236,24 @@ fun CartScreen(
 
             if (cartItems.isEmpty()) {
                 item {
-                    EmptyCartState(onBrowseClick = onBackClick)
+                    EmptyCartState(
+                        recommendations = quickRecommendations.take(3),
+                        onBrowseClick = onBackClick,
+                        onAddRecommendation = { producto, establecimientoNombre, addedMessage ->
+                            viewModel.agregarAlCarrito(
+                                idProducto = producto.id,
+                                nombre = producto.nombre,
+                                precio = producto.precio,
+                                establecimientoId = producto.establecimientoId,
+                                establecimientoNombre = establecimientoNombre,
+                                imagenUrl = producto.imagenUrl,
+                                descripcion = producto.descripcion
+                            )
+                            scope.launch {
+                                snackbarHostState.showSnackbar(addedMessage)
+                            }
+                        }
+                    )
                 }
             } else {
                 item {
@@ -199,12 +273,67 @@ fun CartScreen(
                     )
                 }
                 item {
+                    Surface(
+                        onClick = onBackClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = SoftOrangeBg.copy(alpha = 0.28f)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Canvas(Modifier.matchParentSize()) {
+                                val lineWidth = 1.2.dp.toPx()
+                                drawRoundRect(
+                                    color = PrimaryOrange.copy(alpha = 0.55f),
+                                    cornerRadius = CornerRadius(16.dp.toPx()),
+                                    style = Stroke(
+                                        width = lineWidth,
+                                        pathEffect = PathEffect.dashPathEffect(
+                                            floatArrayOf(6.dp.toPx(), 4.dp.toPx())
+                                        )
+                                    )
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(26.dp).border(1.5.dp, PrimaryOrange, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(17.dp))
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = if (viewModel.carritoEstablecimientoNombre.isBlank()) {
+                                        stringResource(Res.string.cart_add_more_products)
+                                    } else {
+                                        stringResource(Res.string.cart_add_more_products_at, viewModel.carritoEstablecimientoNombre)
+                                    },
+                                    modifier = Modifier.widthIn(max = 280.dp),
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimaryOrange,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
                     PaymentMethodSection(
                         tarjetas = tarjetas,
                         tarjetaSeleccionada = tarjetaSeleccionada,
                         onSelectCard = { tarjeta -> selectedCardKey = tarjeta?.selectorKey().orEmpty() }
                     )
                 }
+                item { SummarySection(items = cartItems) }
             }
         }
     }
@@ -284,6 +413,32 @@ fun CartScreen(
             }
         )
     }
+
+    if (mostrarConfirmacionVaciar && cartItems.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacionVaciar = false },
+            title = { Text(stringResource(Res.string.cart_clear_title)) },
+            text = { Text(stringResource(Res.string.cart_clear_confirmation)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.vaciarCarrito()
+                        viewModel.isWaitingForPayment = false
+                        selectedCardKey = ""
+                        mostrarConfirmacionVaciar = false
+                    }
+                ) {
+                    Text(stringResource(Res.string.cart_clear_action), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacionVaciar = false }) {
+                    Text(stringResource(Res.string.btn_cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -294,10 +449,12 @@ private fun CartSectionHeading(itemCount: Int) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Tu pedido",
+            text = stringResource(Res.string.cart_your_order),
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1
         )
         Surface(
             color = Color(0xFFFFF0E6),

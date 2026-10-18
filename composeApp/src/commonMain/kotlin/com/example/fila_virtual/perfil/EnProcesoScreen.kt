@@ -2,18 +2,19 @@ package com.example.fila_virtual.perfil
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.components.Heders.StoreHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,16 +25,14 @@ fun EnProcesoScreen(
     BackHandler(onBack = onBack)
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(titulo ?: stringResource(Res.string.in_process_default_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = stringResource(Res.string.in_process_back)
-                        )
-                    }
-                }
+            StoreHeader(
+                title = titulo ?: stringResource(Res.string.in_process_default_title),
+                onBack = onBack,
+                containerColor = MaterialTheme.colorScheme.surface,
+                backButtonContainerColor = Color.Transparent,
+                titleStyle = MaterialTheme.typography.titleLarge,
+                titleColor = MaterialTheme.colorScheme.onSurface,
+                backContentDescription = stringResource(Res.string.in_process_back)
             )
         }
     ) { padding ->

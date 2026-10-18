@@ -27,17 +27,27 @@ import com.example.fila_virtual.components.FormTextField
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.user.UserViewModel
+import fila_virtual.composeapp.generated.resources.wallet_add_card_submit
+import fila_virtual.composeapp.generated.resources.wallet_enter_card_title
+import fila_virtual.composeapp.generated.resources.wallet_new_card
+import fila_virtual.composeapp.generated.resources.wallet_update_card_hint
+import fila_virtual.composeapp.generated.resources.wallet_update_card_submit
+import fila_virtual.composeapp.generated.resources.wallet_update_card_title
+import org.jetbrains.compose.resources.stringResource
+import com.example.fila_virtual.data.TarjetaGuardada
+import fila_virtual.composeapp.generated.resources.Res
 
 @Composable
 fun FormularioTarjetaScreen(
     viewModel: UserViewModel,
-    onSuccess: () -> Unit
+    onSuccess: (TarjetaGuardada) -> Unit,
+    tarjetaAReemplazar: TarjetaGuardada? = null
 ) {
     val windowSize = LocalWindowSize.current
     val haptic = LocalHapticFeedback.current
 
-    LaunchedEffect(Unit) {
-        viewModel.clearWalletMessage()
+    LaunchedEffect(tarjetaAReemplazar?.tokenId) {
+        viewModel.resetWalletCardForm()
     }
 
     Column(
@@ -61,13 +71,19 @@ fun FormularioTarjetaScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Agregar tarjeta",
+                    text = stringResource(
+                        if (tarjetaAReemplazar == null) Res.string.wallet_new_card
+                        else Res.string.wallet_update_card_title
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    text = "Ingresa los datos tal como aparecen en tu tarjeta.",
+                    text = stringResource(
+                        if (tarjetaAReemplazar == null) Res.string.wallet_enter_card_title
+                        else Res.string.wallet_update_card_hint
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MediumGray,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -241,8 +257,9 @@ fun FormularioTarjetaScreen(
             onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 viewModel.procesarPagoSeguro(
-                    onSuccess = {
-                        onSuccess()
+                    tarjetaAReemplazar = tarjetaAReemplazar,
+                    onSuccess = { tarjetaGuardada ->
+                        onSuccess(tarjetaGuardada)
                     }
                 )
             },
@@ -285,8 +302,10 @@ fun FormularioTarjetaScreen(
                 )
 
                 Text(
-                    text =
-                        "Validar y vincular tarjeta",
+                    text = stringResource(
+                        if (tarjetaAReemplazar == null) Res.string.wallet_add_card_submit
+                        else Res.string.wallet_update_card_submit
+                    ),
                     color =
                         Color.White,
                     fontWeight =

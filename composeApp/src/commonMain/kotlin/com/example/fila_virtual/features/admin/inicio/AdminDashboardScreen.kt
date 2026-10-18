@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.RolesEmpleado
@@ -126,38 +127,23 @@ fun AdminDashboardScreen(
 @Composable
 fun AdminHeader(padding: Dp, isRefreshing: Boolean = false, onRefresh: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
-    Box(
+    StoreHeader(
+        title = stringResource(Res.string.admin_dashboard_title),
+        subtitle = stringResource(Res.string.admin_dashboard_subtitle),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = padding)
-            .padding(top = windowSize.compactDp(24), bottom = 16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(Res.string.admin_dashboard_title),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = windowSize.adaptiveSp(20),
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = stringResource(Res.string.admin_dashboard_subtitle),
-                style = MaterialTheme.typography.labelSmall,
-                color = MediumGray,
-                letterSpacing = 1.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-    }
+            .padding(top = windowSize.compactDp(24), bottom = 16.dp),
+        containerColor = LightBackground,
+        titleStyle = MaterialTheme.typography.titleLarge.copy(
+            fontSize = windowSize.adaptiveSp(20),
+            fontWeight = FontWeight.Bold
+        ),
+        titleColor = MaterialTheme.colorScheme.onBackground,
+        includeStatusBarPadding = false,
+        minHeight = 0.dp,
+        verticalPadding = 0.dp
+    )
 }
 
 @Composable

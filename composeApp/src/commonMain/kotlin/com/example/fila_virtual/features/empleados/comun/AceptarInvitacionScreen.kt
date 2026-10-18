@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Info
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.data.InvitacionEmpleado
 import com.example.fila_virtual.repository.EmpleadoRepository
 import dev.gitlive.firebase.Firebase
@@ -185,22 +185,17 @@ fun AceptarInvitacionScreen(
 
 @Composable
 private fun InvitationTopBar(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().height(64.dp).background(LightSurface).padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        androidx.compose.material3.IconButton(onClick = onBack) {
-            androidx.compose.material3.Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = DarkGray)
-        }
-        Text(
-            "Invitación de equipo",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.width(48.dp))
-    }
+    StoreHeader(
+        title = "Invitación de equipo",
+        onBack = onBack,
+        containerColor = LightSurface,
+        backButtonContainerColor = Color.Transparent,
+        titleStyle = MaterialTheme.typography.titleMedium,
+        backContentDescription = "Volver",
+        minHeight = 64.dp,
+        horizontalPadding = 12.dp,
+        verticalPadding = 8.dp
+    )
 }
 
 @Composable

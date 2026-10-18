@@ -69,9 +69,7 @@ fun HomeView(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
             HomeHeader(
-                padding = horizontalPadding,
                 cartCount = cartCount,
                 onCartClick = onCartClick
             )

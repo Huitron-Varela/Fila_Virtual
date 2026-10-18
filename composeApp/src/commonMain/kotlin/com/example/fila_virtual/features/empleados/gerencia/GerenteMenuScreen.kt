@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.LightBackground
 import com.example.fila_virtual.core.theme.LightSurface
@@ -135,33 +135,18 @@ fun GerenteMenuScreen(
             .background(LightBackground)
     ) {
         if (!mostrarSoloSeccion) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(Res.string.emp_back),
-                    tint = DarkGray,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable(onClick = onBack)
-                        .padding(12.dp)
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(Res.string.emp_gerente_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkGray
-                    )
-                    if (establecimientoNombre.isNotBlank()) {
-                        Text(establecimientoNombre, color = MediumGray, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
+            StoreHeader(
+                title = stringResource(Res.string.emp_gerente_title),
+                subtitle = establecimientoNombre.takeIf(String::isNotBlank),
+                onBack = onBack,
+                containerColor = LightBackground,
+                backContentDescription = stringResource(Res.string.emp_back),
+                centerTitle = false,
+                includeStatusBarPadding = false,
+                minHeight = 64.dp,
+                horizontalPadding = 8.dp,
+                verticalPadding = 8.dp
+            )
         }
 
         when {

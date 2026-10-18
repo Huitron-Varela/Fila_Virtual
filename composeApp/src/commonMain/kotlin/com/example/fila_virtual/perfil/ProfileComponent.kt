@@ -31,6 +31,7 @@ import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.features.empleados.comun.CodigoInvitacionCard
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.repository.EmpleadoRepository
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
@@ -69,14 +70,15 @@ fun ProfileComponent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = stringResource(Res.string.profile_screen_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = windowSize.adaptiveDp(24), bottom = windowSize.adaptiveDp(16))
+        StoreHeader(
+            title = stringResource(Res.string.profile_screen_title),
+            modifier = Modifier.padding(top = windowSize.adaptiveDp(24), bottom = windowSize.adaptiveDp(16)),
+            containerColor = MaterialTheme.colorScheme.background,
+            titleStyle = MaterialTheme.typography.titleLarge,
+            titleColor = MaterialTheme.colorScheme.onBackground,
+            includeStatusBarPadding = false,
+            minHeight = 0.dp,
+            verticalPadding = 0.dp
         )
 
         Column(

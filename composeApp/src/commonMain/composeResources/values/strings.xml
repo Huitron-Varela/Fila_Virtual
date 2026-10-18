@@ -79,6 +79,25 @@
     <!-- ÓRDENES                                    -->
     <!-- ========================================== -->
     <string name="orders_title">Mis Órdenes</string>
+    <string name="orders_active">Activas</string>
+    <string name="orders_history">Historial</string>
+    <string name="orders_all_filter">Todos (%1$d)</string>
+    <string name="orders_turn">Turno</string>
+    <string name="orders_total">TOTAL</string>
+    <string name="orders_pickup">Retiro en mostrador</string>
+    <string name="orders_rate">Calificar platillos</string>
+    <string name="orders_rated">Platillos calificados</string>
+    <string name="orders_reorder">Volver a pedir</string>
+    <string name="orders_reorder_title">Cambiar carrito</string>
+    <string name="orders_reorder_confirmation">Tu carrito tiene productos de %1$s. ¿Quieres reemplazarlos por los de %2$s?</string>
+    <string name="rating_sheet_title">¿Qué te pareció tu orden?</string>
+    <string name="rating_sheet_subtitle">Tu opinión ayuda a mejorar la preparación y calidad del servicio.</string>
+    <string name="rating_sheet_product_count">%1$d unidades en este pedido</string>
+    <string name="rating_sheet_turn">Turno %1$d</string>
+    <string name="rating_sheet_empty">Esta orden no tiene productos disponibles para calificar.</string>
+    <string name="rating_sheet_submit">Enviar calificaciones</string>
+    <string name="rating_sheet_success">¡Gracias por calificar!</string>
+    <string name="rating_sheet_success_action">Aceptar</string>
     <string name="orders_empty">Aún no tienes órdenes</string>
     <string name="orders_empty_desc">¡Pide algo delicioso ahora!</string>
 
@@ -101,6 +120,20 @@
     <string name="wallet_card_number">Número de la tarjeta</string>
     <string name="wallet_card_name">Nombre como aparece en la tarjeta</string>
     <string name="wallet_card_expiry">Vencimiento</string>
+    <string name="wallet_cardholder_name">Titular de la tarjeta</string>
+    <string name="wallet_edit_card">Editar datos</string>
+    <string name="wallet_delete_card">Eliminar tarjeta</string>
+    <string name="wallet_delete_title">¿Eliminar tarjeta?</string>
+    <string name="wallet_delete_confirmation">¿Estás seguro de que deseas desvincular esta tarjeta? Termina en %1$s. Esta acción no se puede deshacer.</string>
+    <string name="wallet_card_ending_in">Termina en %1$s</string>
+    <string name="wallet_keep_card">Conservar tarjeta</string>
+    <string name="wallet_save_card_changes">Guardar cambios</string>
+    <string name="wallet_update_card_title">Actualizar tarjeta</string>
+    <string name="wallet_update_card_hint">Ingresa nuevamente los datos para validar la tarjeta de forma segura.</string>
+    <string name="wallet_add_card_submit">Validar y vincular tarjeta</string>
+    <string name="wallet_update_card_submit">Validar y reemplazar tarjeta</string>
+    <string name="wallet_update_success_title">Tarjeta actualizada</string>
+    <string name="wallet_update_success_desc">La tarjeta fue validada y actualizada correctamente.</string>
     <string name="wallet_card_expiry_placeholder">MMAA</string>
     <string name="wallet_card_cvv">CVV</string>
     <string name="wallet_link_card_button">Vincular Tarjeta</string>
@@ -111,17 +144,27 @@
     <!-- ========================================== -->
     <!-- CARRITO Y CHECKOUT                         -->
     <!-- ========================================== -->
-    <string name="cart_title">Carrito</string>
+    <string name="cart_title">Mi carrito</string>
+    <string name="cart_clear_action">Vaciar carrito</string>
+    <string name="cart_clear_title">Vaciar carrito</string>
+    <string name="cart_clear_confirmation">¿Quieres eliminar todos los productos de tu carrito?</string>
+    <string name="cart_add_more_products">Agregar más productos</string>
+    <string name="cart_add_more_products_at">Agregar más productos de %1$s</string>
     <string name="cart_empty">El carrito está vacío</string>
-    <string name="cart_your_order">Tu Pedido</string>
+    <string name="cart_quick_recommendations">Recomendados rápidos</string>
+    <string name="cart_your_order">Tu pedido</string>
     <string name="cart_info_title">Tu pedido generará un turno de atención</string>
     <string name="cart_info_desc">Acércate al mostrador cuando tu turno aparezca en pantalla.</string>
     <string name="cart_payment_method">Método de Pago</string>
+    <string name="cart_secure_payment">Pago seguro</string>
+    <string name="cart_payment_recommended">Recomendado</string>
+    <string name="cart_payment_checkout_methods">Checkout seguro • Tarjetas, saldo o transferencias</string>
     <string name="cart_no_payment">Sin método de pago</string>
     <string name="cart_no_cards_message">No tienes tarjetas vinculadas. Agrega una desde la pestaña Billetera.</string>
     <string name="cart_tap_to_select">Toca para seleccionar o agregar</string>
     <string name="cart_select_payment">Selecciona método de pago</string>
     <string name="cart_pay_button">Pagar</string>
+    <string name="cart_get_ticket">Obtener turno</string>
     <string name="cart_item_description_fallback">Sin descripción adicional</string>
     <string name="cart_payment_confirm_title">Confirmar pago</string>
     <string name="cart_payment_confirm_question">¿Quieres continuar con el método seleccionado?</string>
@@ -316,8 +359,13 @@
     <string name="user_menu_retry">Intentar de nuevo</string>
     <string name="user_menu_empty">No hay platillos disponibles</string>
     <string name="user_menu_empty_desc">Este establecimiento aún no tiene platillos disponibles.</string>
+    <string name="user_menu_no_results">No se encontraron platillos</string>
+    <string name="store_open_now">Abierto ahora</string>
+    <string name="store_closed_now">Cerrado ahora</string>
     <string name="user_cart_item_added">%1$s agregado al carrito</string>
+    <string name="product_no_reviews">Sin reseñas</string>
     <string name="user_cart_open">Abrir carrito</string>
+    <string name="user_cart_view">Ver carrito</string>
     <string name="user_product_add">Agregar al carrito</string>
     <string name="cart_quantity_decrease">Reducir cantidad</string>
     <string name="cart_quantity_increase">Aumentar cantidad</string>

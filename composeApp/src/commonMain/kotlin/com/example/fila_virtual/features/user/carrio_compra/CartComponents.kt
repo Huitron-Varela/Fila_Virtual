@@ -20,9 +20,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fila_virtual.components.FormHeader
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.components.RemoteImage
+import com.example.fila_virtual.components.cards.RecommendationProductCard
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
 import kotlin.math.round
@@ -40,10 +42,36 @@ fun Double.formatoMoneda(): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartTopBar(onBackClick: () -> Unit) {
-    FormHeader(
+fun CartTopBar(
+    onBackClick: () -> Unit,
+    onClearClick: () -> Unit,
+    canClearCart: Boolean
+) {
+    val haptic = LocalHapticFeedback.current
+    StoreHeader(
         title = stringResource(Res.string.cart_title),
-        onBack = onBackClick
+        onBack = onBackClick,
+        containerColor = LightBackground,
+        backButtonContainerColor = Color.Transparent,
+        titleStyle = MaterialTheme.typography.titleLarge,
+        titleColor = DarkGray,
+        trailingContent = {
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onClearClick()
+                },
+                enabled = canClearCart
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(Res.string.cart_clear_action),
+                    tint = if (canClearCart) MaterialTheme.colorScheme.error else MediumGray.copy(alpha = 0.45f)
+                )
+            }
+        },
+        horizontalPadding = 8.dp,
+        verticalPadding = 12.dp
     )
 }
 
@@ -67,60 +95,98 @@ fun InfoBanner() {
 }
 
 @Composable
-fun EmptyCartState(onBrowseClick: () -> Unit) {
+fun EmptyCartState(
+    recommendations: List<Pair<Producto, String>>,
+    onBrowseClick: () -> Unit,
+    onAddRecommendation: (Producto, String, String) -> Unit
+) {
     val haptic = LocalHapticFeedback.current
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 380.dp)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Surface(
-            modifier = Modifier.size(112.dp),
-            shape = CircleShape,
-            color = Color(0xFFFFF0E6)
+        Column(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 320.dp).padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = PrimaryOrange,
-                    modifier = Modifier.size(52.dp)
-                )
+            Surface(
+                modifier = Modifier.size(112.dp),
+                shape = CircleShape,
+                color = Color(0xFFFFF0E6)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = PrimaryOrange,
+                        modifier = Modifier.size(52.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(22.dp))
+            Text(
+                text = stringResource(Res.string.cart_empty),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = DarkGray,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Parece que aún no has agregado nada. Explora nuestros productos y pide AlToque.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MediumGray,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.widthIn(max = 300.dp)
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onBrowseClick()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
+            ) {
+                Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Explorar menú", fontWeight = FontWeight.Bold)
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = stringResource(Res.string.cart_empty),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = DarkGray,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "Cuando encuentres algo que se te antoje, aparecerá aquí para revisar tu pedido.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MediumGray,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.widthIn(max = 300.dp)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onBrowseClick()
-            },
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
-        ) {
-            Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Explorar menú", fontWeight = FontWeight.Bold)
+
+        if (recommendations.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(width = 4.dp, height = 20.dp),
+                    shape = RoundedCornerShape(2.dp),
+                    color = PrimaryOrange
+                ) {}
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = stringResource(Res.string.cart_quick_recommendations),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGray
+                )
+            }
+            recommendations.forEach { (producto, establecimientoNombre) ->
+                val addedMessage = stringResource(Res.string.user_cart_item_added, producto.nombre)
+                RecommendationProductCard(
+                    producto = producto,
+                    storeName = establecimientoNombre,
+                    onClick = onBrowseClick,
+                    onAddToCartClick = {
+                        onAddRecommendation(producto, establecimientoNombre, addedMessage)
+                    }
+                )
+            }
         }
     }
 }
@@ -146,9 +212,9 @@ fun CartItemsList(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CartProductImage(producto)
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     CartItemDescription(producto, Modifier.weight(1f))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
                     CartQuantityControls(
                         quantity = producto.cantidad,
                         onDecrement = {
@@ -179,140 +245,160 @@ fun PaymentMethodSection(
         listOf(tarjetaSeleccionada) + tarjetas.filterNot { it.selectorKey() == tarjetaSeleccionada.selectorKey() }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "Método de pago",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = DarkGray
-        )
-
-        if (tarjetaSeleccionada == null) {
-            Card(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onSelectCard(null)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = SoftOrangeBg.copy(alpha = 0.7f)),
-                shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryOrange),
-                elevation = CardDefaults.cardElevation(0.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(color = Color(0xFF009EE3), shape = CircleShape, modifier = Modifier.size(36.dp)) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Mercado Pago", fontWeight = FontWeight.Bold, color = DarkGray)
-                        Text(
-                            "Checkout seguro",
-                            color = MediumGray,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Icon(Icons.Default.CheckCircle, contentDescription = "Seleccionado", tint = PrimaryOrange)
-                }
-            }
-        } else {
-            TextButton(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onSelectCard(null)
-                },
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
-            ) {
-                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF009EE3), modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Cambiar a Mercado Pago", color = PrimaryOrange, fontWeight = FontWeight.SemiBold)
-            }
-        }
-
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Tarjetas guardadas",
-                style = MaterialTheme.typography.labelLarge,
+                text = stringResource(Res.string.cart_payment_method),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MediumGray
+                color = DarkGray
             )
-            Text(
-                text = "${tarjetas.size} ${if (tarjetas.size == 1) "tarjeta" else "tarjetas"}",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = PrimaryOrange
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Color(0xFF15966B), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(Res.string.cart_secure_payment),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MediumGray
+                )
+            }
         }
+
+        val mercadoPagoSeleccionado = tarjetaSeleccionada == null
+        PaymentChoiceCard(
+            selected = mercadoPagoSeleccionado,
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onSelectCard(null)
+            },
+            icon = Icons.Default.AccountBalanceWallet,
+            title = "Mercado Pago",
+            detail = stringResource(Res.string.cart_payment_checkout_methods),
+            iconTint = Color(0xFF009EE3),
+            recommended = true
+        )
 
         if (orderedCards.isEmpty()) {
             Text(
-                text = "Aún no tienes tarjetas guardadas.",
-                modifier = Modifier.padding(vertical = 8.dp),
+                text = stringResource(Res.string.cart_no_cards_message),
+                modifier = Modifier.padding(vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MediumGray
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 orderedCards.forEach { tarjeta ->
                     val isSelected = tarjeta.selectorKey() == tarjetaSeleccionada?.selectorKey()
-                    Card(
+                    PaymentChoiceCard(
+                        selected = isSelected,
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onSelectCard(if (isSelected) null else tarjeta)
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) {
-                                SoftOrangeBg.copy(alpha = 0.78f)
-                            } else {
-                                LightSurface.copy(alpha = 0.68f)
-                            }
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (isSelected) 1.dp else 0.5.dp,
-                            color = if (isSelected) PrimaryOrange else BorderGray.copy(alpha = 0.7f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 1.dp else 0.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.CreditCard, contentDescription = null, tint = DarkGray)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "${tarjeta.marca} •••• ${tarjeta.ultimos4}",
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = DarkGray,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = "Vence ${tarjeta.expiracion}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MediumGray
-                                )
-                            }
-                            if (isSelected) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = "Seleccionada", tint = PrimaryOrange)
-                            }
-                        }
-                    }
+                        icon = Icons.Default.CreditCard,
+                        title = "${tarjeta.marca} •••• ${tarjeta.ultimos4}",
+                        detail = "${stringResource(Res.string.cart_expires)} ${tarjeta.expiracion}",
+                        iconTint = DarkGray
+                    )
                 }
             }
         }
+    }
+}
 
+@Composable
+private fun PaymentChoiceCard(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    detail: String,
+    iconTint: Color,
+    recommended: Boolean = false
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (selected) 2.dp else 1.dp,
+            color = if (selected) PrimaryOrange else BorderGray.copy(alpha = 0.65f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 1.dp else 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (iconTint == Color(0xFF009EE3)) Color(0xFFE5F6FC) else ExtraLightGray
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(28.dp))
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        modifier = Modifier.weight(1f, fill = false),
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    if (recommended) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(color = Color(0xFFE0F0FF), shape = RoundedCornerShape(5.dp)) {
+                            Text(
+                                text = stringResource(Res.string.cart_payment_recommended),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                color = Color(0xFF1677B8),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = detail,
+                    color = MediumGray,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .then(
+                        if (selected) Modifier.background(PrimaryOrange, CircleShape)
+                        else Modifier
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                } else {
+                    Surface(
+                        modifier = Modifier.size(20.dp),
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = androidx.compose.foundation.BorderStroke(2.dp, BorderGray)
+                    ) {}
+                }
+            }
+        }
     }
 }
 
@@ -322,7 +408,7 @@ internal fun TarjetaGuardada.selectorKey(): String = "$marca|$ultimos4|$expiraci
 private fun CartProductImage(producto: ProductoCarrito) {
     Box(
         modifier = Modifier
-            .size(72.dp)
+            .size(64.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(ExtraLightGray),
         contentAlignment = Alignment.Center
@@ -358,8 +444,15 @@ private fun CartItemDescription(producto: ProductoCarrito, modifier: Modifier = 
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(4.dp))
+        if (producto.cantidad > 1) {
+            Text(
+                text = "${producto.precio.formatoMoneda()} c/u",
+                color = MediumGray,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
         Text(
-            text = producto.precio.formatoMoneda(),
+            text = (producto.precio * producto.cantidad).formatoMoneda(),
             color = PrimaryOrange,
             fontWeight = FontWeight.Bold
         )
@@ -375,10 +468,10 @@ private fun CartQuantityControls(
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(
             onClick = onDecrement,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(36.dp)
         ) {
             Box(
-                modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                modifier = Modifier.size(28.dp).background(PrimaryOrange, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Remove, contentDescription = stringResource(Res.string.cart_quantity_decrease), tint = Color.White, modifier = Modifier.size(14.dp))
@@ -387,15 +480,15 @@ private fun CartQuantityControls(
         Text(
             text = quantity.toString(),
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.widthIn(min = 32.dp).padding(horizontal = 4.dp),
+            modifier = Modifier.widthIn(min = 24.dp).padding(horizontal = 2.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         IconButton(
             onClick = onIncrement,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(36.dp)
         ) {
             Box(
-                modifier = Modifier.size(32.dp).background(PrimaryOrange, CircleShape),
+                modifier = Modifier.size(28.dp).background(PrimaryOrange, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cart_quantity_increase), tint = Color.White, modifier = Modifier.size(14.dp))

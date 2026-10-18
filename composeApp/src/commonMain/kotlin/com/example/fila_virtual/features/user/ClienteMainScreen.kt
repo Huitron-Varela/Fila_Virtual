@@ -103,8 +103,7 @@ fun ClienteMainScreen(
         )
     } else if (selectedEstablecimiento != null) {
         UserMenuScreen(
-            establecimientoId = selectedEstablecimiento!!.id,
-            nombreEstablecimiento = selectedEstablecimiento!!.nombre,
+            establecimiento = selectedEstablecimiento!!,
             onBack = { selectedEstablecimiento = null },
             // 🔥 AQUÍ LE PASAMOS LA ORDEN DE ABRIR EL CARRITO
             onNavigateToCart = { showCart = true },
@@ -153,7 +152,7 @@ fun ClienteMainScreen(
                                     }
                                 )
                             }
-                            1 -> OrdenesScreen()
+                            1 -> OrdenesScreen(userViewModel = viewModel)
                             2 -> BilleteraScreen(viewModel)
                             3 -> {
                                 ProfileComponent(

@@ -80,6 +80,25 @@
     <!-- ORDERS                                     -->
     <!-- ========================================== -->
     <string name="orders_title">My Orders</string>
+    <string name="orders_active">Active</string>
+    <string name="orders_history">History</string>
+    <string name="orders_all_filter">All (%1$d)</string>
+    <string name="orders_turn">Turn</string>
+    <string name="orders_total">TOTAL</string>
+    <string name="orders_pickup">Pickup at counter</string>
+    <string name="orders_rate">Rate dishes</string>
+    <string name="orders_rated">Dishes rated</string>
+    <string name="orders_reorder">Order again</string>
+    <string name="orders_reorder_title">Change cart</string>
+    <string name="orders_reorder_confirmation">Your cart has products from %1$s. Replace them with products from %2$s?</string>
+    <string name="rating_sheet_title">How was your order?</string>
+    <string name="rating_sheet_subtitle">Your feedback helps improve preparation and service quality.</string>
+    <string name="rating_sheet_product_count">%1$d items in this order</string>
+    <string name="rating_sheet_turn">Turn %1$d</string>
+    <string name="rating_sheet_empty">This order has no products available to rate.</string>
+    <string name="rating_sheet_submit">Submit ratings</string>
+    <string name="rating_sheet_success">Thanks for your feedback!</string>
+    <string name="rating_sheet_success_action">Done</string>
     <string name="orders_empty">You don\'t have any orders yet</string>
     <string name="orders_empty_desc">Order something delicious now!</string>
 
@@ -102,6 +121,20 @@
     <string name="wallet_card_number">Card number</string>
     <string name="wallet_card_name">Name as it appears on the card</string>
     <string name="wallet_card_expiry">Expiration</string>
+    <string name="wallet_cardholder_name">Cardholder name</string>
+    <string name="wallet_edit_card">Edit details</string>
+    <string name="wallet_delete_card">Delete card</string>
+    <string name="wallet_delete_title">Delete card?</string>
+    <string name="wallet_delete_confirmation">Are you sure you want to unlink this card? It ends in %1$s. This action cannot be undone.</string>
+    <string name="wallet_card_ending_in">Ends in %1$s</string>
+    <string name="wallet_keep_card">Keep card</string>
+    <string name="wallet_save_card_changes">Save changes</string>
+    <string name="wallet_update_card_title">Update card</string>
+    <string name="wallet_update_card_hint">Enter the details again to securely validate the card.</string>
+    <string name="wallet_add_card_submit">Validate and link card</string>
+    <string name="wallet_update_card_submit">Validate and replace card</string>
+    <string name="wallet_update_success_title">Card updated</string>
+    <string name="wallet_update_success_desc">The card was validated and updated successfully.</string>
     <string name="wallet_card_expiry_placeholder">MMYY</string>
     <string name="wallet_card_cvv">CVV</string>
     <string name="wallet_link_card_button">Link Card</string>
@@ -112,17 +145,27 @@
     <!-- ========================================== -->
     <!-- CART & CHECKOUT                            -->
     <!-- ========================================== -->
-    <string name="cart_title">Cart</string>
+    <string name="cart_title">My cart</string>
+    <string name="cart_clear_action">Empty cart</string>
+    <string name="cart_clear_title">Empty cart</string>
+    <string name="cart_clear_confirmation">Remove all products from your cart?</string>
+    <string name="cart_add_more_products">Add more products</string>
+    <string name="cart_add_more_products_at">Add more products from %1$s</string>
     <string name="cart_empty">Your cart is empty</string>
-    <string name="cart_your_order">Your Order</string>
+    <string name="cart_quick_recommendations">Quick recommendations</string>
+    <string name="cart_your_order">Your order</string>
     <string name="cart_info_title">Your order will generate a service ticket</string>
     <string name="cart_info_desc">Approach the counter when your ticket appears on the screen.</string>
     <string name="cart_payment_method">Payment Method</string>
+    <string name="cart_secure_payment">Secure payment</string>
+    <string name="cart_payment_recommended">Recommended</string>
+    <string name="cart_payment_checkout_methods">Secure checkout • Cards, balance or transfers</string>
     <string name="cart_no_payment">No payment method</string>
     <string name="cart_no_cards_message">You have no linked cards. Add one from the Wallet tab.</string>
     <string name="cart_tap_to_select">Tap to select or add</string>
     <string name="cart_select_payment">Select payment method</string>
     <string name="cart_pay_button">Pay</string>
+    <string name="cart_get_ticket">Get ticket</string>
     <string name="cart_item_description_fallback">No additional description</string>
     <string name="cart_payment_confirm_title">Confirm payment</string>
     <string name="cart_payment_confirm_question">Continue with the selected payment method?</string>
@@ -329,8 +372,13 @@
     <string name="user_menu_retry">Try again</string>
     <string name="user_menu_empty">No dishes available</string>
     <string name="user_menu_empty_desc">This establishment does not have any available dishes yet.</string>
+    <string name="user_menu_no_results">No dishes found</string>
+    <string name="store_open_now">Open now</string>
+    <string name="store_closed_now">Closed now</string>
     <string name="user_cart_item_added">%1$s added to cart</string>
+    <string name="product_no_reviews">No reviews yet</string>
     <string name="user_cart_open">Open cart</string>
+    <string name="user_cart_view">View cart</string>
     <string name="user_product_add">Add to cart</string>
     <string name="cart_quantity_decrease">Decrease quantity</string>
     <string name="cart_quantity_increase">Increase quantity</string>

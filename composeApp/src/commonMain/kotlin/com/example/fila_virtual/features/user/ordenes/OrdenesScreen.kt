@@ -38,15 +38,28 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
+import com.example.fila_virtual.components.ActiveOrderCard
+import com.example.fila_virtual.components.HistoryOrderCard
+import com.example.fila_virtual.components.OrderRatingSheet
+import com.example.fila_virtual.components.OrdersSelector
+import com.example.fila_virtual.components.Heders.StoreHeader
 
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.data.EstadoPedido
 import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.codigoVisible
+import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.repository.ProductoRepository
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.orders_reorder_confirmation
+import fila_virtual.composeapp.generated.resources.orders_reorder_title
+import fila_virtual.composeapp.generated.resources.btn_cancel
+import org.jetbrains.compose.resources.stringResource
 
 import androidx.compose.foundation.Image
+import fila_virtual.composeapp.generated.resources.orders_reorder
+import fila_virtual.composeapp.generated.resources.orders_title
 import io.github.alexzhirkevich.qrose.options.QrErrorCorrectionLevel
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 
@@ -83,13 +96,13 @@ fun EstadoPedido.toUIColor(): Color {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdenesScreen(
+    userViewModel: UserViewModel,
     viewModel: OrdenesViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
     val haptic = LocalHapticFeedback.current
     val horizontalPadding = windowSize.compactDp(20)
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Activas", "Historial")
 
     val pedidosActivos by viewModel.pedidosActivos.collectAsState()
     val pedidosHistorial by viewModel.pedidosHistorial.collectAsState()
@@ -102,9 +115,26 @@ fun OrdenesScreen(
 
     var showRatingModal by remember { mutableStateOf(false) }
     var selectedPedidoForRating by remember { mutableStateOf<Pedido?>(null) }
+    var selectedPedidoForReorder by remember { mutableStateOf<Pedido?>(null) }
 
     // 🔥 Memoria del ViewModel que sobrevive a la navegación
     val ratedOrders by viewModel.pedidosCalificados.collectAsState()
+    val cartItems by userViewModel.carrito.collectAsState()
+    val restoreOrderToCart: (Pedido) -> Unit = { pedido ->
+        pedido.productos.forEach { producto ->
+            repeat(producto.cantidad) {
+                userViewModel.agregarAlCarrito(
+                    idProducto = producto.idProducto,
+                    nombre = producto.nombre,
+                    precio = producto.precio,
+                    establecimientoId = pedido.establecimientoId,
+                    establecimientoNombre = pedido.establecimientoNombre,
+                    imagenUrl = producto.imagenUrl,
+                    descripcion = producto.descripcion
+                )
+            }
+        }
+    }
 
     AppPullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -112,46 +142,24 @@ fun OrdenesScreen(
         modifier = Modifier.fillMaxSize().background(LightBackground)
     ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = "Mis Órdenes",
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(20)),
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(top = windowSize.compactDp(24), bottom = 16.dp)
+        StoreHeader(
+            title = stringResource(Res.string.orders_title),
+            modifier = Modifier.padding(top = windowSize.compactDp(24), bottom = 16.dp),
+            containerColor = LightBackground,
+            titleStyle = MaterialTheme.typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(20)),
+            titleColor = MaterialTheme.colorScheme.onBackground,
+            includeStatusBarPadding = false,
+            minHeight = 0.dp,
+            verticalPadding = 0.dp
         )
 
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            containerColor = Color.Transparent,
-            modifier = Modifier.padding(horizontal = horizontalPadding),
-            indicator = { tabPositions ->
-                if (selectedTabIndex < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = {
-                        if (selectedTabIndex != index) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            selectedTabIndex = index
-                        }
-                    },
-                    text = {
-                        Text(
-                            text = title,
-                            fontWeight = FontWeight.Bold,
-                            color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else MediumGray
-                        )
-                    }
-                )
-            }
-        }
+        OrdersSelector(
+            selectedTab = selectedTabIndex,
+            activeCount = pedidosActivos.size,
+            historyCount = pedidosHistorial.size,
+            onTabSelected = { selectedTabIndex = it },
+            modifier = Modifier.padding(horizontal = horizontalPadding)
+        )
 
         if (isLoading) {
             AppListSkeleton(
@@ -174,10 +182,8 @@ fun OrdenesScreen(
                             item { OrdersEmptyState(isHistory = false) }
                         } else {
                             items(items = pedidosActivos, key = { pedido -> pedido.id }) { pedido ->
-                                OrderCard(
-                                    restaurantName = pedido.descripcion,
-                                    description = "Folio de compra: #${pedido.id.takeLast(6).uppercase()}",
-                                    price = "$${pedido.total}",
+                                ActiveOrderCard(
+                                    pedido = pedido,
                                     status = pedido.estado.toUIText(),
                                     statusColor = pedido.estado.toUIColor(),
                                     onClick = {
@@ -199,16 +205,23 @@ fun OrdenesScreen(
                             item { OrdersEmptyState(isHistory = true) }
                         } else {
                             items(items = pedidosHistorial, key = { pedido -> pedido.id }) { pedido ->
-                                OrderHistoryCard(
-                                    restaurantName = pedido.descripcion,
-                                    description = "Folio de compra: #${pedido.id.takeLast(6).uppercase()}",
-                                    price = "$${pedido.total}",
+                                HistoryOrderCard(
+                                    pedido = pedido,
                                     status = pedido.estado.toUIText(),
+                                    statusColor = pedido.estado.toUIColor(),
                                     yaCalificado = ratedOrders.contains(pedido.id),
                                     onRateClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         selectedPedidoForRating = pedido
                                         showRatingModal = true
+                                    },
+                                    canReorder = pedido.productos.isNotEmpty(),
+                                    onReorderClick = {
+                                        if (cartItems.isNotEmpty() && userViewModel.carritoEstablecimientoId != pedido.establecimientoId) {
+                                            selectedPedidoForReorder = pedido
+                                        } else {
+                                            restoreOrderToCart(pedido)
+                                        }
                                     }
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -373,6 +386,36 @@ fun OrdenesScreen(
             }
         )
     }
+
+    selectedPedidoForReorder?.let { pedido ->
+        AlertDialog(
+            onDismissRequest = { selectedPedidoForReorder = null },
+            title = { Text(stringResource(Res.string.orders_reorder_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        Res.string.orders_reorder_confirmation,
+                        userViewModel.carritoEstablecimientoNombre,
+                        pedido.establecimientoNombre
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        userViewModel.vaciarCarrito()
+                        restoreOrderToCart(pedido)
+                        selectedPedidoForReorder = null
+                    }
+                ) { Text(stringResource(Res.string.orders_reorder)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedPedidoForReorder = null }) {
+                    Text(stringResource(Res.string.btn_cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -419,180 +462,6 @@ fun ProgressLine(isActive: Boolean, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun OrderCard(restaurantName: String, description: String, price: String, status: String, statusColor: Color, onClick: () -> Unit) {
-    val haptic = LocalHapticFeedback.current
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize()
-            .clickable {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onClick()
-            },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        BoxWithConstraints {
-            val compact = maxWidth < 380.dp
-            if (compact) {
-                Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        OrderFoodIcon(size = 56.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        OrderDetails(restaurantName, description, price, Modifier.weight(1f))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        OrderStatusAndArrow(status, statusColor)
-                    }
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    OrderFoodIcon(size = 68.dp)
-                    Spacer(modifier = Modifier.width(14.dp))
-                    OrderDetails(restaurantName, description, price, Modifier.weight(1f))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    OrderStatusAndArrow(status, statusColor)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun OrderHistoryCard(restaurantName: String, description: String, price: String, status: String, yaCalificado: Boolean, onRateClick: () -> Unit) {
-    val haptic = LocalHapticFeedback.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth().animateContentSize(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        BoxWithConstraints {
-            val compact = maxWidth < 380.dp
-            Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-                if (compact) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OrderFoodIcon(size = 56.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        OrderDetails(restaurantName, description, price, Modifier.weight(1f))
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OrderStatusBadge(status, MediumGray)
-                } else {
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OrderFoodIcon(size = 68.dp)
-                        Spacer(modifier = Modifier.width(14.dp))
-                        OrderDetails(restaurantName, description, price, Modifier.weight(1f))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        OrderStatusBadge(status, MediumGray)
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = LightGray.copy(alpha = 0.7f))
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onRateClick()
-                    },
-                    enabled = !yaCalificado,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, if (yaCalificado) LightGray else PrimaryOrange),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryOrange, disabledContentColor = MediumGray)
-                ) {
-                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (yaCalificado) "Platillos calificados" else "Calificar platillos", fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderFoodIcon(size: Dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(12.dp))
-            .background(ExtraLightGray),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray, modifier = Modifier.size(size * 0.46f))
-    }
-}
-
-@Composable
-private fun OrderDetails(
-    name: String,
-    folio: String,
-    price: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = name,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodyLarge,
-            color = DarkGray,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = folio,
-            color = MediumGray,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(price, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge, color = PrimaryOrange)
-    }
-}
-
-@Composable
-private fun OrderStatusBadge(status: String, color: Color) {
-    val animatedColor by animateColorAsState(targetValue = color, label = "order_status_color")
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = animatedColor.copy(alpha = 0.13f)
-    ) {
-        Text(
-            text = status,
-            color = animatedColor,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
-        )
-    }
-}
-
-@Composable
-private fun OrderStatusAndArrow(status: String, statusColor: Color) {
-    Column(
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        OrderStatusBadge(status, statusColor)
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = "Ver detalle de la orden",
-            tint = MediumGray
-        )
-    }
-}
-
-@Composable
 private fun OrdersEmptyState(isHistory: Boolean) {
     Column(
         modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp).padding(24.dp),
@@ -629,135 +498,40 @@ fun RatingModal(
     onDismiss: () -> Unit,
     onRatingSubmitted: () -> Unit
 ) {
-    val windowSize = LocalWindowSize.current
-    val haptic = LocalHapticFeedback.current
-    var productRatings by remember { mutableStateOf(mapOf<String, Int>()) }
+    var productRatings by remember(pedido.id) { mutableStateOf(mapOf<String, Int>()) }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showSuccessMessage by remember { mutableStateOf(false) }
-
     val scope = rememberCoroutineScope()
     val productoRepo = remember { ProductoRepository() }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val modalMaxHeight = (windowSize.height * 0.82f).coerceAtMost(720.dp)
-
-    val productosDeLaOrden = pedido.productos
-
-    ModalBottomSheet(
-        onDismissRequest = { if (!isSubmitting) onDismiss() },
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface
-    ) {
-        if (showSuccessMessage) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = modalMaxHeight)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = windowSize.compactDp(24))
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(Icons.Default.ThumbUp, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(48.dp))
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("¡Gracias por calificar!", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onRatingSubmitted()
-                    },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Aceptar", color = Color.White)
+    OrderRatingSheet(
+        pedido = pedido,
+        ratings = productRatings,
+        isSubmitting = isSubmitting,
+        hasSubmitted = showSuccessMessage,
+        errorMessage = errorMessage,
+        onRatingChanged = { productId, rating ->
+            productRatings = productRatings + (productId to rating)
+        },
+        onSubmit = {
+            isSubmitting = true
+            errorMessage = null
+            scope.launch {
+                var allSuccess = true
+                for ((productId, rating) in productRatings) {
+                    if (productoRepo.calificarProducto(productId, rating).isFailure) {
+                        allSuccess = false
+                    }
                 }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = modalMaxHeight)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = windowSize.compactDp(24))
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("¿Qué te pareció tu orden?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (productosDeLaOrden.isEmpty()) {
-                    Text("Esta orden es antigua y no tiene detalles para calificar.", color = MediumGray, modifier = Modifier.padding(vertical = 24.dp))
+                isSubmitting = false
+                if (allSuccess) {
+                    showSuccessMessage = true
                 } else {
-                    productosDeLaOrden.forEach { producto ->
-                        Text(text = producto.nombre, fontWeight = FontWeight.Bold, color = DarkGray, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (i in 1..5) {
-                                val currentRating = productRatings[producto.idProducto] ?: 0
-                                Icon(
-                                    imageVector = if (i <= currentRating) Icons.Default.Star else Icons.Outlined.StarOutline,
-                                    contentDescription = "Estrella",
-                                    tint = if (i <= currentRating) TrafficYellow else BorderGray,
-                                    modifier = Modifier.size(windowSize.compactDp(36)).clickable {
-                                        if (!isSubmitting) {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            val newMap = productRatings.toMutableMap()
-                                            newMap[producto.idProducto] = i
-                                            productRatings = newMap
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(top = 16.dp), color = LightGray.copy(alpha = 0.3f))
-                    }
+                    errorMessage = "No se pudieron enviar todas las calificaciones."
                 }
-
-                if (errorMessage != null) {
-                    Text("Error: $errorMessage", color = TrafficRed, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(vertical = 8.dp))
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        isSubmitting = true
-                        errorMessage = null
-                        scope.launch {
-                            var allSuccess = true
-                            for ((idProd, rating) in productRatings) {
-                                val result = productoRepo.calificarProducto(idProd, rating)
-                                if (result.isFailure) allSuccess = false
-                            }
-                            isSubmitting = false
-                            if (allSuccess) showSuccessMessage = true else errorMessage = "No se pudieron enviar todas las calificaciones."
-                        }
-                    },
-                    enabled = productRatings.isNotEmpty() && !isSubmitting,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (isSubmitting) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    else Text("Enviar calificaciones", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    "Cancelar",
-                    fontWeight = FontWeight.Bold,
-                    color = MediumGray,
-                    modifier = Modifier.clickable {
-                        if (!isSubmitting) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onDismiss()
-                        }
-                    }
-                )
             }
-        }
-    }
+        },
+        onDismiss = onDismiss,
+        onSuccessAcknowledged = onRatingSubmitted
+    )
 }

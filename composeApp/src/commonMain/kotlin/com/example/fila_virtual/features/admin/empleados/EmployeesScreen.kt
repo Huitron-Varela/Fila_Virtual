@@ -38,6 +38,7 @@ import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
 import com.example.fila_virtual.components.AppSnackbar
 import com.example.fila_virtual.components.AppSnackbarHost
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
@@ -167,24 +168,19 @@ fun EmployeesScreen(
                 .padding()
                 .padding(horizontal = horizontalPadding)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = windowSize.compactDp(24), bottom = 16.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = stringResource(Res.string.emp_title_manage),
-                    style = typography.titleLarge.copy(
-                        fontSize = windowSize.adaptiveSp(20),
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
-            }
+            StoreHeader(
+                title = stringResource(Res.string.emp_title_manage),
+                modifier = Modifier.padding(top = windowSize.compactDp(24), bottom = 16.dp),
+                containerColor = colorScheme.background,
+                titleStyle = typography.titleLarge.copy(
+                    fontSize = windowSize.adaptiveSp(20),
+                    fontWeight = FontWeight.Bold
+                ),
+                titleColor = colorScheme.onBackground,
+                includeStatusBarPadding = false,
+                minHeight = 0.dp,
+                verticalPadding = 0.dp
+            )
 
             if (currentEstablecimientoId == "TODOS" || currentEstablecimientoId.isNotEmpty()) {
                 SearchBar(

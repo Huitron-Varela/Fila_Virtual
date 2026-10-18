@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.AppListSkeleton
 import com.example.fila_virtual.components.AppPullToRefreshBox
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.core.theme.BorderGray
 import com.example.fila_virtual.core.theme.DarkGray
 import com.example.fila_virtual.core.theme.LightBackground
@@ -138,6 +139,23 @@ fun EmpleadoHome(
     val estacionSeleccionada = estaciones.firstOrNull { it.name == estacionSeleccionadaName }
     val estadisticasVisibles = estadisticasSesion ?: resumenUltimoTurno
     val haptic = LocalHapticFeedback.current
+    val headerTitle = stringResource(Res.string.emp_home_hello, nombreYApellido(nombre).ifBlank { "—" })
+    val sectionTitle = stringResource(
+        when {
+            turnoEnCurso -> Res.string.emp_shift_active
+            soloGerente -> Res.string.emp_gerente_home_title
+            else -> Res.string.emp_home_title
+        }
+    )
+    val roleLabel = stringResource(if (soloGerente) Res.string.emp_role_gerente else Res.string.emp_home_badge)
+    val sectionDescription = stringResource(
+        when {
+            sinAsignacion -> Res.string.emp_no_branch
+            turnoEnCurso -> Res.string.emp_home_active_hint
+            soloGerente -> Res.string.emp_gerente_home_hint
+            else -> Res.string.emp_home_subtitle
+        }
+    )
 
     AppPullToRefreshBox(
         isRefreshing = cargando,
@@ -151,49 +169,23 @@ fun EmpleadoHome(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        Text(
-                            stringResource(Res.string.emp_home_hello, nombreYApellido(nombre).ifBlank { "—" }),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkGray,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            stringResource(if (soloGerente) Res.string.emp_role_gerente else Res.string.emp_home_badge),
-                            color = PrimaryOrange,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(SoftOrangeBg)
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-                    Text(
-                        text = when {
-                            turnoEnCurso -> stringResource(Res.string.emp_shift_active)
-                            soloGerente -> stringResource(Res.string.emp_gerente_home_title)
-                            else -> stringResource(Res.string.emp_home_title)
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (turnoEnCurso) PrimaryOrange else DarkGray
-                    )
+                StoreHeader(
+                    title = headerTitle,
+                    subtitle = "$roleLabel · $sectionTitle",
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    containerColor = LightBackground,
+                    titleStyle = MaterialTheme.typography.titleLarge,
+                    titleColor = DarkGray,
+                    centerTitle = false,
+                    includeStatusBarPadding = false,
+                    minHeight = 0.dp,
+                    horizontalPadding = 0.dp,
+                    verticalPadding = 0.dp
+                )
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        stringResource(
-                            when {
-                                sinAsignacion -> Res.string.emp_no_branch
-                                turnoEnCurso -> Res.string.emp_home_active_hint
-                                soloGerente -> Res.string.emp_gerente_home_hint
-                                else -> Res.string.emp_home_subtitle
-                            }
-                        ),
+                        sectionDescription,
                         style = MaterialTheme.typography.bodySmall,
                         color = MediumGray
                     )

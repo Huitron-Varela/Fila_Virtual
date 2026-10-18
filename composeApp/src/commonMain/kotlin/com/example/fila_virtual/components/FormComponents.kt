@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.core.BackHandler
 import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.components.Heders.StoreHeader
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import com.example.fila_virtual.core.ImageBytesPreview
@@ -43,39 +43,21 @@ fun FormHeader(
 ) {
     BackHandler(onBack = onBack)
     val windowSize = LocalWindowSize.current
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = LightBackground // Fondo gris uniforme
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.CenterStart)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                    contentDescription = "Atrás",
-                    tint = DarkGray,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = windowSize.adaptiveSp(20),
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-    }
+    StoreHeader(
+        title = title,
+        onBack = onBack,
+        modifier = modifier,
+        containerColor = LightBackground,
+        backButtonContainerColor = Color.Transparent,
+        titleStyle = MaterialTheme.typography.titleLarge.copy(
+            fontSize = windowSize.adaptiveSp(20),
+            fontWeight = FontWeight.Bold
+        ),
+        titleColor = MaterialTheme.colorScheme.onBackground,
+        backContentDescription = "Atrás",
+        horizontalPadding = 8.dp,
+        verticalPadding = 12.dp
+    )
 }
 
 @Composable

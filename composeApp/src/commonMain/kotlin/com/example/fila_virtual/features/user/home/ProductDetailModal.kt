@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,12 +21,18 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlin.math.round
+import kotlin.math.roundToInt
 import com.example.fila_virtual.components.RemoteImage
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Producto
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.product_no_reviews
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +48,10 @@ fun ProductDetailModal(
     var quantity by remember(producto.id) { mutableIntStateOf(1) }
     val horizontalPadding = windowSize.compactDp(20)
     val modalMaxHeight = (windowSize.height * 0.82f).coerceAtMost(760.dp)
+    val totalCents = round(producto.precio * quantity * 100).toLong()
+    val totalFormatted = "$${totalCents / 100}.${(totalCents % 100).toString().padStart(2, '0')}"
+    val priceFormatted = formatProductPrice(producto.precio)
+    val rating = (producto.ratingPromedio.coerceIn(0.0, 5.0) * 10).roundToInt() / 10.0
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -59,10 +67,10 @@ fun ProductDetailModal(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = if (windowSize.isSmallScreen) 160.dp else 220.dp)
-                    .aspectRatio(if (windowSize.isSmallScreen) 1.5f else 1.65f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF1E1E24)),
+                    .heightIn(max = if (windowSize.isSmallScreen) 180.dp else 240.dp)
+                    .aspectRatio(if (windowSize.isSmallScreen) 2.1f else 2.4f)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(ExtraLightGray),
                 contentAlignment = Alignment.Center
             ) {
                 RemoteImage(
@@ -71,100 +79,84 @@ fun ProductDetailModal(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     fallback = {
-                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray, modifier = Modifier.size(48.dp))
                     }
                 )
-
-                Surface(
-                    color = ActionBlue,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp)
-                        .widthIn(max = 180.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Outlined.Restaurant,
-                            contentDescription = null,
-                            tint = LightSurface,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = producto.categoria,
-                            color = LightSurface,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
             }
 
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = horizontalPadding, vertical = 16.dp)
+                    .padding(horizontal = horizontalPadding, vertical = 18.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.size(7.dp).background(TrafficGreen, CircleShape))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = listOf(storeName, producto.categoria).filter(String::isNotBlank).joinToString(" • "),
+                        modifier = Modifier.weight(1f),
+                        color = MediumGray,
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (producto.totalVotos > 0) {
+                        Surface(color = SoftOrangeBg, shape = RoundedCornerShape(8.dp)) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.Star, contentDescription = null, tint = TrafficYellow, modifier = Modifier.size(14.dp))
+                                Text(
+                                    text = "$rating (${producto.totalVotos})",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkGray,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(Res.string.product_no_reviews),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MediumGray,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = producto.nombre,
                         modifier = Modifier.weight(1f).padding(end = 12.dp),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = DarkGray,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "$${producto.precio}",
+                        text = priceFormatted,
                         color = PrimaryOrange,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1
                     )
                 }
-                Text(text = storeName, color = MediumGray, style = MaterialTheme.typography.bodyMedium)
-
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (producto.totalVotos > 0) {
-                        val fullStars = producto.ratingPromedio.coerceIn(0.0, 5.0).toInt()
-                        repeat(5) { index ->
-                            Icon(
-                                imageVector = if (index < fullStars) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = null,
-                                tint = TrafficYellow,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Text(
-                            text = "${producto.ratingPromedio} (${producto.totalVotos} reseñas)",
-                            modifier = Modifier.padding(start = 6.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MediumGray
-                        )
-                    } else {
-                        Text("Aún sin reseñas", style = MaterialTheme.typography.labelMedium, color = MediumGray)
-                    }
-                }
 
                 Text(
-                    text = producto.descripcion.ifBlank { "Este producto no tiene descripción." },
-                    modifier = Modifier.padding(top = 12.dp),
+                    text = producto.descripcion.ifBlank { "Este producto no tiene una descripción disponible." },
+                    modifier = Modifier.padding(top = 14.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MediumGray
                 )
-
             }
 
             BoxWithConstraints(
@@ -179,8 +171,14 @@ fun ProductDetailModal(
                 val quantitySelector: @Composable (Modifier) -> Unit = { modifier ->
                     QuantitySelector(
                         quantity = quantity,
-                        onDecrease = { if (quantity > 1) quantity-- },
-                        onIncrease = { quantity++ },
+                        onDecrease = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (quantity > 1) quantity--
+                        },
+                        onIncrease = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            quantity = (quantity + 1).coerceAtMost(99)
+                        },
                         modifier = modifier
                     )
                 }
@@ -194,17 +192,12 @@ fun ProductDetailModal(
                         quantitySelector(Modifier)
                         Button(
                             onClick = addToCart,
-                            modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                             contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
-                            Text(
-                                "Añadir al carrito",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontWeight = FontWeight.Bold
-                            )
+                            AddToCartButtonContent(totalFormatted)
                         }
                     }
                 } else {
@@ -216,22 +209,49 @@ fun ProductDetailModal(
                         quantitySelector(Modifier.width(136.dp))
                         Button(
                             onClick = addToCart,
-                            modifier = Modifier.weight(1f).height(52.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                             contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
-                            Text(
-                                "Añadir al carrito",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontWeight = FontWeight.Bold
-                            )
+                            AddToCartButtonContent(totalFormatted)
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AddToCartButtonContent(total: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "Añadir al carrito",
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Surface(
+            color = Color.White.copy(alpha = 0.2f),
+            shape = RoundedCornerShape(50)
+        ) {
+            Text(
+                text = total,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
     }
 }
 
@@ -288,4 +308,9 @@ private fun QuantitySelector(
             }
         }
     }
+}
+
+private fun formatProductPrice(value: Double): String {
+    val cents = round(value * 100).toLong()
+    return "$${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
 }

@@ -28,7 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.components.Heders.StoreHeader
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.TarjetaGuardada
@@ -65,6 +67,9 @@ fun BilleteraScreen(
     val tarjetaVinculadaSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var tarjetaAEliminar by remember { mutableStateOf<TarjetaGuardada?>(null) }
+    var tarjetaAEditar by remember { mutableStateOf<TarjetaGuardada?>(null) }
+    var tarjetaConfirmada by remember { mutableStateOf<TarjetaGuardada?>(null) }
+    var tarjetaFueActualizada by remember { mutableStateOf(false) }
 
     var showProximamente by rememberSaveable { mutableStateOf(false) }
     var showTarjetaVinculadaModal by rememberSaveable { mutableStateOf(false) }
@@ -74,6 +79,8 @@ fun BilleteraScreen(
 
     LaunchedEffect(pendingAction) {
         if (pendingAction == "abrir_formulario") {
+            tarjetaAEditar = null
+            viewModel.resetWalletCardForm()
             currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
             showBottomSheet = true
             viewModel.clearPendingWalletAction()
@@ -90,16 +97,16 @@ fun BilleteraScreen(
     Box(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize().padding(bottom = 24.dp)) {
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = stringResource(Res.string.wallet_payment_methods_title),
-                    style = typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(20), fontWeight = FontWeight.Bold),
-                    color = colorScheme.onBackground
-                )
-            }
+            StoreHeader(
+                title = stringResource(Res.string.wallet_payment_methods_title),
+                modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
+                containerColor = colorScheme.background,
+                titleStyle = typography.titleLarge.copy(fontSize = windowSize.adaptiveSp(20), fontWeight = FontWeight.Bold),
+                titleColor = colorScheme.onBackground,
+                includeStatusBarPadding = false,
+                minHeight = 0.dp,
+                verticalPadding = 0.dp
+            )
 
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
 
@@ -153,14 +160,46 @@ fun BilleteraScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         items(metodosPago) { tarjeta ->
-                            Box(modifier = Modifier.fillParentMaxWidth(0.85f)) {
+                            Column(
+                                modifier = Modifier.fillParentMaxWidth(0.85f),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
                                 CreditCardView(
                                     cardNumber = tarjeta.ultimos4,
                                     cardHolder = tarjeta.nombreTitular,
                                     expiryDate = tarjeta.expiracion,
-                                    cardBrand = tarjeta.marca,
-                                    onDelete = { tarjetaAEliminar = tarjeta }
+                                    cardBrand = tarjeta.marca
                                 )
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            tarjetaAEditar = tarjeta
+                                            viewModel.resetWalletCardForm()
+                                            currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
+                                            showBottomSheet = true
+                                        },
+                                        modifier = Modifier.weight(1f).height(44.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray.copy(alpha = 0.7f)),
+                                        contentPadding = PaddingValues(horizontal = 8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(stringResource(Res.string.wallet_edit_card), maxLines = 1)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { tarjetaAEliminar = tarjeta },
+                                        modifier = Modifier.weight(1f).height(44.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.error.copy(alpha = 0.55f)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorScheme.error),
+                                        contentPadding = PaddingValues(horizontal = 8.dp)
+                                    ) {
+                                        Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(stringResource(Res.string.wallet_delete_card), maxLines = 1)
+                                    }
+                                }
                             }
                         }
                     }
@@ -206,7 +245,8 @@ fun BilleteraScreen(
                 Button(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.clearWalletMessage()
+                        tarjetaAEditar = null
+                        viewModel.resetWalletCardForm()
                         currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
                         showProximamente = false
                         showBottomSheet = true
@@ -235,7 +275,10 @@ fun BilleteraScreen(
 
         if (showBottomSheet) {
             ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false },
+                onDismissRequest = {
+                    showBottomSheet = false
+                    tarjetaAEditar = null
+                },
                 sheetState = sheetState,
                 containerColor = colorScheme.surface
             ) {
@@ -255,7 +298,11 @@ fun BilleteraScreen(
                     BottomSheetStateView.FORMULARIO_TARJETA -> {
                         FormularioTarjetaScreen(
                             viewModel = viewModel,
-                            onSuccess = {
+                            tarjetaAReemplazar = tarjetaAEditar,
+                            onSuccess = { tarjetaGuardada ->
+                                tarjetaConfirmada = tarjetaGuardada
+                                tarjetaFueActualizada = tarjetaAEditar != null
+                                tarjetaAEditar = null
                                 coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                                     showBottomSheet = false
                                     showTarjetaVinculadaModal = true
@@ -311,10 +358,12 @@ fun BilleteraScreen(
         }
 
         if (showTarjetaVinculadaModal) {
-            val ultimaTarjeta = viewModel.usuario?.metodosPago?.lastOrNull()
+            val ultimaTarjeta = tarjetaConfirmada ?: viewModel.usuario?.metodosPago?.lastOrNull()
             ModalBottomSheet(
                 onDismissRequest = {
                     showTarjetaVinculadaModal = false
+                    tarjetaConfirmada = null
+                    tarjetaFueActualizada = false
                     viewModel.clearWalletMessage()
                 },
                 sheetState = tarjetaVinculadaSheetState,
@@ -328,9 +377,19 @@ fun BilleteraScreen(
                 ) {
                     Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(56.dp))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = "Tarjeta vinculada", style = typography.titleLarge.copy(fontWeight = FontWeight.Bold), textAlign = TextAlign.Center, color = colorScheme.onSurface)
+                    Text(
+                        text = stringResource(if (tarjetaFueActualizada) Res.string.wallet_update_success_title else Res.string.wallet_success_title),
+                        style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        textAlign = TextAlign.Center,
+                        color = colorScheme.onSurface
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Tu tarjeta fue validada correctamente y se agregó a tu Wallet.", style = typography.bodyMedium, color = MediumGray, textAlign = TextAlign.Center)
+                    Text(
+                        text = stringResource(if (tarjetaFueActualizada) Res.string.wallet_update_success_desc else Res.string.wallet_success_desc),
+                        style = typography.bodyMedium,
+                        color = MediumGray,
+                        textAlign = TextAlign.Center
+                    )
 
                     if (ultimaTarjeta != null) {
                         Spacer(modifier = Modifier.height(20.dp))
@@ -349,6 +408,8 @@ fun BilleteraScreen(
                         onClick = {
                             coroutineScope.launch { tarjetaVinculadaSheetState.hide() }.invokeOnCompletion {
                                 showTarjetaVinculadaModal = false
+                                tarjetaConfirmada = null
+                                tarjetaFueActualizada = false
                                 viewModel.clearWalletMessage()
                             }
                         },
@@ -363,29 +424,124 @@ fun BilleteraScreen(
         }
 
         if (tarjetaAEliminar != null) {
-            AlertDialog(
-                onDismissRequest = { tarjetaAEliminar = null },
-                title = { Text(text = "Eliminar Tarjeta", style = typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
-                text = { Text(text = "¿Estás seguro que deseas desvincular la tarjeta terminada en ${tarjetaAEliminar?.ultimos4}? Esta acción no se puede deshacer.", style = typography.bodyMedium) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            tarjetaAEliminar?.let { tarjeta -> viewModel.eliminarTarjeta(tarjeta.ultimos4) }
-                            tarjetaAEliminar = null
-                        }
+            val tarjeta = tarjetaAEliminar!!
+            Dialog(onDismissRequest = { tarjetaAEliminar = null }) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(0.94f).widthIn(max = 420.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = LightSurface,
+                    shadowElevation = 12.dp
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "Eliminar", color = colorScheme.error, fontWeight = FontWeight.Bold)
+                        Surface(
+                            modifier = Modifier.size(76.dp),
+                            shape = RoundedCornerShape(50),
+                            color = colorScheme.error.copy(alpha = 0.08f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.DeleteOutline,
+                                    contentDescription = null,
+                                    tint = colorScheme.error,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(Res.string.wallet_delete_title),
+                            style = typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(Res.string.wallet_delete_confirmation, tarjeta.ultimos4),
+                            style = typography.bodyMedium,
+                            color = MediumGray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            color = ExtraLightGray
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    modifier = Modifier.size(42.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = DarkGray
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White, modifier = Modifier.size(23.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(
+                                        text = "${tarjeta.marca} ${tarjeta.nombreTitular}".trim(),
+                                        color = DarkGray,
+                                        style = typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = stringResource(Res.string.wallet_card_ending_in, tarjeta.ultimos4),
+                                        color = MediumGray,
+                                        style = typography.bodySmall
+                                    )
+                                }
+                                if (tarjeta.expiracion.isNotBlank()) {
+                                    Text(
+                                        text = tarjeta.expiracion,
+                                        color = MediumGray,
+                                        style = typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Button(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.eliminarTarjeta(tarjeta.ultimos4)
+                                tarjetaAEliminar = null
+                            },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.error)
+                        ) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(Res.string.wallet_delete_card), fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = { tarjetaAEliminar = null },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.surfaceVariant)
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.wallet_keep_card),
+                                color = colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
-                },
-                dismissButton = {
-                    TextButton(onClick = { tarjetaAEliminar = null }) {
-                        Text(text = "Cancelar", color = MediumGray)
-                    }
-                },
-                containerColor = colorScheme.surface,
-                shape = RoundedCornerShape(16.dp)
-            )
+                }
+            }
         }
+
     }
 }
 
@@ -569,8 +725,7 @@ fun CreditCardView(
     cardNumber: String,
     cardHolder: String,
     expiryDate: String,
-    cardBrand: String,
-    onDelete: () -> Unit
+    cardBrand: String
 ) {
     val cardGradient =
         when (cardBrand.uppercase()) {
@@ -613,10 +768,6 @@ fun CreditCardView(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(width = 36.dp, height = 26.dp).background(Color(0xFFD4AF37), RoundedCornerShape(4.dp)))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar", tint = Color.White.copy(alpha = 0.8f))
-                        }
                     }
                 }
 

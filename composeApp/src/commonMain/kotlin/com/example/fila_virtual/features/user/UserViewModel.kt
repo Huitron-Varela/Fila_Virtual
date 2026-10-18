@@ -87,6 +87,14 @@ class UserViewModel(
         errorMessage = "" // Limpiamos errores de MP también
     }
 
+    fun resetWalletCardForm() {
+        numeroTarjeta = ""
+        nombreTitular = ""
+        fechaExpiracion = ""
+        cvv = ""
+        clearWalletMessage()
+    }
+
     fun toggleMercadoPagoVinculado(vincular: Boolean) {
         val uid = usuario?.uid ?: return
         viewModelScope.launch {
@@ -272,7 +280,68 @@ class UserViewModel(
         }
     }
 
-    fun procesarPagoSeguro(onSuccess: () -> Unit = {}) {
+    fun actualizarDatosTarjeta(
+        tarjetaOriginal: TarjetaGuardada,
+        nombreTitular: String,
+        expiracion: String,
+        onComplete: (Boolean) -> Unit
+    ) {
+        val userId = Firebase.auth.currentUser?.uid
+        val metodosActuales = usuario?.metodosPago
+        if (userId == null || metodosActuales == null) {
+            onComplete(false)
+            return
+        }
+
+        val index = metodosActuales.indexOfFirst { tarjeta ->
+            if (tarjetaOriginal.tokenId.isNotBlank()) {
+                tarjeta.tokenId == tarjetaOriginal.tokenId
+            } else {
+                tarjeta == tarjetaOriginal
+            }
+        }
+        if (index < 0) {
+            onComplete(false)
+            return
+        }
+
+        val nuevosMetodos = metodosActuales.toMutableList().also { metodos ->
+            metodos[index] = metodos[index].copy(
+                nombreTitular = nombreTitular.trim(),
+                expiracion = expiracion
+            )
+        }
+
+        viewModelScope.launch {
+            isLoading = true
+            var success = false
+            try {
+                val metodosComoMapa = nuevosMetodos.map { tarjeta ->
+                    mapOf(
+                        "ultimos4" to tarjeta.ultimos4,
+                        "marca" to tarjeta.marca,
+                        "nombreTitular" to tarjeta.nombreTitular,
+                        "expiracion" to tarjeta.expiracion,
+                        "tokenId" to tarjeta.tokenId
+                    )
+                }
+                Firebase.firestore.collection("usuarios").document(userId)
+                    .update("metodosPago" to metodosComoMapa, "updatedAt" to Timestamp.now().seconds * 1000)
+                usuario = usuario?.copy(metodosPago = nuevosMetodos)
+                success = true
+            } catch (e: Exception) {
+                errorMessage = "No se pudieron actualizar los datos de la tarjeta."
+            } finally {
+                isLoading = false
+                onComplete(success)
+            }
+        }
+    }
+
+    fun procesarPagoSeguro(
+        tarjetaAReemplazar: TarjetaGuardada? = null,
+        onSuccess: (TarjetaGuardada) -> Unit = {}
+    ) {
         clearWalletMessage()
 
         validarNumeroTarjeta(numeroTarjeta)?.let { mostrarErrorWallet(it); return }
@@ -321,9 +390,23 @@ class UserViewModel(
                     val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
                     val marcaReal = detectarMarcaTarjeta(numeroTarjeta)
                     val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
-
                     val nuevaTarjeta = TarjetaGuardada(ultimos4, marcaReal, nombreTitular.trim(), expiracionFormateada, tokenId)
-                    currentMethods.add(nuevaTarjeta)
+                    if (tarjetaAReemplazar == null) {
+                        currentMethods.add(nuevaTarjeta)
+                    } else {
+                        val indiceReemplazo = currentMethods.indexOfFirst { tarjeta ->
+                            if (tarjetaAReemplazar.tokenId.isNotBlank()) {
+                                tarjeta.tokenId == tarjetaAReemplazar.tokenId
+                            } else {
+                                tarjeta == tarjetaAReemplazar
+                            }
+                        }
+                        if (indiceReemplazo < 0) {
+                            mostrarErrorWallet("La tarjeta que intentas actualizar ya no está guardada.")
+                            return@launch
+                        }
+                        currentMethods[indiceReemplazo] = nuevaTarjeta
+                    }
 
                     val metodosComoMapa = currentMethods.map { tarjeta ->
                         mapOf(
@@ -340,10 +423,14 @@ class UserViewModel(
 
                     usuario = usuario?.copy(metodosPago = currentMethods)
                     numeroTarjeta = ""; nombreTitular = ""; fechaExpiracion = ""; cvv = ""
-                    walletMessage = "¡Tarjeta validada y vinculada correctamente!"
+                    walletMessage = if (tarjetaAReemplazar == null) {
+                        "¡Tarjeta validada y vinculada correctamente!"
+                    } else {
+                        "¡Tarjeta actualizada correctamente!"
+                    }
                     walletMessageIsError = false
                     errorMessage = ""
-                    onSuccess()
+                    onSuccess(nuevaTarjeta)
                 } else {
                     mostrarErrorWallet("Mercado Pago rechazó los datos.")
                 }
