@@ -68,6 +68,7 @@ class UserViewModel(
 
     private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
     val carrito: StateFlow<List<ProductoCarrito>> = _carrito
+    private var ultimoTurnoGenerado = 0
     var carritoEstablecimientoId by mutableStateOf("")
         private set
     var carritoEstablecimientoNombre by mutableStateOf("")
@@ -536,6 +537,12 @@ class UserViewModel(
         carritoEstablecimientoId = ""
         carritoEstablecimientoNombre = ""
     }
+
+    private fun generarSiguienteTurno(): Int {
+        ultimoTurnoGenerado = ultimoTurnoGenerado % 500 + 1
+        return ultimoTurnoGenerado
+    }
+
     fun calcularTotalCarrito(): Double { return _carrito.value.sumOf { it.precio * it.cantidad } }
     fun calcularCantidadTotalItems(): Int { return _carrito.value.sumOf { it.cantidad } }
 
@@ -638,7 +645,7 @@ class UserViewModel(
                 val total = round((subtotal + 5.0) * 100) / 100.0
                 val descripcion = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
 
-                val turno = (1..99).random()
+                val turno = generarSiguienteTurno()
                 val now = Timestamp.now().seconds * 1000
                 val pedidosRef = Firebase.firestore.collection("pedidos")
                 val nuevoPedidoRef = pedidosRef.document
