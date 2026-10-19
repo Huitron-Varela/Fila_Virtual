@@ -89,7 +89,13 @@
     <string name="orders_rated">Platillos calificados</string>
     <string name="orders_reorder">Volver a pedir</string>
     <string name="orders_reorder_title">Cambiar carrito</string>
+    <string name="orders_reorder_confirm_title">Confirmar recompra</string>
+    <string name="orders_reorder_success_title">Pedido agregado</string>
+    <string name="orders_reorder_confirm_action">Confirmar recompra</string>
     <string name="orders_reorder_confirmation">Tu carrito tiene productos de %1$s. ¿Quieres reemplazarlos por los de %2$s?</string>
+    <string name="orders_reorder_review">Se agregarán estos productos a tu carrito:</string>
+    <string name="orders_reorder_success">Se agregó a tu carrito.</string>
+    <string name="orders_reorder_done">Aceptar</string>
     <string name="rating_sheet_title">¿Qué te pareció tu orden?</string>
     <string name="rating_sheet_subtitle">Tu opinión ayuda a mejorar la preparación y calidad del servicio.</string>
     <string name="rating_sheet_product_count">%1$d unidades en este pedido</string>
@@ -420,7 +426,7 @@
     <string name="emp_home_station">Estación</string>
     <string name="emp_home_stat_delivered">Entregados</string>
     <string name="emp_home_stat_prepared">Preparados</string>
-    <string name="emp_home_stat_incidents">Incidencias</string>
+    <string name="emp_home_stat_incidents">abandonados</string>
     <string name="emp_home_active_hint">Entra a una estación para continuar, o termina el turno cuando acabes.</string>
     <string name="emp_station_cocina">Cocina</string>
     <string name="emp_station_cocina_desc">Consulta pedidos recibidos, pásalos a preparación y márcalos como listos.</string>

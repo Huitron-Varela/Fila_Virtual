@@ -59,45 +59,67 @@ fun EditProfileScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var isSaving by remember { mutableStateOf(false) }
-    var showConfirmSheet by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
-    // MODAL DE CONFIRMACIÓN
-    if (showConfirmSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showConfirmSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = windowSize.adaptiveDp(24), topEnd = windowSize.adaptiveDp(24))
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(windowSize.adaptiveDp(24)).padding(bottom = windowSize.adaptiveDp(32)), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Confirmar cambios", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(modifier = Modifier.height(windowSize.adaptiveDp(16)))
-                Text("¿Estás seguro de que deseas guardar los cambios realizados?", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(modifier = Modifier.height(windowSize.adaptiveDp(32)))
-                Button(
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Confirmar cambios") },
+            text = { Text("¿Estás seguro de que deseas guardar los cambios realizados?") },
+            confirmButton = {
+                TextButton(
                     onClick = {
-                        showConfirmSheet = false
+                        showConfirmDialog = false
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        scope.launch {
-                            isSaving = true
-                            viewModel.updateProfile(
-                                nombre = nombre,
-                                telefono = telefono,
-                                fotoUrl = usuario?.fotoUrl,
-                                fotoBytes = selectedImage?.bytes,
-                                fotoMimeType = selectedImage?.mimeType ?: "image/jpeg"
-                            ) { success ->
-                                if (success) onBack()
-                                else scope.launch { snackbarHostState.showSnackbar("No se pudieron guardar los cambios.") }
-                                isSaving = false
+                        isSaving = true
+                        viewModel.updateProfile(
+                            nombre = nombre,
+                            telefono = telefono,
+                            fotoUrl = usuario?.fotoUrl,
+                            fotoBytes = selectedImage?.bytes,
+                            fotoMimeType = selectedImage?.mimeType ?: "image/jpeg"
+                        ) { success ->
+                            isSaving = false
+                            if (success) {
+                                showSuccessDialog = true
+                            } else {
+                                scope.launch { snackbarHostState.showSnackbar("No se pudieron guardar los cambios.") }
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(windowSize.adaptiveDp(56)),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(windowSize.adaptiveDp(16))
-                ) { Text("Confirmar y Guardar", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold) }
+                    enabled = !isSaving
+                ) {
+                    Text("Confirmar y guardar", color = PrimaryOrange, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text("Cancelar", color = MediumGray)
+                }
             }
-        }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showSuccessDialog = false
+                onBack()
+            },
+            title = { Text("Perfil actualizado") },
+            text = { Text("Tus cambios se guardaron correctamente.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSuccessDialog = false
+                        onBack()
+                    }
+                ) {
+                    Text("Aceptar", color = PrimaryOrange, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 
     BaseFormScreen(
@@ -105,9 +127,10 @@ fun EditProfileScreen(
         onBack = onBack,
         onSave = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            showConfirmSheet = true
+            showConfirmDialog = true
         },
         saveButtonText = if (isSaving) "Guardando..." else "Guardar Cambios",
+        isSaveEnabled = !isSaving,
         snackbarHostState = snackbarHostState
     ) {
         Spacer(modifier = Modifier.height(windowSize.adaptiveDp(8)))

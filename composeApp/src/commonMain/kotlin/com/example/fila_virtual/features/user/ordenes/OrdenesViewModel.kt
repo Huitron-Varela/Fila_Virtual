@@ -126,7 +126,7 @@ class OrdenesViewModel : ViewModel() {
                         pedido.estado == EstadoPedido.ENTREGADO ||
                             pedido.estado == EstadoPedido.NO_RECLAMADO ||
                             pedido.estado == EstadoPedido.CANCELADO
-                    }.sortedByDescending { it.createdAt }
+                    }.sortedBy { it.createdAt }
 
                     _isLoading.value = false
                     _isRefreshing.value = false

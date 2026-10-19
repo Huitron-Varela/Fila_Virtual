@@ -75,17 +75,17 @@ fun BilleteraScreen(
     var showTarjetaVinculadaModal by rememberSaveable { mutableStateOf(false) }
     var showMPVinculadoModal by rememberSaveable { mutableStateOf(false) }
 
-    val pendingAction = viewModel.pendingWalletAction
-
-    LaunchedEffect(pendingAction) {
-        if (pendingAction == "abrir_formulario") {
-            tarjetaAEditar = null
-            viewModel.resetWalletCardForm()
-            currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
-            showBottomSheet = true
-            viewModel.clearPendingWalletAction()
-        }
-    }
+    // Alta de tarjetas deshabilitada temporalmente: no abrir el formulario desde acciones pendientes.
+    // val pendingAction = viewModel.pendingWalletAction
+    // LaunchedEffect(pendingAction) {
+    //     if (pendingAction == "abrir_formulario") {
+    //         tarjetaAEditar = null
+    //         viewModel.resetWalletCardForm()
+    //         currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
+    //         showBottomSheet = true
+    //         viewModel.clearPendingWalletAction()
+    //     }
+    // }
 
     LaunchedEffect(showBottomSheet) {
         if (!showBottomSheet) {
@@ -110,102 +110,102 @@ fun BilleteraScreen(
 
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
 
-                // =======================================================
-                // 1. MIS TARJETAS (ARRIBA COMO LO TENÍAS ORIGINALMENTE)
-                // =======================================================
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "MIS TARJETAS",
-                        style = typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp),
-                        color = MediumGray
-                    )
+                // // =======================================================
+                // // 1. MIS TARJETAS (ARRIBA COMO LO TENÍAS ORIGINALMENTE)
+                // // =======================================================
+                // Row(
+                //     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp),
+                //     verticalAlignment = Alignment.CenterVertically
+                // ) {
+                //     Text(
+                //         text = "MIS TARJETAS",
+                //         style = typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp),
+                //         color = MediumGray
+                //     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                //     Spacer(modifier = Modifier.width(8.dp))
 
-                    Box(
-                        modifier = Modifier.background(Color(0xFFFFF0E6), RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "${metodosPago.size} activas",
-                            color = PrimaryOrange,
-                            style = typography.labelSmall.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
+                //     Box(
+                //         modifier = Modifier.background(Color(0xFFFFF0E6), RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
+                //     ) {
+                //         Text(
+                //             text = "${metodosPago.size} activas",
+                //             color = PrimaryOrange,
+                //             style = typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                //         )
+                //     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                //     Spacer(modifier = Modifier.weight(1f))
 
-                    if (metodosPago.isNotEmpty()) {
-                        Text(
-                            text = "Desliza para ver",
-                            style = typography.labelSmall,
-                            color = MediumGray
-                        )
-                    }
-                }
+                //     if (metodosPago.isNotEmpty()) {
+                //         Text(
+                //             text = "Desliza para ver",
+                //             style = typography.labelSmall,
+                //             color = MediumGray
+                //         )
+                //     }
+                // }
 
-                if (metodosPago.isEmpty()) {
-                    Text(
-                        text = stringResource(Res.string.wallet_no_linked_cards),
-                        style = typography.bodyMedium,
-                        color = MediumGray,
-                        modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp)
-                    )
-                } else {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(metodosPago) { tarjeta ->
-                            Column(
-                                modifier = Modifier.fillParentMaxWidth(0.85f),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                CreditCardView(
-                                    cardNumber = tarjeta.ultimos4,
-                                    cardHolder = tarjeta.nombreTitular,
-                                    expiryDate = tarjeta.expiracion,
-                                    cardBrand = tarjeta.marca
-                                )
-                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            tarjetaAEditar = tarjeta
-                                            viewModel.resetWalletCardForm()
-                                            currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
-                                            showBottomSheet = true
-                                        },
-                                        modifier = Modifier.weight(1f).height(44.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray.copy(alpha = 0.7f)),
-                                        contentPadding = PaddingValues(horizontal = 8.dp)
-                                    ) {
-                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(stringResource(Res.string.wallet_edit_card), maxLines = 1)
-                                    }
-                                    OutlinedButton(
-                                        onClick = { tarjetaAEliminar = tarjeta },
-                                        modifier = Modifier.weight(1f).height(44.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.error.copy(alpha = 0.55f)),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorScheme.error),
-                                        contentPadding = PaddingValues(horizontal = 8.dp)
-                                    ) {
-                                        Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(stringResource(Res.string.wallet_delete_card), maxLines = 1)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // if (metodosPago.isEmpty()) {
+                //     Text(
+                //         text = stringResource(Res.string.wallet_no_linked_cards),
+                //         style = typography.bodyMedium,
+                //         color = MediumGray,
+                //         modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp)
+                //     )
+                // } else {
+                //     LazyRow(
+                //         contentPadding = PaddingValues(horizontal = 24.dp),
+                //         horizontalArrangement = Arrangement.spacedBy(16.dp),
+                //         modifier = Modifier.fillMaxWidth()
+                //     ) {
+                //         items(metodosPago) { tarjeta ->
+                //             Column(
+                //                 modifier = Modifier.fillParentMaxWidth(0.85f),
+                //                 verticalArrangement = Arrangement.spacedBy(10.dp)
+                //             ) {
+                //                 CreditCardView(
+                //                     cardNumber = tarjeta.ultimos4,
+                //                     cardHolder = tarjeta.nombreTitular,
+                //                     expiryDate = tarjeta.expiracion,
+                //                     cardBrand = tarjeta.marca
+                //                 )
+                //                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                //                     OutlinedButton(
+                //                         onClick = {
+                //                             tarjetaAEditar = tarjeta
+                //                             viewModel.resetWalletCardForm()
+                //                             currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
+                //                             showBottomSheet = true
+                //                         },
+                //                         modifier = Modifier.weight(1f).height(44.dp),
+                //                         shape = RoundedCornerShape(12.dp),
+                //                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray.copy(alpha = 0.7f)),
+                //                         contentPadding = PaddingValues(horizontal = 8.dp)
+                //                     ) {
+                //                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                //                         Spacer(modifier = Modifier.width(6.dp))
+                //                         Text(stringResource(Res.string.wallet_edit_card), maxLines = 1)
+                //                     }
+                //                     OutlinedButton(
+                //                         onClick = { tarjetaAEliminar = tarjeta },
+                //                         modifier = Modifier.weight(1f).height(44.dp),
+                //                         shape = RoundedCornerShape(12.dp),
+                //                         border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.error.copy(alpha = 0.55f)),
+                //                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colorScheme.error),
+                //                         contentPadding = PaddingValues(horizontal = 8.dp)
+                //                     ) {
+                //                         Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                //                         Spacer(modifier = Modifier.width(6.dp))
+                //                         Text(stringResource(Res.string.wallet_delete_card), maxLines = 1)
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
 
-                Spacer(modifier = Modifier.height(40.dp))
+                // Spacer(modifier = Modifier.height(40.dp))
 
                 // =======================================================
                 // 2. BILLETERAS DIGITALES (MERCADO PAGO ABAJO)
@@ -237,40 +237,40 @@ fun BilleteraScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
-            // BOTÓN DE AÑADIR MÉTODO
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        tarjetaAEditar = null
-                        viewModel.resetWalletCardForm()
-                        currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
-                        showProximamente = false
-                        showBottomSheet = true
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(Res.string.wallet_new_card),
-                            style = typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)),
-                            color = Color.White
-                        )
-                    }
-                }
+        //     // BOTÓN DE AÑADIR MÉTODO
+        //     Column(
+        //         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        //         horizontalAlignment = Alignment.CenterHorizontally
+        //     ) {
+        //         Button(
+        //             onClick = {
+        //                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        //                 tarjetaAEditar = null
+        //                 viewModel.resetWalletCardForm()
+        //                 currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
+        //                 showProximamente = false
+        //                 showBottomSheet = true
+        //             },
+        //             modifier = Modifier.fillMaxWidth().height(56.dp),
+        //             colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+        //             shape = RoundedCornerShape(12.dp)
+        //         ) {
+        //             Row(
+        //                 verticalAlignment = Alignment.CenterVertically,
+        //                 horizontalArrangement = Arrangement.Center,
+        //                 modifier = Modifier.fillMaxSize()
+        //             ) {
+        //                 Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White)
+        //                 Spacer(Modifier.width(8.dp))
+        //                 Text(
+        //                     text = stringResource(Res.string.wallet_new_card),
+        //                     style = typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = windowSize.adaptiveSp(16)),
+        //                     color = Color.White
+        //                 )
+        //             }
+        //         }
 
-            }
+        //     }
         }
 
         if (showBottomSheet) {
@@ -285,31 +285,14 @@ fun BilleteraScreen(
                 when (currentSheetView) {
                     BottomSheetStateView.SELECCION_METODO -> {
                         AddMPMethodContent(
-                            onAddCard = {
-                                showProximamente = false
-                                currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
-                            },
                             onConnectMP = {
                                 currentSheetView = BottomSheetStateView.MOCK_CARGANDO_MP
                             },
                             isMPAlreadyLinked = mercadoPagoVinculado
                         )
                     }
-                    BottomSheetStateView.FORMULARIO_TARJETA -> {
-                        FormularioTarjetaScreen(
-                            viewModel = viewModel,
-                            tarjetaAReemplazar = tarjetaAEditar,
-                            onSuccess = { tarjetaGuardada ->
-                                tarjetaConfirmada = tarjetaGuardada
-                                tarjetaFueActualizada = tarjetaAEditar != null
-                                tarjetaAEditar = null
-                                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                                    showBottomSheet = false
-                                    showTarjetaVinculadaModal = true
-                                }
-                            }
-                        )
-                    }
+                    // Alta de tarjetas deshabilitada temporalmente; se conserva el estado para reactivarla luego.
+                    BottomSheetStateView.FORMULARIO_TARJETA -> Unit
                     BottomSheetStateView.MOCK_CARGANDO_MP -> {
                         MockConectandoMercadoPagoScreen {
                             viewModel.toggleMercadoPagoVinculado(true)
@@ -661,7 +644,6 @@ fun MockConectandoMercadoPagoScreen(onSimulacionCompletada: () -> Unit) {
 
 @Composable
 fun AddMPMethodContent(
-    onAddCard: () -> Unit,
     onConnectMP: () -> Unit,
     isMPAlreadyLinked: Boolean
 ) {
@@ -700,22 +682,23 @@ fun AddMPMethodContent(
             Spacer(Modifier.height(16.dp))
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth().clickable { onAddCard() },
-            colors = CardDefaults.cardColors(containerColor = colorScheme.background),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(colorScheme.surface), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.CreditCard, null, tint = MediumGray)
-                }
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text(stringResource(Res.string.wallet_new_card), style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium, fontSize = windowSize.adaptiveSp(16)), color = colorScheme.onSurface)
-                    Text("Validar y guardar tarjeta", style = typography.bodySmall, color = MediumGray)
-                }
-            }
-        }
+        // Alta de tarjetas deshabilitada temporalmente.
+        // Card(
+        //     modifier = Modifier.fillMaxWidth().clickable { onAddCard() },
+        //     colors = CardDefaults.cardColors(containerColor = colorScheme.background),
+        //     shape = RoundedCornerShape(16.dp)
+        // ) {
+        //     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        //         Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(colorScheme.surface), contentAlignment = Alignment.Center) {
+        //             Icon(Icons.Default.CreditCard, null, tint = MediumGray)
+        //         }
+        //         Spacer(Modifier.width(16.dp))
+        //         Column {
+        //             Text(stringResource(Res.string.wallet_new_card), style = typography.bodyLarge.copy(fontWeight = FontWeight.Medium, fontSize = windowSize.adaptiveSp(16)), color = colorScheme.onSurface)
+        //             Text("Validar y guardar tarjeta", style = typography.bodySmall, color = MediumGray)
+        //         }
+        //     }
+        // }
         Spacer(Modifier.height(24.dp))
     }
 }

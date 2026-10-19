@@ -90,7 +90,13 @@
     <string name="orders_rated">Dishes rated</string>
     <string name="orders_reorder">Order again</string>
     <string name="orders_reorder_title">Change cart</string>
+    <string name="orders_reorder_confirm_title">Confirm order again</string>
+    <string name="orders_reorder_success_title">Order added</string>
+    <string name="orders_reorder_confirm_action">Confirm order again</string>
     <string name="orders_reorder_confirmation">Your cart has products from %1$s. Replace them with products from %2$s?</string>
+    <string name="orders_reorder_review">These products will be added to your cart:</string>
+    <string name="orders_reorder_success">Added to your cart.</string>
+    <string name="orders_reorder_done">Done</string>
     <string name="rating_sheet_title">How was your order?</string>
     <string name="rating_sheet_subtitle">Your feedback helps improve preparation and service quality.</string>
     <string name="rating_sheet_product_count">%1$d items in this order</string>

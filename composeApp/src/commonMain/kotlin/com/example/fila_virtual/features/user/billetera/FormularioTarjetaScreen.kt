@@ -253,66 +253,35 @@ fun FormularioTarjetaScreen(
                 )
             }
 
-        Button(
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                viewModel.procesarPagoSeguro(
-                    tarjetaAReemplazar = tarjetaAReemplazar,
-                    onSuccess = { tarjetaGuardada ->
-                        onSuccess(tarjetaGuardada)
-                    }
-                )
-            },
-            enabled =
-                !viewModel.isLoading,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-            shape =
-                RoundedCornerShape(12.dp),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor =
-                        PrimaryOrange
-                )
-        ) {
-            if (viewModel.isLoading) {
-                CircularProgressIndicator(
-                    color =
-                        Color.White,
-                    strokeWidth =
-                        2.dp,
-                    modifier =
-                        Modifier.size(24.dp)
-                )
-            } else {
-                Icon(
-                    imageVector =
-                        Icons.Default.Lock,
-                    contentDescription =
-                        null,
-                    tint =
-                        Color.White
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(8.dp)
-                )
-
-                Text(
-                    text = stringResource(
-                        if (tarjetaAReemplazar == null) Res.string.wallet_add_card_submit
-                        else Res.string.wallet_update_card_submit
-                    ),
-                    color =
-                        Color.White,
-                    fontWeight =
-                        FontWeight.Bold
-                )
-            }
-        }
+        // Alta de tarjetas deshabilitada temporalmente.
+        // Button(
+        //     onClick = {
+        //         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        //         viewModel.procesarPagoSeguro(
+        //             tarjetaAReemplazar = tarjetaAReemplazar,
+        //             onSuccess = { tarjetaGuardada -> onSuccess(tarjetaGuardada) }
+        //         )
+        //     },
+        //     enabled = !viewModel.isLoading,
+        //     modifier = Modifier.fillMaxWidth().height(56.dp),
+        //     shape = RoundedCornerShape(12.dp),
+        //     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+        // ) {
+        //     if (viewModel.isLoading) {
+        //         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+        //     } else {
+        //         Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White)
+        //         Spacer(modifier = Modifier.width(8.dp))
+        //         Text(
+        //             text = stringResource(
+        //                 if (tarjetaAReemplazar == null) Res.string.wallet_add_card_submit
+        //                 else Res.string.wallet_update_card_submit
+        //             ),
+        //             color = Color.White,
+        //             fontWeight = FontWeight.Bold
+        //         )
+        //     }
+        // }
 
         Spacer(
             modifier =

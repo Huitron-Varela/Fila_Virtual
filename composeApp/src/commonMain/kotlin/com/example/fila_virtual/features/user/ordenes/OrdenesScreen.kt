@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.AppListSkeleton
@@ -59,6 +60,12 @@ import org.jetbrains.compose.resources.stringResource
 
 import androidx.compose.foundation.Image
 import fila_virtual.composeapp.generated.resources.orders_reorder
+import fila_virtual.composeapp.generated.resources.orders_reorder_confirm_action
+import fila_virtual.composeapp.generated.resources.orders_reorder_confirm_title
+import fila_virtual.composeapp.generated.resources.orders_reorder_done
+import fila_virtual.composeapp.generated.resources.orders_reorder_review
+import fila_virtual.composeapp.generated.resources.orders_reorder_success
+import fila_virtual.composeapp.generated.resources.orders_reorder_success_title
 import fila_virtual.composeapp.generated.resources.orders_title
 import io.github.alexzhirkevich.qrose.options.QrErrorCorrectionLevel
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
@@ -116,6 +123,7 @@ fun OrdenesScreen(
     var showRatingModal by remember { mutableStateOf(false) }
     var selectedPedidoForRating by remember { mutableStateOf<Pedido?>(null) }
     var selectedPedidoForReorder by remember { mutableStateOf<Pedido?>(null) }
+    var reorderAddedToCart by remember(selectedPedidoForReorder?.id) { mutableStateOf(false) }
 
     // 🔥 Memoria del ViewModel que sobrevive a la navegación
     val ratedOrders by viewModel.pedidosCalificados.collectAsState()
@@ -217,11 +225,7 @@ fun OrdenesScreen(
                                     },
                                     canReorder = pedido.productos.isNotEmpty(),
                                     onReorderClick = {
-                                        if (cartItems.isNotEmpty() && userViewModel.carritoEstablecimientoId != pedido.establecimientoId) {
-                                            selectedPedidoForReorder = pedido
-                                        } else {
-                                            restoreOrderToCart(pedido)
-                                        }
+                                        selectedPedidoForReorder = pedido
                                     }
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -388,33 +392,141 @@ fun OrdenesScreen(
     }
 
     selectedPedidoForReorder?.let { pedido ->
-        AlertDialog(
-            onDismissRequest = { selectedPedidoForReorder = null },
-            title = { Text(stringResource(Res.string.orders_reorder_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        Res.string.orders_reorder_confirmation,
-                        userViewModel.carritoEstablecimientoNombre,
-                        pedido.establecimientoNombre
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        userViewModel.vaciarCarrito()
-                        restoreOrderToCart(pedido)
-                        selectedPedidoForReorder = null
+        val cambiaEstablecimiento = cartItems.isNotEmpty() &&
+            userViewModel.carritoEstablecimientoId != pedido.establecimientoId
+        val dismissReorderDialog = {
+            selectedPedidoForReorder = null
+            reorderAddedToCart = false
+        }
+        Dialog(onDismissRequest = dismissReorderDialog) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(0.94f).widthIn(max = 420.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = LightSurface,
+                shadowElevation = 12.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = windowSize.height * 0.88f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 22.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        modifier = Modifier.size(76.dp),
+                        shape = CircleShape,
+                        color = if (reorderAddedToCart) Color(0xFFE8F5E9) else SoftOrangeBg
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (reorderAddedToCart) Icons.Default.ThumbUp else Icons.Default.Fastfood,
+                                contentDescription = null,
+                                tint = if (reorderAddedToCart) Color(0xFF2E7D32) else PrimaryOrange,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
                     }
-                ) { Text(stringResource(Res.string.orders_reorder)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { selectedPedidoForReorder = null }) {
-                    Text(stringResource(Res.string.btn_cancel))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(
+                            if (reorderAddedToCart) Res.string.orders_reorder_success_title
+                            else Res.string.orders_reorder_confirm_title
+                        ),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (reorderAddedToCart) {
+                        Text(
+                            text = stringResource(Res.string.orders_reorder_success),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MediumGray,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(
+                            text = if (cambiaEstablecimiento) {
+                                stringResource(
+                                    Res.string.orders_reorder_confirmation,
+                                    userViewModel.carritoEstablecimientoNombre,
+                                    pedido.establecimientoNombre
+                                )
+                            } else {
+                                stringResource(Res.string.orders_reorder_review)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MediumGray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            color = ExtraLightGray
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                pedido.productos.forEach { producto ->
+                                    Text(
+                                        text = "${producto.cantidad}x ${producto.nombre}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = DarkGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Button(
+                        onClick = {
+                            if (reorderAddedToCart) {
+                                dismissReorderDialog()
+                            } else {
+                                if (cambiaEstablecimiento) userViewModel.vaciarCarrito()
+                                restoreOrderToCart(pedido)
+                                reorderAddedToCart = true
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+                    ) {
+                        Text(
+                            stringResource(
+                                if (reorderAddedToCart) Res.string.orders_reorder_done
+                                else Res.string.orders_reorder_confirm_action
+                            ),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (!reorderAddedToCart) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = dismissReorderDialog,
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.btn_cancel),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 }
 
